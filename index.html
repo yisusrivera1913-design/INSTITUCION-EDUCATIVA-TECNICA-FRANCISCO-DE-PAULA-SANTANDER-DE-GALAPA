@@ -62,17 +62,21 @@
     @media print {
       @page {
         size: portrait;
-        margin: 1cm;
+        margin: 0;
+        /* Hides browser headers/footers */
+      }
+
+      body {
+        background-color: white !important;
+        margin: 0 !important;
+        padding: 1cm !important;
+        /* Slightly smaller padding to fit more content */
       }
 
       * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         color-adjust: exact !important;
-      }
-
-      body {
-        background-color: white !important;
       }
 
       .no-print,
@@ -103,11 +107,26 @@
         border-color: #000 !important;
       }
 
+      /* Intelligent breaks: Keep sections together as requested */
+      .institutional-section,
+      .activity-block,
+      .evaluation-card,
       tr,
       td,
-      th,
-      .break-inside-avoid {
+      th {
         page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin-bottom: 2px !important;
+      }
+
+      /* Headers stay with content */
+      h1,
+      h2,
+      h3,
+      h4,
+      .institutional-header {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
       }
 
       h1,

@@ -60,6 +60,7 @@ export interface DidacticSequence {
   observaciones: string;
   adecuaciones_piar: string;
   eje_crese_utilizado?: string; // El eje CRESE seleccionado por la IA
+  numero_secuencia?: string; // Para edición manual del número de secuencia
   // Nuevos campos para facilitar la vida al docente
   taller_imprimible: {
     introduccion: string;
