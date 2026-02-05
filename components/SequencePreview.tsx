@@ -156,25 +156,28 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
             <span className="hidden sm:inline">Copiar</span>
           </button>
 
-          <div className="relative group flex-1 md:flex-none">
+          <div className="flex flex-wrap gap-2">
             <button
-              className="w-full justify-center flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-900 active:scale-95 transition-all font-bold shadow-lg shadow-slate-500/30"
+              onClick={() => handlePrint('all')}
+              className="flex items-center gap-2 px-6 py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-900 active:scale-95 transition-all font-bold shadow-lg shadow-slate-500/30"
             >
               <Printer className="h-5 w-5" />
-              Imprimir ▼
+              Todo
             </button>
-            {/* Dropdown Menu */}
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 hidden group-hover:block animate-fade-in-up overflow-hidden z-50">
-              <button onClick={() => handlePrint('all')} className="w-full text-left px-4 py-3 hover:bg-slate-50 text-slate-700 font-medium text-sm border-b border-gray-50 flex justify-between">
-                <span>Todo</span> <span className="text-gray-400">📄</span>
-              </button>
-              <button onClick={() => handlePrint('planning')} className="w-full text-left px-4 py-3 hover:bg-blue-50 text-blue-700 font-medium text-sm border-b border-gray-50 flex justify-between">
-                <span>Solo Planeación</span> <span className="text-blue-400">📝</span>
-              </button>
-              <button onClick={() => handlePrint('anexos')} className="w-full text-left px-4 py-3 hover:bg-purple-50 text-purple-700 font-medium text-sm flex justify-between">
-                <span>Solo Anexos</span> <span className="text-purple-400">📎</span>
-              </button>
-            </div>
+            <button
+              onClick={() => handlePrint('planning')}
+              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-95 transition-all font-bold shadow-lg shadow-blue-500/30"
+            >
+              <PenTool className="h-5 w-5" />
+              Sólo Planeación
+            </button>
+            <button
+              onClick={() => handlePrint('anexos')}
+              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 active:scale-95 transition-all font-bold shadow-lg shadow-indigo-500/30"
+            >
+              <FileDown className="h-5 w-5" />
+              Sólo Anexos
+            </button>
           </div>
 
         </div>
@@ -237,18 +240,19 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
 
         {/* --- SECCIÓN PLANEACIÓN --- */}
         <div className={`${planningClass}`}>
-          {/* ENCABEZADO */}
-          <div className="flex gap-4 items-center mb-4 border-b-2 border-gray-800 pb-2">
-            {/* Logo placeholder - User can replace or we use a generic shield */}
-            <div className="w-24 h-24 flex items-center justify-center border border-gray-300 rounded-full bg-gray-50 flex-shrink-0 text-gray-400">
-              <School size={48} />
+          {/* ENCABEZADO INSTITUCIONAL */}
+          <div className="flex gap-6 items-center mb-6 border-b-2 border-slate-900 pb-4">
+            {/* Logo Oficial */}
+            <div className="w-24 h-24 flex items-center justify-center flex-shrink-0">
+              <img src="/logo_guaimaral.png" alt="Logo I.E. Guaimaral" className="w-full h-full object-contain" />
             </div>
 
             <div className="flex-grow text-center">
-              <h1 className="text-xl font-bold uppercase tracking-wide">Institución Educativa Guaimaral</h1>
-              <div className="border-t border-b border-gray-800 py-1 my-1">
-                <h2 className="text-sm font-bold uppercase">Proceso: Gestión Académica - Preparación de Clases</h2>
+              <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900">Institución Educativa Guaimaral</h1>
+              <div className="mt-2 py-1.5 border-y border-slate-800">
+                <h2 className="text-[12px] font-bold uppercase text-slate-700">Proceso: Gestión Académica - Preparación de Clases</h2>
               </div>
+              <p className="text-[10px] text-slate-400 mt-1 font-bold">Cúcuta, Norte de Santander | "Calidad Humana y Excelencia Académica"</p>
             </div>
           </div>
 
@@ -642,14 +646,14 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
 
         {/* --- SECCIÓN TALLER IMPRIMIBLE --- */}
         <div className={`mt-12 pt-8 border-t-4 border-double border-gray-400 break-before-page ${anexosClass}`}>
-          <div className="flex justify-between items-start mb-6">
-            <div className="flex gap-3 items-center">
-              <div className="w-12 h-12 bg-gray-100 border border-gray-300 rounded flex items-center justify-center text-gray-400">
-                <School size={24} />
+          <div className="flex justify-between items-start mb-10 border-b border-slate-200 pb-6">
+            <div className="flex gap-4 items-center">
+              <div className="w-16 h-16 flex items-center justify-center flex-shrink-0">
+                <img src="/logo_guaimaral.png" alt="Logo" className="w-full h-full object-contain" />
               </div>
               <div>
-                <h3 className="font-bold text-lg uppercase leading-none">Taller de Aplicación</h3>
-                <p className="text-[10px] text-gray-500 uppercase mt-1">Institución Educativa Guaimaral</p>
+                <h3 className="font-black text-xl uppercase leading-none text-slate-800">Taller de Aplicación</h3>
+                <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-1.5">Guía de Aprendizaje Institucional</p>
               </div>
             </div>
             <div className="text-right text-[10px] text-gray-600">

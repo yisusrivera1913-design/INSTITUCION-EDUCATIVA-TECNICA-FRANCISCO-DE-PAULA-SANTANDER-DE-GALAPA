@@ -62,20 +62,25 @@
     @media print {
       @page {
         size: portrait;
-        margin: 1.5cm;
+        margin: 1cm;
+      }
+
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
       }
 
       body {
         background-color: white !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
       }
 
       .no-print,
       header,
       footer,
       button,
-      nav {
+      nav,
+      .action-bar {
         display: none !important;
       }
 
@@ -91,13 +96,17 @@
       }
 
       .border,
-      .border-gray-200 {
-        border-color: #e5e7eb !important;
+      .border-gray-200,
+      .border-gray-300,
+      .border-gray-400,
+      .border-gray-800 {
+        border-color: #000 !important;
       }
 
       tr,
       td,
-      th {
+      th,
+      .break-inside-avoid {
         page-break-inside: avoid !important;
       }
 
@@ -105,6 +114,11 @@
       h2,
       h3 {
         page-break-after: avoid !important;
+      }
+
+      /* Force background colors for the Green boxes in institutional format */
+      .bg-\[\#EDF7ED\] {
+        background-color: #EDF7ED !important;
       }
     }
   </style>
