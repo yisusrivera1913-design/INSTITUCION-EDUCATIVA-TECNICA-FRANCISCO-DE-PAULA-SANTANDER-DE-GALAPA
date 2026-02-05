@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DidacticSequence, SequenceInput } from '../types';
 import { generateDocx } from '../services/docxService';
-import { Printer, FileDown, CheckCircle, Sparkles, Send, School, ExternalLink, PenTool } from 'lucide-react';
+import { Printer, FileDown, CheckCircle, Sparkles, Send, School, ExternalLink, PenTool, Lock } from 'lucide-react';
 
 interface SequencePreviewProps {
   data: DidacticSequence;
@@ -618,15 +618,16 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
             </div>
 
             <div>
-              <h4 className="font-bold text-xs mb-2 text-gray-800">Banco de Preguntas (5 preguntas por sesión - Evaluación por Competencias)</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <h4 className="font-bold text-xs mb-2 text-gray-800">Banco de Preguntas (Evaluación por Competencias)</h4>
+              <div className="grid grid-cols-1 gap-4">
                 {editableData.evaluacion.map((ev, i) => (
-                  <div key={i} className="border border-gray-300 p-2 rounded bg-gray-50 break-inside-avoid shadow-sm group">
-                    <div className="flex justify-between items-start mb-1">
+                  <div key={i} className="border border-gray-300 p-3 rounded bg-gray-50 break-inside-avoid shadow-sm group">
+                    <div className="flex justify-between items-start mb-2">
                       <div className="flex-1">
+                        <span className="text-[10px] font-bold text-blue-700 mr-2">P{i + 1}.</span>
                         <EditableContent
                           value={ev.pregunta}
-                          className="font-bold text-gray-900 border-0 p-0"
+                          className="font-bold text-gray-900 border-0 p-0 inline text-[11px]"
                           onSave={(val) => {
                             const newEv = [...editableData.evaluacion];
                             newEv[i].pregunta = val;
@@ -636,8 +637,45 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
                       </div>
                       <span className="text-[9px] text-gray-500 uppercase border border-gray-300 px-1.5 py-0.5 rounded ml-2 whitespace-nowrap bg-gray-100">{ev.tipo}</span>
                     </div>
+
+                    {/* Opciones A, B, C, D */}
+                    {ev.opciones && ev.opciones.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 ml-4">
+                        {ev.opciones.map((opt, idx) => (
+                          <div key={idx} className="flex items-start gap-2 text-[10px] text-gray-700">
+                            <span className="font-bold text-blue-600">{String.fromCharCode(65 + idx)}.</span>
+                            <EditableContent
+                              value={opt}
+                              className="border-0 p-0"
+                              onSave={(val) => {
+                                const newEv = [...editableData.evaluacion];
+                                if (newEv[i].opciones) {
+                                  newEv[i].opciones![idx] = val;
+                                  handleUpdateField('evaluacion', newEv);
+                                }
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
+              </div>
+
+              {/* Clave de Respuestas (Solo para el Docente) */}
+              <div className="mt-6 p-4 bg-slate-900 text-white rounded-xl no-print">
+                <h5 className="text-[10px] font-black uppercase tracking-widest mb-3 flex items-center gap-2">
+                  <Lock size={12} className="text-blue-400" /> Clave de Respuestas (Teacher Only)
+                </h5>
+                <div className="grid grid-cols-5 gap-2">
+                  {editableData.evaluacion.map((ev, i) => (
+                    <div key={i} className="flex gap-2 text-[10px]">
+                      <span className="text-slate-500">{i + 1}.</span>
+                      <span className="font-bold text-blue-400">{ev.respuesta_correcta || 'N/A'}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

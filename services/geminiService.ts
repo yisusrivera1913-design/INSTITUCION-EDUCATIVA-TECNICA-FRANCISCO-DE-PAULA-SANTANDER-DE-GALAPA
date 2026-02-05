@@ -83,8 +83,13 @@ const responseSchema: any = {
       type: SchemaType.ARRAY,
       items: {
         type: SchemaType.OBJECT,
-        properties: { pregunta: { type: SchemaType.STRING }, tipo: { type: SchemaType.STRING } },
-        required: ["pregunta", "tipo"]
+        properties: {
+          pregunta: { type: SchemaType.STRING },
+          tipo: { type: SchemaType.STRING },
+          opciones: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          respuesta_correcta: { type: SchemaType.STRING }
+        },
+        required: ["pregunta", "tipo", "opciones", "respuesta_correcta"]
       }
     },
     recursos: {
@@ -149,11 +154,11 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
     ${refinementInstruction ? `Instrucción de ajuste: ${sanitizeInput(refinementInstruction)}` : ''}
 
     Requisitos Críticos:
-    1. Generar exactamente ${input.sesiones} sesiones detalladas.
-    2. Rúbrica con 4 niveles (Superior, Alto, Básico, Bajo).
-    3. Evaluación con preguntas tipo saber (5 por sesión).
-    4. Taller imprimible con reto creativo.
-    5. Adecuaciones PIAR para inclusión educativa.
+    1. ESTRUCTURA PEDAGÓGICA: Generar exactamente ${input.sesiones} sesiones. Cada sesión debe seguir el modelo de: Inicio (Motivación/Saberes previos), Desarrollo (Conceptualización/Práctica guiada) y Cierre (Evaluación formativa).
+    2. CALIDAD DE CONTENIDO: El lenguaje debe ser adecuado para ${input.grado}. Las actividades deben ser innovadoras, usando metodologías activas (ABP, Gamificación o Flipped Classroom).
+    3. SELECCIÓN MÚLTIPLE: Cada sesión debe tener sus propias preguntas de evaluación. LAS PREGUNTAS DEBEN SER DE SELECCIÓN MÚLTIPLE CON 4 OPCIONES (A, B, C, D). No incluyas la respuesta correcta dentro del texto de la pregunta, usa el campo 'respuesta_correcta'.
+    4. RÚBRICA: Asegura que los criterios de la rúbrica evalúen las competencias específicas del tema.
+    5. LOGO Y FORMATO: Todo el contenido debe estar diseñado para ser exportado a un documento oficial institucional.
     
     Responde estrictamente en formato JSON válido según el esquema.
   `;

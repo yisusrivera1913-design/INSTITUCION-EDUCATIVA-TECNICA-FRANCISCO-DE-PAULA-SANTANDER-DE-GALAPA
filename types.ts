@@ -27,6 +27,8 @@ export interface RubricCriteria {
 export interface EvaluationItem {
   pregunta: string;
   tipo: string;
+  opciones?: string[]; // Para preguntas de selección múltiple (A, B, C, D)
+  respuesta_correcta?: string;
 }
 
 export interface Resource {
