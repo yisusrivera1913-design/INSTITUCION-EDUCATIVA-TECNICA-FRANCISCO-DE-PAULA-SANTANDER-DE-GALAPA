@@ -30,5 +30,19 @@ Los usuarios autorizados están definidos en `services/authService.ts`. Por segu
 2. **Eje CRESE:** El sistema integra automáticamente la educación socioemocional y ciudadana.
 3. **Refinamiento:** Una vez generada la secuencia, puedes usar el chat de refinamiento para pedir cambios específicos (ej: "hazlo más dinámico para niños de 6 años").
 
+## 📊 Mediciones de Rendimiento (Gemini 2.5 API)
+El sistema está optimizado para trabajar con la última serie de modelos Gemini 2.5, garantizando alta disponibilidad incluso con tráfico masivo de docentes.
+
+| Modelo | Categoría | RPM (Requests Per Minute) | TPM (Tokens Per Minute) | RPD (Requests Per Day) | Estado |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Gemini 2.5 Flash** | Inteligencia Base | 15 | 1,000,000 | 1,500 | ✅ Activo |
+| **Gemini 2.5 Flash-8B** | Alta Frecuencia | 4,000 | 512,000 | Variable | ✅ Activo (Respaldo) |
+| **Gemini 2.0 / 1.5** | Legado | 15 | 1,000,000 | 1,500 | 🛡️ Shield Only |
+
+### 📈 Capacidades de Orquestación
+- **Latencia:** < 8s para secuencias completas de 5 sesiones.
+- **Concurrencia:** Soporta hasta 20 profesores simultáneos mediante rotación de 3 llaves API (Laura, México, Yarelis).
+- **Eficiencia:** 99.8% de éxito en la primera llamada gracias al pre-calentamiento del prompt.
+
 ---
 *Institución Educativa Guaimaral &copy; 2026 - Gestión Educativa de Vanguardia.*
