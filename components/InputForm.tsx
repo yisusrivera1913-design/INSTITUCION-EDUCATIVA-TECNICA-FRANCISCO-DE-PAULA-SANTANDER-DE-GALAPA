@@ -21,6 +21,7 @@ export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerat
   const isLindaVarela = user?.name.toLowerCase().includes("linda varela");
   const isAsterioTorres = user?.name.toLowerCase().includes("asterio torres");
   const isRobertoDaza = user?.name.toLowerCase().includes("roberto daza");
+  const isEduardo = user?.name.toLowerCase() === "eduardo";
 
   const filteredGrados = isTransitionTeacher
     ? GRADOS.filter(g => g === "Transición")
@@ -34,7 +35,9 @@ export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerat
         ? AREAS.filter(a => a.includes("Naturales") || a.includes("Agropecuaria") || a.includes("Ética"))
         : isRobertoDaza
           ? AREAS.filter(a => ["Ciencias Sociales", "Ética y Valores", "Filosofía", "Cátedra de la Paz"].includes(a))
-          : AREAS;
+          : isEduardo
+            ? AREAS.filter(a => ["Tecnología e Informática", "Educación Física"].includes(a))
+            : AREAS;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
