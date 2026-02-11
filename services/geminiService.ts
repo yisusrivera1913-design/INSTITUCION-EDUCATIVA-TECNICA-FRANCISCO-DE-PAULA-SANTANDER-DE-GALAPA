@@ -212,7 +212,7 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
 
         console.log(`% c[✨ ÉXITO]Respondió: ${modelName} | Llave: ${label} `, "color: #10b981; font-weight: bold;");
 
-        const mKey = `key${i + 1} ` as keyof typeof apiMetrics;
+        const mKey = `key${i + 1}` as keyof typeof apiMetrics;
         apiMetrics[mKey].requests++;
         apiMetrics[mKey].success++;
         apiMetrics[mKey].lastUsed = new Date().toLocaleTimeString();
@@ -225,7 +225,7 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
         lastError = err;
         console.warn(`[❌ Intento Fallido] ${modelName} (${label}): ${err.message} `);
         modelHealthStatus[modelName] = "offline";
-        const mKey = `key${i + 1} ` as keyof typeof apiMetrics;
+        const mKey = `key${i + 1}` as keyof typeof apiMetrics;
         apiMetrics[mKey].requests++;
         apiMetrics[mKey].errors++;
         logApiKeyUsage(i, 'error', err.message, modelName);
