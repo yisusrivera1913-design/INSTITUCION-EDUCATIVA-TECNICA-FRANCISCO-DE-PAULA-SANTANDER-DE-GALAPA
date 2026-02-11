@@ -176,18 +176,28 @@ export const authService = {
     },
 
     // --- USAGE TRACKING (STATS) ---
-    logUsage: async (email: string) => {
+    logUsage: async (email: string, details?: { grade: string, area: string, theme: string }) => {
+        const actionText = details
+            ? `Generó: ${details.theme} (${details.area} - ${details.grade})`
+            : 'Generó Secuencia';
+
         // 1. Local Log
         const key = `guaimaral_stats_${email.toLowerCase()}`;
         const currentLog = JSON.parse(localStorage.getItem(key) || '[]');
-        currentLog.push(Date.now());
+        currentLog.push({
+            timestamp: Date.now(),
+            action: actionText
+        });
         localStorage.setItem(key, JSON.stringify(currentLog));
 
         // 2. Cloud Log (Supabase)
         if (supabase) {
             try {
                 const { error } = await supabase.from('usage_logs').insert([
-                    { user_email: email, action: 'Generó Secuencia' }
+                    {
+                        user_email: email,
+                        action: actionText
+                    }
                 ]);
                 if (error) {
                     console.error("❌ Supabase Log Error:", error.message);
@@ -254,8 +264,10 @@ export const authService = {
 
     getLocalUsageStats: (email: string) => {
         const key = `guaimaral_stats_${email.toLowerCase()}`;
-        const timestamps: number[] = JSON.parse(localStorage.getItem(key) || '[]');
+        const logs: any[] = JSON.parse(localStorage.getItem(key) || '[]');
         const now = new Date();
+
+        const timestamps = logs.map(l => typeof l === 'number' ? l : l.timestamp);
 
         const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
         const weekStart = now.getTime() - (7 * 24 * 60 * 60 * 1000);

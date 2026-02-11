@@ -6,9 +6,9 @@ import { UserManagement, PasswordChange } from './components/UserManagement';
 import { DidacticSequence, SequenceInput } from './types';
 import { generateDidacticSequence } from './services/geminiService';
 import { GraduationCap, Loader2, AlertTriangle, LogOut, User as UserIcon, Shield, LayoutDashboard } from 'lucide-react';
-
 import { Login } from './components/Login';
 import { authService, User } from './services/authService';
+// HistorySidebar removed for total privacy
 
 const initialInput: SequenceInput = {
   grado: '',
@@ -18,6 +18,15 @@ const initialInput: SequenceInput = {
   sesiones: 0,
   ejeCrese: '',
 };
+
+interface HistoryItem {
+  id: string;
+  timestamp: number;
+  title: string;
+  area: string;
+  grade: string;
+  sequence: DidacticSequence;
+}
 
 function App() {
   // Auth State
@@ -30,9 +39,9 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  // Persistent history state removed
 
   const loadingMessages = [
     "Analizando el DBA y contexto...",
@@ -56,7 +65,7 @@ function App() {
     return () => clearInterval(interval);
   }, [isLoading]);
 
-  // 1. Initial Load (Solo input - SIN historial por seguridad)
+  // 1. Initial Load (Solo parámetros de entrada - HISTORIAL EFÍMERO POR SEGURIDAD)
   useEffect(() => {
     if (isAuthenticated && currentUser) {
       const inputKey = authService.getUserStorageKey('guaimaral_input');
@@ -70,7 +79,7 @@ function App() {
     }
   }, [isAuthenticated, currentUser]);
 
-  // 3. Persist current input
+  // 2. Persistencia de entrada (No persiste contenido generado)
   useEffect(() => {
     if (isAuthenticated && currentUser) {
       const inputKey = authService.getUserStorageKey('guaimaral_input');
@@ -107,9 +116,16 @@ function App() {
       const result = await generateDidacticSequence(input, refinementConfig?.instruction);
       setSequence(result);
 
-      // LOG USAGE (Híbrido: Local + Nube si está disponible)
+      // NO GUARDAR EN HISTORIAL PERSISTENTE (Política Efímera solicitada por Rector)
+      // Solo se mantiene en memoria mientras la sesión esté abierta o no se reinicie la app.
+
+      // LOG USAGE (Híbrido: Local + Nube si está disponible) - EL CONTADOR SÍ SE GUARDA
       if (currentUser) {
-        authService.logUsage(currentUser.email);
+        authService.logUsage(currentUser.email, {
+          theme: input.tema,
+          area: input.area,
+          grade: input.grado
+        });
       }
 
     } catch (err) {
@@ -142,6 +158,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-outfit pb-20 relative selection:bg-blue-100 selection:text-blue-900">
+      {/* Sidebar removed per Rector's request */}
 
       {/* Header */}
       <header className="relative z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 no-print transition-all duration-300 shadow-sm">
@@ -221,7 +238,7 @@ function App() {
         )}
       </header>
 
-      <main className={`relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 transition-all duration-500 ${isSidebarOpen ? 'lg:pl-80' : 'lg:pl-24'}`}>
+      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
         {/* Admin Stats Overlay */}
         {showStats && currentUser?.role === 'admin' && (
@@ -280,7 +297,7 @@ function App() {
             </h2>
             <p className="text-slate-500 text-lg max-w-2xl mx-auto leading-relaxed font-medium">
               Crea secuencias didácticas de alta calidad alineadas con el MEN en segundos. <br />
-              <span className="text-slate-400 text-sm">Sin historial de almacenamiento local para total privacidad.</span>
+              <span className="text-red-500 text-xs font-bold uppercase tracking-wider">🔒 Sesión Efímera: El contenido no se guarda al salir o recargar. Descarga tu archivo.</span>
             </p>
           </div>
 

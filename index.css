@@ -1,5 +1,5 @@
 /* Estilos base para I.E. Guaimaral - Docente AI Pro */
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
   --primary: #2563eb;
@@ -8,10 +8,19 @@
   --bg-dark: #0f172a;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
   font-family: 'Outfit', 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #f8fafc;
+}
+
+.font-outfit {
+  font-family: 'Outfit', sans-serif;
 }
 
 /* Transiciones suaves para elementos interactivos */
@@ -20,7 +29,7 @@ button,
 input,
 select,
 textarea {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Glassmorphism utility */
@@ -40,16 +49,17 @@ textarea {
 
 /* Scrollbar personalizado - Premium style */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 20px;
+  border: 2px solid #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -57,6 +67,36 @@ textarea {
 }
 
 /* Animaciones Avanzadas */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
 @keyframes float {
   0% {
     transform: translateY(0px);
@@ -102,6 +142,36 @@ textarea {
   animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
 }
 
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
 /* Shimmer effect for progress bars */
 @keyframes shimmer {
   0% {
@@ -113,6 +183,27 @@ textarea {
   }
 }
 
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 2s infinite;
+}
+
+/* Shadow utilities */
+.shadow-premium {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+}
+
 /* Fix para impresión */
 @media print {
   .no-print {
@@ -121,5 +212,12 @@ textarea {
 
   body {
     background: white;
+  }
+
+  .glass,
+  .dark-glass {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    border-color: #e2e8f0 !important;
   }
 }

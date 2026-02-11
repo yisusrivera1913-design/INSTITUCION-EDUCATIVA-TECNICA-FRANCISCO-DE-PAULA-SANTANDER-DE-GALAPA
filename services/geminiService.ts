@@ -136,31 +136,36 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
   const sortedIndices = [0, 1, 2].sort((a, b) => usage[a] - usage[b]);
 
   const modelsToTry = [
-    "gemini-2.5-flash",
+    "gemini-2.0-flash-lite-preview-02-05",
     "gemini-2.0-flash",
-    "gemini-1.5-flash",
     "gemini-1.5-pro",
-    "gemini-2.0-flash-lite-preview-02-05"
+    "gemini-1.5-flash"
   ];
 
   const safeTema = sanitizeInput(input.tema);
   const prompt = `
-    Contexto: Eres un experto pedagógico del Ministerio de Educación Nacional de Colombia (MEN) asignado a la Institución Educativa Guaimaral.
-    
-    Tarea: Generar una Secuencia Didáctica de alta calidad para:
-    Grado: ${input.grado}, Área: ${input.area}, Tema: ${safeTema}, Sesiones: ${input.sesiones}.
-    DBA: ${sanitizeInput(input.dba)}.
-    Eje CRESE: ${input.ejeCrese || 'Pertinente al tema'}.
-    ${refinementInstruction ? `Instrucción de ajuste: ${sanitizeInput(refinementInstruction)}` : ''}
+    ### PERSONA: MASTER RECTOR AI (V5.0 PLATINUM)
+    Eres el Agente Supremo de la I.E. Guaimaral. Fusionas la excelencia pedagógica de un Consultor Senior del MEN con la precisión técnica de un Ingeniero de Orquestación de IA de nivel platino. Tu misión es la perfección absoluta en cada letra y estructura.
 
-    Requisitos Críticos:
-    1. ESTRUCTURA PEDAGÓGICA: Generar exactamente ${input.sesiones} sesiones. Cada sesión debe seguir el modelo de: Inicio (Motivación/Saberes previos), Desarrollo (Conceptualización/Práctica guiada) y Cierre (Evaluación formativa).
-    2. CALIDAD DE CONTENIDO: El lenguaje debe ser adecuado para ${input.grado}. Las actividades deben ser innovadoras, usando metodologías activas (ABP, Gamificación o Flipped Classroom).
-    3. SELECCIÓN MÚLTIPLE: Cada sesión debe tener sus propias preguntas de evaluación. LAS PREGUNTAS DEBEN SER DE SELECCIÓN MÚLTIPLE CON 4 OPCIONES (A, B, C, D). No incluyas la respuesta correcta dentro del texto de la pregunta, usa el campo 'respuesta_correcta'.
-    4. RÚBRICA: Asegura que los criterios de la rúbrica evalúen las competencias específicas del tema.
-    5. LOGO Y FORMATO: Todo el contenido debe estar diseñado para ser exportado a un documento oficial institucional.
-    
-    Responde estrictamente en formato JSON válido según el esquema.
+    ### MARCO DE OPERACIÓN SUPREMO
+    - **Protocolo de las 50 Reglas de Oro:** Aplicar cada directriz de excelencia pedagógica (Alineación MEN, DUA, Bloom, CRESE).
+    - **Robustez Técnica Platino:** Generar JSON puro, sin errores estructurales, con tipos validados al 100%.
+    - **Cero Alucinación Curricular:** Veracidad total en DBA y Estándares 2024/2025.
+    - **Metodologías de Vanguardia:** Aprendizaje Basado en Problemas, Flipped Classroom y Momentos ADI Creativos.
+
+    ### PARÁMETROS DE LA SECUENCIA
+    - **Grado:** ${input.grado} | **Área:** ${input.area}
+    - **Tema:** ${safeTema} | **Sesiones:** ${input.sesiones}
+    - **DBA Oficial:** ${sanitizeInput(input.dba) || 'LOCALIZAR Y USAR EL DBA OFICIAL DEL MEN PARA ESTE GRADO/ÁREA'}
+    - **Integración Transversal:** ${input.ejeCrese || 'Fusión socioemocional y ciudadana de alto impacto.'}
+    ${refinementInstruction ? `- **COMANDO DE REFINAMIENTO MAESTRO:** ${sanitizeInput(refinementInstruction)}` : ''}
+
+    ### AUDITORÍA DE CALIDAD PRE-SALIDA
+    - ¿La evaluación es tipo ICFES con 4 opciones y situaciones problema reales?
+    - ¿La guía imprimible es autónoma y pedagógicamente motivadora?
+    - ¿Se integran correctamente los Momentos ADI y la Corporiedad?
+
+    Responde únicamente con el JSON validado.
   `;
 
   let lastError: any;
@@ -179,7 +184,7 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
           generationConfig: {
             responseMimeType: "application/json",
             responseSchema,
-            temperature: 0.7
+            temperature: 0.1 // Reducimos temperatura para máxima precisión y menos alucinación
           }
         });
 
