@@ -29,7 +29,8 @@ export const AREAS = [
   "Dimensión Cognitiva",
   "Dimensión Socioafectiva",
   "Dimensión Comunicativa",
-  "Agropecuaria"
+  "Agropecuaria",
+  "Cátedra de la Paz"
 ];
 
 export const EJES_CRESE = [
