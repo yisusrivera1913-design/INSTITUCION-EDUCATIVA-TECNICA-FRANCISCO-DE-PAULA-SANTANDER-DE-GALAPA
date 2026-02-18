@@ -211,11 +211,7 @@ export const UserManagement: React.FC = () => {
                         <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-200">
                             <th className="pb-4 pl-4">Usuario</th>
                             <th className="pb-4">Rol</th>
-                            <th className="pb-4 text-center">Hoy (Secuencias)</th>
-                            <th className="pb-4 text-center">Mes (Secuencias)</th>
-                            <th className="pb-4 text-center">Año (Secuencias)</th>
-                            <th className="pb-4 text-center">Docs Guardados</th>
-                            <th className="pb-4 text-center">Acumulado Total</th>
+                            <th className="pb-4 text-center">Total Secuencias</th>
                             <th className="pb-4 text-right pr-4">Acciones</th>
                         </tr>
                     </thead>
@@ -253,20 +249,6 @@ export const UserManagement: React.FC = () => {
                                         </span>
                                     </td>
                                     <td className="py-4 text-center font-bold text-slate-800">
-                                        {user.stats?.today || 0}
-                                    </td>
-                                    <td className="py-4 text-center text-slate-600">
-                                        {user.stats?.month || 0}
-                                    </td>
-                                    <td className="py-4 text-center text-slate-500">
-                                        {user.stats?.year || 0}
-                                    </td>
-                                    <td className="py-4 text-center">
-                                        <span className="bg-indigo-50 px-3 py-1 rounded-full text-xs font-black text-indigo-600 border border-indigo-100">
-                                            {user.stats?.saved || 0}
-                                        </span>
-                                    </td>
-                                    <td className="py-4 text-center font-bold text-slate-500">
                                         {user.stats?.total || 0}
                                     </td>
                                     <td className="py-4 text-right pr-4">
