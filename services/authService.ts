@@ -414,13 +414,19 @@ export const authService = {
         return `${baseKey}_${hash}`;
     },
 
-    // --- REAL-TIME PRESENCE (CENTRALIZADO) ---
-    trackPresence: (user: User) => {
+    // --- REAL-TIME PRESENCE (SINGLETON ROBUSTO) ---
+    _presenceChannel: null as any,
+    _hb: null as any,
+
+    trackPresence: (user: User, onSync?: (state: any) => void) => {
         if (!supabase) return null;
         const lowEmail = user.email.toLowerCase();
 
-        // Limpiar canal previo si existe para evitar duplicados
-        supabase.removeChannel(supabase.channel('online-users'));
+        // Si ya tenemos el canal activo, solo devolvemos el objeto
+        if (authService._presenceChannel) {
+            if (onSync) authService._presenceChannel.on('presence', { event: 'sync' }, () => onSync(authService._presenceChannel.presenceState()));
+            return authService._presenceChannel;
+        }
 
         const channel = supabase.channel('online-users', {
             config: {
@@ -430,34 +436,50 @@ export const authService = {
             },
         });
 
-        const trackUser = async () => {
+        authService._presenceChannel = channel;
+
+        const doTrack = async () => {
             try {
                 await channel.track({
                     online_at: new Date().toISOString(),
                     name: user.name,
                     role: user.role,
-                    email: lowEmail
+                    email: lowEmail,
+                    local_id: Math.random().toString(36).substring(7)
                 });
-                console.log('📡 [Presence] Tracking enviado para:', lowEmail);
+                console.log('📡 [Presence] Pulso enviado:', lowEmail);
             } catch (e) {
-                console.error('❌ [Presence] Error en track:', e);
+                console.warn('⚠️ [Presence] Fallo temporal de track');
             }
         };
 
         channel
             .on('presence', { event: 'sync' }, () => {
-                console.log('🔄 [Presence] Sincronización detectada');
+                const state = channel.presenceState();
+                console.log('🔄 [Presence] Sincronización:', state);
+                if (onSync) onSync(state);
             })
             .on('presence', { event: 'join' }, ({ key }) => {
-                console.log('➕ [Presence] Nuevo usuario activo:', key);
+                console.log('➕ [Presence] +1:', key);
+                if (onSync) onSync(channel.presenceState());
+            })
+            .on('presence', { event: 'leave' }, ({ key }) => {
+                console.log('➖ [Presence] -1:', key);
+                if (onSync) onSync(channel.presenceState());
             })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
-                    console.log('🔌 [Presence] Suscrito con éxito');
-                    await trackUser();
-                    // Heartbeat más frecuente (cada 20s) para evitar caídas en local
-                    const hb = setInterval(trackUser, 20000);
-                    (channel as any)._hb = hb;
+                    console.log('✅ [Presence] Canal CONECTADO');
+                    await doTrack();
+                    // Pulso cada 15s para máxima estabilidad local
+                    if (authService._hb) clearInterval(authService._hb);
+                    authService._hb = setInterval(doTrack, 15000);
+                } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                    console.error('❌ [Presence] Canal caído, reintentando...');
+                    setTimeout(() => {
+                        authService._presenceChannel = null;
+                        authService.trackPresence(user, onSync);
+                    }, 5000);
                 }
             });
 

@@ -65,42 +65,20 @@ export const UserManagement: React.FC = () => {
                 }, () => fetchUsers())
                 .subscribe();
 
-            // Presence Listener for Active Users
-            const presenceChannel = supabase.channel('online-users');
-
-            const updatePresenceState = () => {
-                const state = presenceChannel.presenceState();
-                console.log('🔄 Sincronización Forzada de Presencia:', state);
+            // Usar el Singleton de authService para evitar conflictos de canales
+            const currentUser = authService.getCurrentUser();
+            const ch = authService.trackPresence(currentUser!, (state) => {
+                console.log('💎 [UI] Actualizando lista de activos:', state);
                 setOnlineUsers({ ...state });
-            };
+            });
 
-            presenceChannel
-                .on('presence', { event: 'sync' }, updatePresenceState)
-                .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-                    console.log('🟢 Usuario se unió:', key);
-                    updatePresenceState();
-                })
-                .on('presence', { event: 'leave' }, ({ key }) => {
-                    console.log('🔴 Usuario salió:', key);
-                    updatePresenceState();
-                })
-                .subscribe(async (status) => {
-                    if (status === 'SUBSCRIBED') {
-                        // Forzar una sincronización inicial apenas se suscribe
-                        updatePresenceState();
-                    }
-                });
-
-            // Sincronizar inmediatamente al montar
-            updatePresenceState();
-
-            // Intervalo de seguridad para refrescar la lista de activos cada 10s
-            const interval = setInterval(updatePresenceState, 10000);
+            // Sincronizar inmediatamente
+            if (ch) setOnlineUsers({ ...ch.presenceState() });
 
             return () => {
-                clearInterval(interval);
+                // No cerramos el canal aquí porque es un singleton compartido por App.tsx
+                console.log('🚶 Saliendo de Panel de Gestión');
                 supabase.removeChannel(channel);
-                supabase.removeChannel(presenceChannel);
             };
         }
     }, []);
