@@ -1,34 +1,42 @@
 import React, { useEffect, useState } from 'react';
 import { authService } from '../services/authService';
-import { Database, FileText, Download, Calendar, User, Search, Trash2 } from 'lucide-react';
+import { Database, FileText, Download, Calendar, User, Search, Trash2, Activity, Clock, BarChart3, TrendingUp } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
+import { User as UserType } from '../services/authService';
 
 export const AdminSequenceViewer: React.FC<{ userEmail?: string }> = ({ userEmail }) => {
     const [sequences, setSequences] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [stats, setStats] = useState<any>(null);
 
-    const loadSequences = async () => {
+    const loadData = async () => {
         setIsLoading(true);
-        let data = await authService.getAllSequences();
+        let seqData = await authService.getAllSequences();
 
         if (userEmail) {
-            data = data.filter(s => s.user_email.toLowerCase() === userEmail.toLowerCase());
+            seqData = seqData.filter(s => s.user_email.toLowerCase() === userEmail.toLowerCase());
+            // Cargar estadísticas también
+            const s = await authService.getUsageStats(userEmail);
+            setStats(s);
         }
 
-        setSequences(data);
+        setSequences(seqData);
         setIsLoading(false);
     };
 
     useEffect(() => {
-        loadSequences();
+        loadData();
 
-        // Realtime subscription
+        // Realtime subscription para cambios en secuencias y logs
         if (supabase) {
             const channel = supabase
                 .channel('admin-sequences')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'generated_sequences' }, () => {
-                    loadSequences();
+                    loadData();
+                })
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'usage_logs' }, () => {
+                    loadData();
                 })
                 .subscribe();
 
@@ -83,6 +91,40 @@ export const AdminSequenceViewer: React.FC<{ userEmail?: string }> = ({ userEmai
                     />
                 </div>
             </div>
+
+            {/* Teacher Stats Bar - Visible only when viewing personal history */}
+            {userEmail && stats && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+                    <div className="bg-blue-50/50 p-6 rounded-[2rem] border border-blue-100/50">
+                        <div className="flex items-center gap-3 mb-3 text-blue-600">
+                            <Clock size={16} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Hoy</span>
+                        </div>
+                        <div className="text-3xl font-black text-slate-800 tracking-tight">{stats.today}</div>
+                    </div>
+                    <div className="bg-indigo-50/50 p-6 rounded-[2rem] border border-indigo-100/50">
+                        <div className="flex items-center gap-3 mb-3 text-indigo-600">
+                            <TrendingUp size={16} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Mensual</span>
+                        </div>
+                        <div className="text-3xl font-black text-slate-800 tracking-tight">{stats.month}</div>
+                    </div>
+                    <div className="bg-purple-50/50 p-6 rounded-[2rem] border border-purple-100/50">
+                        <div className="flex items-center gap-3 mb-3 text-purple-600">
+                            <BarChart3 size={16} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Anual</span>
+                        </div>
+                        <div className="text-3xl font-black text-slate-800 tracking-tight">{stats.year}</div>
+                    </div>
+                    <div className="bg-slate-50/50 p-6 rounded-[2rem] border border-slate-200/50">
+                        <div className="flex items-center gap-3 mb-3 text-slate-500">
+                            <Activity size={16} />
+                            <span className="text-[10px] font-black uppercase tracking-widest">Total</span>
+                        </div>
+                        <div className="text-3xl font-black text-slate-800 tracking-tight">{stats.total}</div>
+                    </div>
+                </div>
+            )}
 
             {isLoading ? (
                 <div className="flex justify-center py-20">

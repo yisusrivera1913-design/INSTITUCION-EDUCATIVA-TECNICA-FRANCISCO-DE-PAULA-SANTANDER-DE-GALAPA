@@ -78,13 +78,10 @@ function App() {
         setInput(initialInput);
       }
 
-      // Track presence
-      const presenceChannel = authService.trackPresence(currentUser);
+      // Track presence (Inicia el manager global)
+      const sub = authService.trackPresence(currentUser);
       return () => {
-        if (presenceChannel) {
-          if ((presenceChannel as any)._hb) clearInterval((presenceChannel as any)._hb);
-          presenceChannel.unsubscribe();
-        }
+        if (sub) sub.unsubscribe();
       };
     }
   }, [isAuthenticated, currentUser]);
@@ -126,16 +123,9 @@ function App() {
       const result = await generateDidacticSequence(input, refinementConfig?.instruction);
       setSequence(result);
 
-      // SAVE SEQUENCE TO CLOUD (Requested by Rector for persistence)
+      // SAVE & LOG TO CLOUD (Consolidated for Rector's dashboard visibility)
       if (currentUser) {
-        authService.saveSequence(currentUser.email, result, {
-          theme: input.tema,
-          area: input.area,
-          grade: input.grado
-        });
-
-        // LOG USAGE (Híbrido: Local + Nube si está disponible) - EL CONTADOR SÍ SE GUARDA
-        authService.logUsage(currentUser.email, {
+        await authService.saveAndLogSequence(currentUser, result, {
           theme: input.tema,
           area: input.area,
           grade: input.grado

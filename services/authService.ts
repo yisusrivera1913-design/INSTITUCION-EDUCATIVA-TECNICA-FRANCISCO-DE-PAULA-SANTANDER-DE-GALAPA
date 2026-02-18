@@ -43,6 +43,7 @@ export interface User {
         today: number;
         week: number;
         month: number;
+        year: number;
         total: number;
         saved: number;
     };
@@ -177,75 +178,57 @@ export const authService = {
         return null;
     },
 
-    // --- USAGE TRACKING (STATS) ---
-    logUsage: async (email: string, details?: { grade: string, area: string, theme: string }) => {
-        const actionText = details
-            ? `Generó: ${details.theme} (${details.area} - ${details.grade})`
-            : 'Generó Secuencia';
+    // --- GENERATED SEQUENCES PERSISTENCE & LOGGING ---
+    saveAndLogSequence: async (user: User, sequence: any, details: { grade: string, area: string, theme: string }) => {
+        const email = user.email.toLowerCase().trim();
+        const actionText = `Generó: ${details.theme} (${details.area} - ${details.grade})`;
 
-        // 1. Local Log
-        const key = `guaimaral_stats_${email.toLowerCase()}`;
-        const currentLog = JSON.parse(localStorage.getItem(key) || '[]');
-        currentLog.push({
-            timestamp: Date.now(),
-            action: actionText
-        });
-        localStorage.setItem(key, JSON.stringify(currentLog));
+        // 1. Respaldo Local (Inmediato)
+        try {
+            const statsKey = `guaimaral_stats_${email}`;
+            const seqKey = `guaimaral_saved_sequences_${email}`;
 
-        // 2. Cloud Log (Supabase)
-        if (supabase) {
-            try {
-                const { error } = await supabase.from('usage_logs').insert([
-                    {
-                        user_email: email.toLowerCase(),
-                        action: actionText
-                    }
-                ]);
-                if (error) {
-                    console.error("❌ Supabase Log Error:", error.message);
-                    console.warn("Verifica que las políticas RLS y el Realtime estén activos.");
-                } else {
-                    console.log("✅ Actividad guardada en la nube para:", email);
-                }
-            } catch (e) {
-                console.error("❌ System Log Error", e);
-            }
-        } else {
-            console.warn("⚠️ Supabase no está configurado. La actividad solo se guardará localmente.");
+            const stats = JSON.parse(localStorage.getItem(statsKey) || '[]');
+            stats.push({ timestamp: Date.now(), action: actionText });
+            localStorage.setItem(statsKey, JSON.stringify(stats));
+
+            const seqs = JSON.parse(localStorage.getItem(seqKey) || '[]');
+            seqs.push({
+                id: crypto.randomUUID(),
+                timestamp: Date.now(),
+                grade: details.grade,
+                area: details.area,
+                theme: details.theme,
+                content: sequence
+            });
+            localStorage.setItem(seqKey, JSON.stringify(seqs));
+        } catch (e) {
+            console.warn("⚠️ Local storage backup failed");
         }
-    },
 
-    // --- GENERATED SEQUENCES PERSISTENCE ---
-    saveSequence: async (email: string, sequence: any, details: { grade: string, area: string, theme: string }) => {
-        // 1. Local Persistence (Backup)
-        const localKey = `guaimaral_saved_sequences_${email.toLowerCase()}`;
-        const currentSaved = JSON.parse(localStorage.getItem(localKey) || '[]');
-        currentSaved.push({
-            id: crypto.randomUUID(),
-            timestamp: Date.now(),
-            grade: details.grade,
-            area: details.area,
-            theme: details.theme,
-            content: sequence
-        });
-        localStorage.setItem(localKey, JSON.stringify(currentSaved));
-
-        // 2. Cloud Persistence (Supabase)
+        // 2. Nube (Prioridad para el Rector)
         if (supabase) {
             try {
-                const { error } = await supabase.from('generated_sequences').insert([
-                    {
-                        user_email: email.toLowerCase(),
-                        grado: details.grade,
-                        area: details.area,
-                        tema: details.theme,
-                        content: sequence
-                    }
-                ]);
-                if (error) console.error("❌ Supabase Save Error:", error.message);
-                else console.log("✅ Secuencia guardada en la nube para:", email);
+                // A. Registro en Log de Uso (Para Hoy/Mes/Año)
+                const { error: logErr } = await supabase.from('usage_logs').insert([{
+                    user_email: email,
+                    action: actionText
+                }]);
+                if (logErr) console.error("❌ Error Log Nube:", logErr.message);
+
+                // B. Guardado en Repositorio (Para Docs Guardados)
+                const { error: seqErr } = await supabase.from('generated_sequences').insert([{
+                    user_email: email,
+                    grado: details.grade,
+                    area: details.area,
+                    tema: details.theme,
+                    content: sequence
+                }]);
+                if (seqErr) console.error("❌ Error Repositorio Nube:", seqErr.message);
+
+                if (!logErr && !seqErr) console.log("🚀 [Sync] Éxito Total en la Nube");
             } catch (e) {
-                console.error("❌ System Save Error", e);
+                console.error("❌ Fallo crítico de sincronización:", e);
             }
         }
     },
@@ -270,59 +253,51 @@ export const authService = {
     },
 
     getUsageStats: async (email: string) => {
-        // Prefer Cloud Data if available
+        const lowEmail = email.toLowerCase().trim();
+
         if (supabase) {
             try {
                 const now = new Date();
-                const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-                const weekStart = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)).toISOString();
+
+                // Inicios de periodos robustos
+                const dayStart = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
                 const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+                const yearStart = new Date(now.getFullYear(), 0, 1).toISOString();
 
-                // Get Total
-                const { count: total } = await supabase
-                    .from('usage_logs')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_email', email.toLowerCase());
+                // 1. Acumulado Histórico (Logs de actividad)
+                const { count: logTotal } = await supabase.from('usage_logs').select('id', { count: 'exact', head: true }).eq('user_email', lowEmail);
 
-                // Get Today
-                const { count: today } = await supabase
-                    .from('usage_logs')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_email', email.toLowerCase())
-                    .gte('timestamp', dayStart);
+                // 2. Hoy (Docs o Logs de hoy)
+                const { count: todayLogs } = await supabase.from('usage_logs').select('id', { count: 'exact', head: true }).eq('user_email', lowEmail).gte('timestamp', dayStart);
+                const { count: todayDocs } = await supabase.from('generated_sequences').select('id', { count: 'exact', head: true }).eq('user_email', lowEmail).gte('timestamp', dayStart);
 
-                // Get Week
-                const { count: week } = await supabase
-                    .from('usage_logs')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_email', email.toLowerCase())
-                    .gte('timestamp', weekStart);
+                // 3. Mes (Logs o Docs de este mes)
+                const { count: monthLogs } = await supabase.from('usage_logs').select('id', { count: 'exact', head: true }).eq('user_email', lowEmail).gte('timestamp', monthStart);
+                const { count: monthDocs } = await supabase.from('generated_sequences').select('id', { count: 'exact', head: true }).eq('user_email', lowEmail).gte('timestamp', monthStart);
 
-                // Get Month
-                const { count: month } = await supabase
-                    .from('usage_logs')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_email', email.toLowerCase())
-                    .gte('timestamp', monthStart);
+                // 4. Año (Histórico total en realidad para migración)
+                const { count: totalDocs } = await supabase.from('generated_sequences').select('id', { count: 'exact', head: true }).eq('user_email', lowEmail);
 
-                // Get Total Saved Sequences (from generated_sequences table)
-                const { count: savedSequences } = await supabase
-                    .from('generated_sequences')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_email', email.toLowerCase());
+                // 5. Acumulado Real (Suma de lo que hay en repositorio + posibles logs huérfanos)
+                const finalTotal = (logTotal || 0) > (totalDocs || 0) ? (logTotal || 0) : (totalDocs || 0);
 
                 return {
-                    today: today || 0,
-                    week: week || 0,
-                    month: month || 0,
-                    total: total || 0,
-                    saved: savedSequences || 0
+                    today: Math.max(todayLogs || 0, todayDocs || 0),
+                    week: 0,
+                    month: Math.max(monthLogs || 0, monthDocs || 0),
+                    year: totalDocs || 0, // Migramos todo lo guardado al contador de año para que se vea
+                    total: finalTotal,
+                    saved: totalDocs || 0
                 };
-
-            } catch (e) { console.error("Cloud Stats Error", e); }
+            } catch (e) { console.error("Cloud stats logic error", e); }
         }
 
-        return authService.getLocalUsageStats(email);
+        const local = authService.getLocalUsageStats(email);
+        return {
+            ...local,
+            year: local.year || local.month,
+            saved: local.saved || 0
+        };
     },
 
     getLocalUsageStats: (email: string) => {
@@ -335,6 +310,7 @@ export const authService = {
         const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
         const weekStart = now.getTime() - (7 * 24 * 60 * 60 * 1000);
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        const yearStart = new Date(now.getFullYear(), 0, 1).getTime();
 
         const localSavedKey = `guaimaral_saved_sequences_${email.toLowerCase()}`;
         const savedCount = JSON.parse(localStorage.getItem(localSavedKey) || '[]').length;
@@ -343,6 +319,7 @@ export const authService = {
             today: timestamps.filter(t => t >= dayStart).length,
             week: timestamps.filter(t => t >= weekStart).length,
             month: timestamps.filter(t => t >= monthStart).length,
+            year: timestamps.filter(t => t >= yearStart).length,
             total: timestamps.length,
             saved: savedCount
         };
@@ -383,9 +360,16 @@ export const authService = {
     },
 
     logout: () => {
+        // Limpiar Presencia al salir
+        if (authService._hb) clearInterval(authService._hb);
+        if (authService._presenceChannel) {
+            authService._presenceChannel.unsubscribe();
+            authService._presenceChannel = null;
+        }
         localStorage.removeItem(STORAGE_KEYS.AUTH);
         localStorage.removeItem(STORAGE_KEYS.USER);
         localStorage.removeItem(STORAGE_KEYS.ROLE);
+        window.location.reload(); // Recarga limpia para resetear singletons
     },
 
     isAuthenticated: (): boolean => {
@@ -414,75 +398,86 @@ export const authService = {
         return `${baseKey}_${hash}`;
     },
 
-    // --- REAL-TIME PRESENCE (SINGLETON ROBUSTO) ---
+    // --- REAL-TIME PRESENCE (PRESENCE MANAGER) ---
     _presenceChannel: null as any,
+    _presenceState: {} as Record<string, any>,
+    _presenceListeners: [] as ((state: any) => void)[],
     _hb: null as any,
 
     trackPresence: (user: User, onSync?: (state: any) => void) => {
         if (!supabase) return null;
         const lowEmail = user.email.toLowerCase();
 
-        // Si ya tenemos el canal activo, solo devolvemos el objeto
-        if (authService._presenceChannel) {
-            if (onSync) authService._presenceChannel.on('presence', { event: 'sync' }, () => onSync(authService._presenceChannel.presenceState()));
-            return authService._presenceChannel;
+        // 1. Manejo de Listeners
+        let listenerWrapper: ((state: any) => void) | null = null;
+        if (onSync) {
+            listenerWrapper = (state: any) => onSync(state);
+            authService._presenceListeners.push(listenerWrapper);
         }
 
-        const channel = supabase.channel('online-users', {
-            config: {
-                presence: {
-                    key: lowEmail,
-                },
-            },
-        });
-
-        authService._presenceChannel = channel;
-
-        const doTrack = async () => {
-            try {
-                await channel.track({
-                    online_at: new Date().toISOString(),
-                    name: user.name,
-                    role: user.role,
-                    email: lowEmail,
-                    local_id: Math.random().toString(36).substring(7)
-                });
-                console.log('📡 [Presence] Pulso enviado:', lowEmail);
-            } catch (e) {
-                console.warn('⚠️ [Presence] Fallo temporal de track');
-            }
+        const notifyAll = () => {
+            if (!authService._presenceChannel) return;
+            const state = authService._presenceChannel.presenceState();
+            authService._presenceState = state;
+            authService._presenceListeners.forEach(l => l(state));
         };
 
-        channel
-            .on('presence', { event: 'sync' }, () => {
-                const state = channel.presenceState();
-                console.log('🔄 [Presence] Sincronización:', state);
-                if (onSync) onSync(state);
-            })
-            .on('presence', { event: 'join' }, ({ key }) => {
-                console.log('➕ [Presence] +1:', key);
-                if (onSync) onSync(channel.presenceState());
-            })
-            .on('presence', { event: 'leave' }, ({ key }) => {
-                console.log('➖ [Presence] -1:', key);
-                if (onSync) onSync(channel.presenceState());
-            })
-            .subscribe(async (status) => {
-                if (status === 'SUBSCRIBED') {
-                    console.log('✅ [Presence] Canal CONECTADO');
-                    await doTrack();
-                    // Pulso cada 15s para máxima estabilidad local
-                    if (authService._hb) clearInterval(authService._hb);
-                    authService._hb = setInterval(doTrack, 15000);
-                } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-                    console.error('❌ [Presence] Canal caído, reintentando...');
-                    setTimeout(() => {
-                        authService._presenceChannel = null;
-                        authService.trackPresence(user, onSync);
-                    }, 5000);
-                }
+        // 2. Inicialización del Canal (Nuclear Singleton)
+        if (!authService._presenceChannel || (authService as any)._currentEmail !== lowEmail) {
+            console.log('🚀 [Presence] Reiniciando canal para:', lowEmail);
+
+            if (authService._hb) clearInterval(authService._hb);
+            if (authService._presenceChannel) authService._presenceChannel.unsubscribe();
+
+            (authService as any)._currentEmail = lowEmail;
+
+            const channel = supabase.channel('online-users', {
+                config: { presence: { key: lowEmail } }
             });
 
-        return channel;
+            authService._presenceChannel = channel;
+
+            const updateTrack = async () => {
+                try {
+                    await channel.track({
+                        name: user.name,
+                        role: user.role,
+                        email: lowEmail,
+                        ts: Date.now()
+                    });
+                } catch (e) { }
+            };
+
+            channel
+                .on('presence', { event: 'sync' }, notifyAll)
+                .on('presence', { event: 'join' }, ({ key }) => {
+                    console.log('🟢 [Presence] Alguien entró:', key);
+                    notifyAll();
+                })
+                .on('presence', { event: 'leave' }, ({ key }) => {
+                    console.log('🔴 [Presence] Alguien salió:', key);
+                    notifyAll();
+                })
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        await updateTrack();
+                        if (authService._hb) clearInterval(authService._hb);
+                        authService._hb = setInterval(updateTrack, 15000);
+                    }
+                });
+        } else {
+            // Si ya existe el canal, notificar inmediatamente al nuevo listener
+            if (onSync) onSync(authService._presenceChannel.presenceState());
+        }
+
+        // Devolver un objeto que simule el canal pero maneje el unsubscribe del listener solamente
+        return {
+            unsubscribe: () => {
+                if (listenerWrapper) {
+                    authService._presenceListeners = authService._presenceListeners.filter(l => l !== listenerWrapper);
+                }
+            },
+            presenceState: () => authService._presenceChannel?.presenceState() || {}
+        };
     }
 };

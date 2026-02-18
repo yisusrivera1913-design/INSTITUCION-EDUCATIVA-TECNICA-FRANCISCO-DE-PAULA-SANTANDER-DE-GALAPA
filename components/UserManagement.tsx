@@ -67,17 +67,17 @@ export const UserManagement: React.FC = () => {
 
             // Usar el Singleton de authService para evitar conflictos de canales
             const currentUser = authService.getCurrentUser();
-            const ch = authService.trackPresence(currentUser!, (state) => {
+            const sub = authService.trackPresence(currentUser!, (state) => {
                 console.log('💎 [UI] Actualizando lista de activos:', state);
                 setOnlineUsers({ ...state });
             });
 
             // Sincronizar inmediatamente
-            if (ch) setOnlineUsers({ ...ch.presenceState() });
+            if (sub) setOnlineUsers({ ...sub.presenceState() });
 
             return () => {
-                // No cerramos el canal aquí porque es un singleton compartido por App.tsx
-                console.log('🚶 Saliendo de Panel de Gestión');
+                console.log('🚶 Quitanto subscriptor de UI del panel');
+                if (sub) sub.unsubscribe();
                 supabase.removeChannel(channel);
             };
         }
@@ -187,11 +187,11 @@ export const UserManagement: React.FC = () => {
                         <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-200">
                             <th className="pb-4 pl-4">Usuario</th>
                             <th className="pb-4">Rol</th>
-                            <th className="pb-4 text-center">Hoy</th>
-                            <th className="pb-4 text-center">Semana</th>
-                            <th className="pb-4 text-center">Mes</th>
+                            <th className="pb-4 text-center">Hoy (Secuencias)</th>
+                            <th className="pb-4 text-center">Mes (Secuencias)</th>
+                            <th className="pb-4 text-center">Año (Secuencias)</th>
                             <th className="pb-4 text-center">Docs Guardados</th>
-                            <th className="pb-4 text-center">Total Peticiones</th>
+                            <th className="pb-4 text-center">Acumulado Total</th>
                             <th className="pb-4 text-right pr-4">Acciones</th>
                         </tr>
                     </thead>
@@ -232,10 +232,10 @@ export const UserManagement: React.FC = () => {
                                         {user.stats?.today || 0}
                                     </td>
                                     <td className="py-4 text-center text-slate-600">
-                                        {user.stats?.week || 0}
+                                        {user.stats?.month || 0}
                                     </td>
                                     <td className="py-4 text-center text-slate-500">
-                                        {user.stats?.month || 0}
+                                        {user.stats?.year || 0}
                                     </td>
                                     <td className="py-4 text-center">
                                         <span className="bg-indigo-50 px-3 py-1 rounded-full text-xs font-black text-indigo-600 border border-indigo-100">
