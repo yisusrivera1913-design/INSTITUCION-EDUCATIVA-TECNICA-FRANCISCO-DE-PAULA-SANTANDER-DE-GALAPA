@@ -390,6 +390,52 @@ export const authService = {
         }
     },
 
+    // --- MIGRACIÓN: LOCAL -> NUBE ---
+    migrationLocalToCloud: async () => {
+        if (!supabase) return { success: false, message: "Sin conexión a la nube" };
+        const user = authService.getCurrentUser();
+        if (!user) return { success: false, message: "No hay usuario activo" };
+
+        const email = user.email.toLowerCase();
+        let syncedCount = 0;
+
+        try {
+            // A. Sincronizar Secuencias Guardadas
+            const seqKey = `guaimaral_saved_sequences_${email}`;
+            const localSeqs = JSON.parse(localStorage.getItem(seqKey) || '[]');
+
+            // Ver qué hay ya en la nube para no duplicar
+            const { data: cloudSeqs } = await supabase.from('generated_sequences').select('tema').eq('user_email', email);
+            const cloudTemas = new Set((cloudSeqs || []).map(s => s.tema));
+
+            for (const s of localSeqs) {
+                if (!cloudTemas.has(s.theme)) {
+                    await supabase.from('generated_sequences').insert([{
+                        user_email: email,
+                        grado: s.grade,
+                        area: s.area,
+                        tema: s.theme,
+                        content: s.content
+                    }]);
+
+                    // También crear un log de actividad retroactivo
+                    await supabase.from('usage_logs').insert([{
+                        user_email: email,
+                        action: `Migración Local: ${s.theme}`
+                    }]);
+
+                    syncedCount++;
+                }
+            }
+
+            console.log(`✅ [Migración] ${syncedCount} secuencias sincronizadas con éxito.`);
+            return { success: true, count: syncedCount };
+        } catch (e) {
+            console.error("❌ Error en migración:", e);
+            return { success: false, message: "Fallo técnico en migración" };
+        }
+    },
+
     getUserStorageKey: (baseKey: string): string => {
         const user = authService.getCurrentUser();
         if (!user) return baseKey;

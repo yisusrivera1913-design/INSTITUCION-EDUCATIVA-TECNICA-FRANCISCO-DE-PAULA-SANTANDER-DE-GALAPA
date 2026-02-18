@@ -99,6 +99,22 @@ export const UserManagement: React.FC = () => {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+
+        // --- AUTO-MIGRACIÓN DESPUÉS DE BACKUP (Opcional) ---
+        await authService.migrationLocalToCloud();
+        fetchUsers();
+    };
+
+    const handleManualSync = async () => {
+        setIsRefreshing(true);
+        const result = await authService.migrationLocalToCloud();
+        if (result.success) {
+            alert(`Sincronización exitosa: ${result.count} secuencias migradas a la nube.`);
+            fetchUsers();
+        } else {
+            alert("Error en la sincronización sincronizada: " + (result.message || "Error desconocido"));
+        }
+        setIsRefreshing(false);
     };
 
     const handleRestoreBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,6 +183,14 @@ export const UserManagement: React.FC = () => {
                     >
                         <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
                         {isRefreshing ? 'Actualizando...' : 'Actualizar'}
+                    </button>
+                    <button
+                        onClick={handleManualSync}
+                        disabled={isRefreshing}
+                        className="px-4 py-2 bg-teal-600 text-white text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-teal-700 transition-all flex items-center gap-2 shadow-lg shadow-teal-500/20"
+                    >
+                        <Upload size={14} />
+                        Sincronizar Cloud
                     </button>
                     <button
                         onClick={handleDownloadBackup}
