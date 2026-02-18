@@ -197,7 +197,7 @@ export const authService = {
             try {
                 const { error } = await supabase.from('usage_logs').insert([
                     {
-                        user_email: email,
+                        user_email: email.toLowerCase(),
                         action: actionText
                     }
                 ]);
@@ -235,7 +235,7 @@ export const authService = {
             try {
                 const { error } = await supabase.from('generated_sequences').insert([
                     {
-                        user_email: email,
+                        user_email: email.toLowerCase(),
                         grado: details.grade,
                         area: details.area,
                         tema: details.theme,
@@ -282,34 +282,34 @@ export const authService = {
                 const { count: total } = await supabase
                     .from('usage_logs')
                     .select('*', { count: 'exact', head: true })
-                    .eq('user_email', email);
+                    .eq('user_email', email.toLowerCase());
 
                 // Get Today
                 const { count: today } = await supabase
                     .from('usage_logs')
                     .select('*', { count: 'exact', head: true })
-                    .eq('user_email', email)
+                    .eq('user_email', email.toLowerCase())
                     .gte('timestamp', dayStart);
 
                 // Get Week
                 const { count: week } = await supabase
                     .from('usage_logs')
                     .select('*', { count: 'exact', head: true })
-                    .eq('user_email', email)
+                    .eq('user_email', email.toLowerCase())
                     .gte('timestamp', weekStart);
 
                 // Get Month
                 const { count: month } = await supabase
                     .from('usage_logs')
                     .select('*', { count: 'exact', head: true })
-                    .eq('user_email', email)
+                    .eq('user_email', email.toLowerCase())
                     .gte('timestamp', monthStart);
 
                 // Get Total Saved Sequences (from generated_sequences table)
                 const { count: savedSequences } = await supabase
                     .from('generated_sequences')
                     .select('*', { count: 'exact', head: true })
-                    .eq('user_email', email);
+                    .eq('user_email', email.toLowerCase());
 
                 return {
                     today: today || 0,
@@ -417,11 +417,12 @@ export const authService = {
     // --- REAL-TIME PRESENCE ---
     trackPresence: (user: User) => {
         if (!supabase) return null;
+        const lowEmail = user.email.toLowerCase();
 
         const channel = supabase.channel('online-users', {
             config: {
                 presence: {
-                    key: user.email,
+                    key: lowEmail,
                 },
             },
         });
@@ -429,16 +430,17 @@ export const authService = {
         channel
             .on('presence', { event: 'sync' }, () => {
                 const state = channel.presenceState();
-                console.log('Presence State Updated:', state);
+                console.log('📡 Sincronización de presencia:', state);
             })
-            .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-                console.log('User joined:', key, newPresences);
+            .on('presence', { event: 'join' }, ({ key }) => {
+                console.log('🟢 Entró:', key);
             })
-            .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-                console.log('User left:', key, leftPresences);
+            .on('presence', { event: 'leave' }, ({ key }) => {
+                console.log('🔴 Salió:', key);
             })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
+                    console.log('🔌 Suscrito al canal de presencia');
                     await channel.track({
                         online_at: new Date().toISOString(),
                         name: user.name,

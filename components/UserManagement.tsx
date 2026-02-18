@@ -214,15 +214,15 @@ export const UserManagement: React.FC = () => {
                                                     {user.name.charAt(0)}
                                                 </div>
                                                 {/* Status Dot */}
-                                                <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${onlineUsers[user.email]
+                                                <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${onlineUsers[user.email.toLowerCase()]
                                                     ? 'bg-green-500 animate-pulse'
                                                     : 'bg-slate-300'
-                                                    }`} title={onlineUsers[user.email] ? 'En línea ahora' : 'Desconectado'}></div>
+                                                    }`} title={onlineUsers[user.email.toLowerCase()] ? 'En línea ahora' : 'Desconectado'}></div>
                                             </div>
                                             <div>
                                                 <div className="flex items-center gap-2">
                                                     <div className="font-bold text-slate-800">{user.name}</div>
-                                                    {onlineUsers[user.email] && (
+                                                    {onlineUsers[user.email.toLowerCase()] && (
                                                         <span className="text-[8px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter shadow-sm animate-bounce">Activo</span>
                                                     )}
                                                 </div>
