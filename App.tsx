@@ -81,7 +81,10 @@ function App() {
       // Track presence
       const presenceChannel = authService.trackPresence(currentUser);
       return () => {
-        if (presenceChannel) presenceChannel.unsubscribe();
+        if (presenceChannel) {
+          if ((presenceChannel as any)._heartbeat) clearInterval((presenceChannel as any)._heartbeat);
+          presenceChannel.unsubscribe();
+        }
       };
     }
   }, [isAuthenticated, currentUser]);

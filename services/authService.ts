@@ -427,25 +427,29 @@ export const authService = {
             },
         });
 
+        const syncPresence = async () => {
+            await channel.track({
+                online_at: new Date().toISOString(),
+                name: user.name,
+                role: user.role,
+                version: '2.5'
+            });
+        };
+
         channel
             .on('presence', { event: 'sync' }, () => {
                 const state = channel.presenceState();
-                console.log('📡 Sincronización de presencia:', state);
+                console.log('📡 Presencia sincronizada para:', lowEmail, state);
             })
             .on('presence', { event: 'join' }, ({ key }) => {
-                console.log('🟢 Entró:', key);
-            })
-            .on('presence', { event: 'leave' }, ({ key }) => {
-                console.log('🔴 Salió:', key);
+                if (key === lowEmail) console.log('🟢 Conectado correctamente');
             })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
-                    console.log('🔌 Suscrito al canal de presencia');
-                    await channel.track({
-                        online_at: new Date().toISOString(),
-                        name: user.name,
-                        role: user.role
-                    });
+                    await syncPresence();
+                    // Heartbeat cada 45 segundos para asegurar que no se caiga
+                    const heartbeat = setInterval(syncPresence, 45000);
+                    (channel as any)._heartbeat = heartbeat;
                 }
             });
 
