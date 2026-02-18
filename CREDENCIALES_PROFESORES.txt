@@ -90,32 +90,36 @@ Acceso: Panel completo + Estadísticas globales
     Email: jorge.ferrer@guaimaral.edu.co
     Contraseña: guaimaral2026
 
-12. Linda Varela
+12. Leovigilda Navarro
+    Email: leovigilda.navarro@guaimaral.edu.co
+    Contraseña: guaimaral2026
+
+13. Linda Varela
     Email: linda.varela@guaimaral.edu.co
     Contraseña: guaimaral2026
 
-13. Martín Celin
+14. Martín Celin
     Email: martin.celin@guaimaral.edu.co
     Contraseña: guaimaral2026
 
-14. Nancy Vargas
+15. Nancy Vargas
     Email: nancy.vargas@guaimaral.edu.co
     Contraseña: guaimaral2026
 
-15. Pedro Arroyo
+16. Pedro Arroyo
     Email: pedro.arroyo@guaimaral.edu.co
     Contraseña: guaimaral2026
 
-16. Roberto Daza
+17. Roberto Daza
     Email: roberto.daza@guaimaral.edu.co
     Contraseña: guaimaral2026
 
-17. Xilena Santiago
+18. Xilena Santiago
     Email: xilena.santiago@guaimaral.edu.co
     Contraseña: guaimaral2026
 
 ===========================================
-📊 TOTAL: 24 USUARIOS (1 Admin + 23 Docentes)
+📊 TOTAL: 25 USUARIOS (1 Admin + 24 Docentes)
 ===========================================
 
 🌐 ACCESO AL SISTEMA:

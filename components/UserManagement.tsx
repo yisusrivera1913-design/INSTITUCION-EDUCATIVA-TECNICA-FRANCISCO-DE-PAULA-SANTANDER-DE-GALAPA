@@ -1,37 +1,92 @@
 import React, { useState, useEffect } from 'react';
 import { authService, User } from '../services/authService';
 import { supabase } from '../services/supabaseClient';
-import { Users, Activity, Calendar, Clock, BarChart3, Shield, Key, RefreshCw, Download, Upload } from 'lucide-react';
+import { Users, Activity, Calendar, Clock, BarChart3, Shield, Key, RefreshCw, Download, Upload, FileText, Database } from 'lucide-react';
 
 export const UserManagement: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [onlineUsers, setOnlineUsers] = useState<Record<string, any>>({});
+    const [expandedUser, setExpandedUser] = useState<string | null>(null);
+    const [userSequences, setUserSequences] = useState<Record<string, any[]>>({});
+    const [isLoadingSeqs, setIsLoadingSeqs] = useState(false);
 
     const fetchUsers = async () => {
+        setIsRefreshing(true);
         const data = await authService.getAllUsersWithStats();
-        // Sort by total usage by default to keep consistent order
+        // Sort by total usage by default
         const sorted = data.sort((a, b) => (b.stats?.total || 0) - (a.stats?.total || 0));
         setUsers(sorted);
+        setIsRefreshing(false);
+    };
+
+    const toggleSequences = async (email: string) => {
+        if (expandedUser === email) {
+            setExpandedUser(null);
+            return;
+        }
+
+        setIsLoadingSeqs(true);
+        setExpandedUser(email);
+
+        // Fetch specific sequences for this user
+        const allSeqs = await authService.getAllSequences();
+        const filtered = allSeqs.filter(s => s.user_email.toLowerCase() === email.toLowerCase());
+        setUserSequences(prev => ({ ...prev, [email]: filtered }));
+        setIsLoadingSeqs(false);
+    };
+
+    const downloadJson = (sequence: any) => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sequence.content, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `secuencia_${sequence.tema}_${new Date(sequence.timestamp).getTime()}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
     };
 
     useEffect(() => {
         fetchUsers();
 
-        // REAL-TIME: Listen for new usage logs to update stats instantly
+        // REAL-TIME: Listen for new usage logs or generated sequences to update stats instantly
         if (supabase) {
             const channel = supabase
-                .channel('realtime-usage')
+                .channel('realtime-stats')
                 .on('postgres_changes', {
-                    event: 'INSERT',
+                    event: '*',
                     schema: 'public',
                     table: 'usage_logs'
-                }, () => {
-                    fetchUsers(); // Refresh when someone generates a sequence
+                }, () => fetchUsers())
+                .on('postgres_changes', {
+                    event: '*',
+                    schema: 'public',
+                    table: 'generated_sequences'
+                }, () => fetchUsers())
+                .subscribe();
+
+            // Presence Listener for Active Users
+            const presenceChannel = supabase.channel('online-users');
+            presenceChannel
+                .on('presence', { event: 'sync' }, () => {
+                    const state = presenceChannel.presenceState();
+                    setOnlineUsers({ ...state });
+                })
+                .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+                    setOnlineUsers(prev => ({ ...prev, [key]: newPresences }));
+                })
+                .on('presence', { event: 'leave' }, ({ key }) => {
+                    setOnlineUsers(prev => {
+                        const next = { ...prev };
+                        delete next[key];
+                        return next;
+                    });
                 })
                 .subscribe();
 
             return () => {
                 supabase.removeChannel(channel);
+                supabase.removeChannel(presenceChannel);
             };
         }
     }, []);
@@ -98,7 +153,17 @@ export const UserManagement: React.FC = () => {
                     </div>
                     <div>
                         <h3 className="text-2xl font-black text-slate-800 tracking-tight">Gestión de Usuarios</h3>
-                        <p className="text-sm font-medium text-slate-500">Monitor de actividad docente y accesos</p>
+                        <div className="flex items-center gap-2 mt-1">
+                            <p className="text-sm font-medium text-slate-500">Monitor de actividad docente y accesos</p>
+                            <div className="h-1 w-1 bg-slate-300 rounded-full"></div>
+                            <p className="text-xs font-black text-green-600 uppercase tracking-widest flex items-center gap-1.5">
+                                <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                </span>
+                                {Object.keys(onlineUsers).length} Activos
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -133,49 +198,150 @@ export const UserManagement: React.FC = () => {
                             <th className="pb-4 text-center">Hoy</th>
                             <th className="pb-4 text-center">Semana</th>
                             <th className="pb-4 text-center">Mes</th>
-                            <th className="pb-4 text-center">Total Histórico</th>
+                            <th className="pb-4 text-center">Docs Guardados</th>
+                            <th className="pb-4 text-center">Total Peticiones</th>
+                            <th className="pb-4 text-right pr-4">Acciones</th>
                         </tr>
                     </thead>
                     <tbody className="text-sm font-medium text-slate-600">
                         {users.map((user, i) => (
-                            <tr key={i} className="group hover:bg-white/50 transition-colors border-b border-slate-100 last:border-0">
-                                <td className="py-4 pl-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
-                                            {user.name.charAt(0)}
+                            <React.Fragment key={i}>
+                                <tr className={`group transition-colors border-b border-slate-100 last:border-0 ${expandedUser === user.email ? 'bg-indigo-50/30' : 'hover:bg-white/50'}`}>
+                                    <td className="py-4 pl-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative">
+                                                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
+                                                    {user.name.charAt(0)}
+                                                </div>
+                                                {/* Status Dot */}
+                                                <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${onlineUsers[user.email]
+                                                    ? 'bg-green-500 animate-pulse'
+                                                    : 'bg-slate-300'
+                                                    }`} title={onlineUsers[user.email] ? 'En línea ahora' : 'Desconectado'}></div>
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="font-bold text-slate-800">{user.name}</div>
+                                                    {onlineUsers[user.email] && (
+                                                        <span className="text-[8px] bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full font-black uppercase tracking-tighter shadow-sm animate-bounce">Activo</span>
+                                                    )}
+                                                </div>
+                                                <div className="text-xs text-slate-400">{user.email}</div>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <div className="font-bold text-slate-800">{user.name}</div>
-                                            <div className="text-xs text-slate-400">{user.email}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="py-4">
-                                    <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider ${user.role === 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
-                                        }`}>
-                                        {user.role}
-                                    </span>
-                                </td>
-                                <td className="py-4 text-center font-bold text-slate-800">
-                                    {user.stats?.today || 0}
-                                </td>
-                                <td className="py-4 text-center text-slate-600">
-                                    {user.stats?.week || 0}
-                                </td>
-                                <td className="py-4 text-center text-slate-500">
-                                    {user.stats?.month || 0}
-                                </td>
-                                <td className="py-4 text-center">
-                                    <span className="bg-slate-100 px-3 py-1 rounded-full text-xs font-bold text-slate-600 group-hover:bg-slate-200 transition-colors">
+                                    </td>
+                                    <td className="py-4">
+                                        <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider ${user.role === 'admin' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
+                                            }`}>
+                                            {user.role}
+                                        </span>
+                                    </td>
+                                    <td className="py-4 text-center font-bold text-slate-800">
+                                        {user.stats?.today || 0}
+                                    </td>
+                                    <td className="py-4 text-center text-slate-600">
+                                        {user.stats?.week || 0}
+                                    </td>
+                                    <td className="py-4 text-center text-slate-500">
+                                        {user.stats?.month || 0}
+                                    </td>
+                                    <td className="py-4 text-center">
+                                        <span className="bg-indigo-50 px-3 py-1 rounded-full text-xs font-black text-indigo-600 border border-indigo-100">
+                                            {user.stats?.saved || 0}
+                                        </span>
+                                    </td>
+                                    <td className="py-4 text-center font-bold text-slate-500">
                                         {user.stats?.total || 0}
-                                    </span>
-                                </td>
-                            </tr>
+                                    </td>
+                                    <td className="py-4 text-right pr-4">
+                                        <button
+                                            onClick={() => toggleSequences(user.email)}
+                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border flex items-center gap-2 ml-auto ${expandedUser === user.email
+                                                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                                                : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+                                                }`}
+                                        >
+                                            <FileText size={12} />
+                                            {expandedUser === user.email ? 'Cerrar' : 'Ver'}
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                {/* Expanded Sequence List for this specific Professor */}
+                                {expandedUser === user.email && (
+                                    <tr className="bg-white/40 backdrop-blur-sm border-b border-slate-100 animate-fade-in">
+                                        <td colSpan={6} className="p-8">
+                                            <div className="bg-white rounded-3xl border border-indigo-100 shadow-sm overflow-hidden">
+                                                <div className="bg-indigo-50/50 px-6 py-4 border-b border-indigo-100 flex justify-between items-center">
+                                                    <h4 className="text-sm font-black text-indigo-900 uppercase tracking-widest flex items-center gap-2">
+                                                        <Database size={16} />
+                                                        Repositorio de {user.name}
+                                                    </h4>
+                                                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">
+                                                        {userSequences[user.email]?.length || 0} Secuencias Acumuladas
+                                                    </span>
+                                                </div>
+
+                                                {isLoadingSeqs ? (
+                                                    <div className="py-12 flex flex-col items-center gap-3">
+                                                        <RefreshCw size={24} className="text-indigo-600 animate-spin" />
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cargando archivo...</span>
+                                                    </div>
+                                                ) : (userSequences[user.email]?.length || 0) === 0 ? (
+                                                    <div className="py-12 text-center">
+                                                        <p className="text-sm font-bold text-slate-400 italic">No ha generado secuencias todavía.</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="max-h-96 overflow-y-auto">
+                                                        <table className="w-full text-left">
+                                                            <thead className="bg-slate-50/50 sticky top-0 backdrop-blur-sm">
+                                                                <tr className="text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                                                    <th className="px-6 py-3">Tema</th>
+                                                                    <th className="px-6 py-3">Área / Grado</th>
+                                                                    <th className="px-6 py-3">Fecha de Creación</th>
+                                                                    <th className="px-6 py-3 text-right">Acción</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-slate-50">
+                                                                {userSequences[user.email]?.map((seq) => (
+                                                                    <tr key={seq.id} className="hover:bg-slate-50/30 transition-colors">
+                                                                        <td className="px-6 py-4">
+                                                                            <span className="text-sm font-black text-slate-800">{seq.tema}</span>
+                                                                        </td>
+                                                                        <td className="px-6 py-4">
+                                                                            <span className="text-xs font-bold text-slate-500">{seq.area} • {seq.grado}</span>
+                                                                        </td>
+                                                                        <td className="px-6 py-4">
+                                                                            <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
+                                                                                <Calendar size={14} />
+                                                                                {new Date(seq.timestamp).toLocaleString()}
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="px-6 py-4 text-right">
+                                                                            <button
+                                                                                onClick={() => downloadJson(seq)}
+                                                                                className="p-2 bg-slate-50 border border-slate-200 text-slate-500 rounded-lg hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
+                                                                                title="Descargar Planificación"
+                                                                            >
+                                                                                <Download size={14} />
+                                                                            </button>
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </React.Fragment>
                         ))}
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div >
     );
 };
 
@@ -225,8 +391,8 @@ export const PasswordChange: React.FC<{ email: string }> = ({ email }) => {
                     onClick={handleChange}
                     disabled={isChanging}
                     className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${isChanging
-                            ? 'bg-slate-400 text-white cursor-not-allowed'
-                            : 'bg-slate-800 text-white hover:bg-slate-900'
+                        ? 'bg-slate-400 text-white cursor-not-allowed'
+                        : 'bg-slate-800 text-white hover:bg-slate-900'
                         }`}
                 >
                     {isChanging ? 'Actualizando...' : 'Actualizar'}

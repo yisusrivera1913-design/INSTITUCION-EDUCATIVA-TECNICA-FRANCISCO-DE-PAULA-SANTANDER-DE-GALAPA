@@ -44,6 +44,7 @@ export interface User {
         week: number;
         month: number;
         total: number;
+        saved: number;
     };
 }
 
@@ -72,6 +73,7 @@ export const AUTHORIZED_USERS: User[] = [
     { name: 'Jairo Benavides', email: 'jairo.benavides@guaimaral.edu.co', role: 'docente' },
     { name: 'Jorge de la Hoz', email: 'jorge.delahoz@guaimaral.edu.co', role: 'docente' },
     { name: 'Jorge Ferrer', email: 'jorge.ferrer@guaimaral.edu.co', role: 'docente' },
+    { name: 'Leovigilda Navarro', email: 'leovigilda.navarro@guaimaral.edu.co', role: 'docente' },
     { name: 'Linda Varela', email: 'linda.varela@guaimaral.edu.co', role: 'docente' },
     { name: 'Martín Celin', email: 'martin.celin@guaimaral.edu.co', role: 'docente' },
     { name: 'Nancy Vargas', email: 'nancy.vargas@guaimaral.edu.co', role: 'docente' },
@@ -213,6 +215,60 @@ export const authService = {
         }
     },
 
+    // --- GENERATED SEQUENCES PERSISTENCE ---
+    saveSequence: async (email: string, sequence: any, details: { grade: string, area: string, theme: string }) => {
+        // 1. Local Persistence (Backup)
+        const localKey = `guaimaral_saved_sequences_${email.toLowerCase()}`;
+        const currentSaved = JSON.parse(localStorage.getItem(localKey) || '[]');
+        currentSaved.push({
+            id: crypto.randomUUID(),
+            timestamp: Date.now(),
+            grade: details.grade,
+            area: details.area,
+            theme: details.theme,
+            content: sequence
+        });
+        localStorage.setItem(localKey, JSON.stringify(currentSaved));
+
+        // 2. Cloud Persistence (Supabase)
+        if (supabase) {
+            try {
+                const { error } = await supabase.from('generated_sequences').insert([
+                    {
+                        user_email: email,
+                        grado: details.grade,
+                        area: details.area,
+                        tema: details.theme,
+                        content: sequence
+                    }
+                ]);
+                if (error) console.error("❌ Supabase Save Error:", error.message);
+                else console.log("✅ Secuencia guardada en la nube para:", email);
+            } catch (e) {
+                console.error("❌ System Save Error", e);
+            }
+        }
+    },
+
+    getAllSequences: async () => {
+        if (!supabase) return [];
+        try {
+            const { data, error } = await supabase
+                .from('generated_sequences')
+                .select('*')
+                .order('timestamp', { ascending: false });
+
+            if (error) {
+                console.error("Error fetching all sequences:", error);
+                return [];
+            }
+            return data || [];
+        } catch (e) {
+            console.error(e);
+            return [];
+        }
+    },
+
     getUsageStats: async (email: string) => {
         // Prefer Cloud Data if available
         if (supabase) {
@@ -249,11 +305,18 @@ export const authService = {
                     .eq('user_email', email)
                     .gte('timestamp', monthStart);
 
+                // Get Total Saved Sequences (from generated_sequences table)
+                const { count: savedSequences } = await supabase
+                    .from('generated_sequences')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('user_email', email);
+
                 return {
                     today: today || 0,
                     week: week || 0,
                     month: month || 0,
-                    total: total || 0
+                    total: total || 0,
+                    saved: savedSequences || 0
                 };
 
             } catch (e) { console.error("Cloud Stats Error", e); }
@@ -273,11 +336,15 @@ export const authService = {
         const weekStart = now.getTime() - (7 * 24 * 60 * 60 * 1000);
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
+        const localSavedKey = `guaimaral_saved_sequences_${email.toLowerCase()}`;
+        const savedCount = JSON.parse(localStorage.getItem(localSavedKey) || '[]').length;
+
         return {
             today: timestamps.filter(t => t >= dayStart).length,
             week: timestamps.filter(t => t >= weekStart).length,
             month: timestamps.filter(t => t >= monthStart).length,
-            total: timestamps.length
+            total: timestamps.length,
+            saved: savedCount
         };
     },
 
@@ -345,5 +412,41 @@ export const authService = {
         // Create a simple alphanumeric hash from email for the key
         const hash = user.email.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0).toString(16);
         return `${baseKey}_${hash}`;
+    },
+
+    // --- REAL-TIME PRESENCE ---
+    trackPresence: (user: User) => {
+        if (!supabase) return null;
+
+        const channel = supabase.channel('online-users', {
+            config: {
+                presence: {
+                    key: user.email,
+                },
+            },
+        });
+
+        channel
+            .on('presence', { event: 'sync' }, () => {
+                const state = channel.presenceState();
+                console.log('Presence State Updated:', state);
+            })
+            .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+                console.log('User joined:', key, newPresences);
+            })
+            .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+                console.log('User left:', key, leftPresences);
+            })
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED') {
+                    await channel.track({
+                        online_at: new Date().toISOString(),
+                        name: user.name,
+                        role: user.role
+                    });
+                }
+            });
+
+        return channel;
     }
 };

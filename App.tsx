@@ -3,9 +3,10 @@ import { InputForm } from './components/InputForm';
 import { ApiStats } from './components/ApiStats';
 import { SequencePreview } from './components/SequencePreview';
 import { UserManagement, PasswordChange } from './components/UserManagement';
+import { AdminSequenceViewer } from './components/AdminSequenceViewer';
 import { DidacticSequence, SequenceInput } from './types';
 import { generateDidacticSequence } from './services/geminiService';
-import { GraduationCap, Loader2, AlertTriangle, LogOut, User as UserIcon, Shield, LayoutDashboard } from 'lucide-react';
+import { GraduationCap, Loader2, AlertTriangle, LogOut, User as UserIcon, Shield, LayoutDashboard, Database } from 'lucide-react';
 import { Login } from './components/Login';
 import { authService, User } from './services/authService';
 // HistorySidebar removed for total privacy
@@ -76,6 +77,12 @@ function App() {
       } else {
         setInput(initialInput);
       }
+
+      // Track presence
+      const presenceChannel = authService.trackPresence(currentUser);
+      return () => {
+        if (presenceChannel) presenceChannel.unsubscribe();
+      };
     }
   }, [isAuthenticated, currentUser]);
 
@@ -116,11 +123,15 @@ function App() {
       const result = await generateDidacticSequence(input, refinementConfig?.instruction);
       setSequence(result);
 
-      // NO GUARDAR EN HISTORIAL PERSISTENTE (Política Efímera solicitada por Rector)
-      // Solo se mantiene en memoria mientras la sesión esté abierta o no se reinicie la app.
-
-      // LOG USAGE (Híbrido: Local + Nube si está disponible) - EL CONTADOR SÍ SE GUARDA
+      // SAVE SEQUENCE TO CLOUD (Requested by Rector for persistence)
       if (currentUser) {
+        authService.saveSequence(currentUser.email, result, {
+          theme: input.tema,
+          area: input.area,
+          grade: input.grado
+        });
+
+        // LOG USAGE (Híbrido: Local + Nube si está disponible) - EL CONTADOR SÍ SE GUARDA
         authService.logUsage(currentUser.email, {
           theme: input.tema,
           area: input.area,
@@ -180,15 +191,13 @@ function App() {
           <div className="flex items-center gap-3">
             {/* Nav Tools */}
             <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50">
-              {currentUser?.role === 'admin' && (
-                <button
-                  onClick={() => setShowStats(!showStats)}
-                  className={`p-2.5 rounded-xl transition-all ${showStats ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-600 hover:bg-white'}`}
-                  title="Panel de Control Rector"
-                >
-                  <LayoutDashboard size={20} />
-                </button>
-              )}
+              <button
+                onClick={() => setShowStats(!showStats)}
+                className={`p-2.5 rounded-xl transition-all ${showStats ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600 hover:bg-white'}`}
+                title={currentUser?.role === 'admin' ? "Panel de Control Rector" : "Mi Historial de Secuencias"}
+              >
+                {currentUser?.role === 'admin' ? <LayoutDashboard size={20} /> : <Database size={20} />}
+              </button>
             </div>
 
             <div className="h-8 w-px bg-slate-200 mx-2 hidden sm:block"></div>
@@ -240,11 +249,17 @@ function App() {
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
-        {/* Admin Stats Overlay */}
-        {showStats && currentUser?.role === 'admin' && (
+        {/* Stats / History Overlay */}
+        {showStats && (
           <div className="animate-fade-in-up space-y-8 mb-10">
-            <ApiStats />
-            <UserManagement />
+            {currentUser?.role === 'admin' ? (
+              <>
+                <ApiStats />
+                <UserManagement />
+              </>
+            ) : (
+              <AdminSequenceViewer userEmail={currentUser?.email} />
+            )}
           </div>
         )}
 
@@ -297,7 +312,7 @@ function App() {
             </h2>
             <p className="text-slate-500 text-lg max-w-2xl mx-auto leading-relaxed font-medium">
               Crea secuencias didácticas de alta calidad alineadas con el MEN en segundos. <br />
-              <span className="text-red-500 text-xs font-bold uppercase tracking-wider">🔒 Sesión Efímera: El contenido no se guarda al salir o recargar. Descarga tu archivo.</span>
+              <span className="text-blue-600 text-xs font-bold uppercase tracking-wider">🔒 Persistencia Activa: Tus secuencias se guardan automáticamente en el panel administrativo.</span>
             </p>
           </div>
 
