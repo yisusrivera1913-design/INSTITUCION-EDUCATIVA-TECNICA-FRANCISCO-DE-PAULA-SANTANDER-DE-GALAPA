@@ -67,22 +67,29 @@ export const UserManagement: React.FC = () => {
 
             // Presence Listener for Active Users
             const presenceChannel = supabase.channel('online-users');
+
+            const updatePresenceState = () => {
+                const state = presenceChannel.presenceState();
+                console.log('🔄 Sincronización Forzada de Presencia:', state);
+                setOnlineUsers({ ...state });
+            };
+
             presenceChannel
-                .on('presence', { event: 'sync' }, () => {
-                    const state = presenceChannel.presenceState();
-                    setOnlineUsers({ ...state });
-                })
+                .on('presence', { event: 'sync' }, updatePresenceState)
                 .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-                    setOnlineUsers(prev => ({ ...prev, [key]: newPresences }));
+                    console.log('🟢 Usuario se unió:', key);
+                    updatePresenceState();
                 })
                 .on('presence', { event: 'leave' }, ({ key }) => {
-                    setOnlineUsers(prev => {
-                        const next = { ...prev };
-                        delete next[key];
-                        return next;
-                    });
+                    console.log('🔴 Usuario salió:', key);
+                    updatePresenceState();
                 })
-                .subscribe();
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        // Forzar una sincronización inicial apenas se suscribe
+                        updatePresenceState();
+                    }
+                });
 
             return () => {
                 supabase.removeChannel(channel);
