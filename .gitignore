@@ -23,4 +23,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-*.sql
+# *.sql removed to allow database guides
