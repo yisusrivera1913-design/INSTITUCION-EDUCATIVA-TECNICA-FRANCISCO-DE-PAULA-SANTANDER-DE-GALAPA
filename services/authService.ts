@@ -414,10 +414,13 @@ export const authService = {
         return `${baseKey}_${hash}`;
     },
 
-    // --- REAL-TIME PRESENCE ---
+    // --- REAL-TIME PRESENCE (CENTRALIZADO) ---
     trackPresence: (user: User) => {
         if (!supabase) return null;
         const lowEmail = user.email.toLowerCase();
+
+        // Limpiar canal previo si existe para evitar duplicados
+        supabase.removeChannel(supabase.channel('online-users'));
 
         const channel = supabase.channel('online-users', {
             config: {
@@ -427,29 +430,34 @@ export const authService = {
             },
         });
 
-        const syncPresence = async () => {
-            await channel.track({
-                online_at: new Date().toISOString(),
-                name: user.name,
-                role: user.role,
-                version: '2.5'
-            });
+        const trackUser = async () => {
+            try {
+                await channel.track({
+                    online_at: new Date().toISOString(),
+                    name: user.name,
+                    role: user.role,
+                    email: lowEmail
+                });
+                console.log('📡 [Presence] Tracking enviado para:', lowEmail);
+            } catch (e) {
+                console.error('❌ [Presence] Error en track:', e);
+            }
         };
 
         channel
             .on('presence', { event: 'sync' }, () => {
-                const state = channel.presenceState();
-                console.log('📡 Presencia sincronizada para:', lowEmail, state);
+                console.log('🔄 [Presence] Sincronización detectada');
             })
             .on('presence', { event: 'join' }, ({ key }) => {
-                if (key === lowEmail) console.log('🟢 Conectado correctamente');
+                console.log('➕ [Presence] Nuevo usuario activo:', key);
             })
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
-                    await syncPresence();
-                    // Heartbeat cada 45 segundos para asegurar que no se caiga
-                    const heartbeat = setInterval(syncPresence, 45000);
-                    (channel as any)._heartbeat = heartbeat;
+                    console.log('🔌 [Presence] Suscrito con éxito');
+                    await trackUser();
+                    // Heartbeat más frecuente (cada 20s) para evitar caídas en local
+                    const hb = setInterval(trackUser, 20000);
+                    (channel as any)._hb = hb;
                 }
             });
 

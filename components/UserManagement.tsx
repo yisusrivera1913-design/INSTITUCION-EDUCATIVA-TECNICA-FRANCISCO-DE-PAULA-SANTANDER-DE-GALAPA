@@ -91,7 +91,14 @@ export const UserManagement: React.FC = () => {
                     }
                 });
 
+            // Sincronizar inmediatamente al montar
+            updatePresenceState();
+
+            // Intervalo de seguridad para refrescar la lista de activos cada 10s
+            const interval = setInterval(updatePresenceState, 10000);
+
             return () => {
+                clearInterval(interval);
                 supabase.removeChannel(channel);
                 supabase.removeChannel(presenceChannel);
             };
