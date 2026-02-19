@@ -14,20 +14,16 @@ import { authService, User } from './services/authService';
 const initialInput: SequenceInput = {
   grado: '',
   area: '',
+  asignatura: '',
   tema: '',
   dba: '',
-  sesiones: 0,
-  ejeCrese: '',
+  sesiones: 4,
+  ejeCrese: 'Ciudadanía y Convivencia',
+  grupos: '',
+  fecha: '',
 };
 
-interface HistoryItem {
-  id: string;
-  timestamp: number;
-  title: string;
-  area: string;
-  grade: string;
-  sequence: DidacticSequence;
-}
+// ... (HistoryItem interface stays same)
 
 function App() {
   // Auth State
@@ -42,14 +38,13 @@ function App() {
   const [loadingStep, setLoadingStep] = useState(0);
   const [showStats, setShowStats] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  // Persistent history state removed
 
   const loadingMessages = [
     "Analizando el DBA y contexto...",
     "Diseñando estrategias pedagógicas...",
-    "Estructurando actividades paso a paso...",
-    "Creando rúbricas de evaluación...",
-    "Finalizando documento..."
+    "Estructurando momentos de clase...",
+    "Creando indicadores de desempeño...",
+    "Finalizando planeación..."
   ];
 
   const [lastGenTime, setLastGenTime] = useState(0);
@@ -66,19 +61,18 @@ function App() {
     return () => clearInterval(interval);
   }, [isLoading]);
 
-  // 1. Initial Load (Solo parámetros de entrada - HISTORIAL EFÍMERO POR SEGURIDAD)
+  // 1. Initial Load
   useEffect(() => {
     if (isAuthenticated && currentUser) {
-      const inputKey = authService.getUserStorageKey('guaimaral_input');
+      const inputKey = authService.getUserStorageKey('santander_input_v1');
       const savedInput = localStorage.getItem(inputKey);
 
       if (savedInput) {
-        try { setInput(JSON.parse(savedInput)); } catch (e) { console.error("Error loading input", e); }
+        try { setInput(JSON.parse(savedInput)); } catch (e) { setInput(initialInput); }
       } else {
         setInput(initialInput);
       }
 
-      // Track presence (Inicia el manager global)
       const sub = authService.trackPresence(currentUser);
       return () => {
         if (sub) sub.unsubscribe();
@@ -86,10 +80,10 @@ function App() {
     }
   }, [isAuthenticated, currentUser]);
 
-  // 2. Persistencia de entrada (No persiste contenido generado)
+  // 2. Persistencia de entrada
   useEffect(() => {
     if (isAuthenticated && currentUser) {
-      const inputKey = authService.getUserStorageKey('guaimaral_input');
+      const inputKey = authService.getUserStorageKey('santander_input_v1');
       localStorage.setItem(inputKey, JSON.stringify(input));
     }
   }, [input, isAuthenticated, currentUser]);
@@ -111,8 +105,8 @@ function App() {
 
   const handleGenerate = async (refinementConfig?: { instruction: string }) => {
     const now = Date.now();
-    if (now - lastGenTime < 10000 && !refinementConfig) {
-      setError("Por seguridad, espera unos segundos antes de generar una nueva secuencia.");
+    if (now - lastGenTime < 8000 && !refinementConfig) {
+      setError("Espera unos segundos para la siguiente generación.");
       return;
     }
     setLastGenTime(now);
@@ -120,10 +114,12 @@ function App() {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await generateDidacticSequence(input, refinementConfig?.instruction);
+      const result = await generateDidacticSequence({
+        ...input,
+        docente_nombre: currentUser?.name
+      }, refinementConfig?.instruction);
       setSequence(result);
 
-      // SAVE & LOG TO CLOUD (Consolidated for Rector's dashboard visibility)
       if (currentUser) {
         await authService.saveAndLogSequence(currentUser, result, {
           theme: input.tema,
@@ -146,7 +142,7 @@ function App() {
   };
 
   const handleFullReset = () => {
-    if (confirm("¿Restablecer parámetros actuales?")) {
+    if (confirm("¿Restablecer toda la configuración?")) {
       setSequence(null);
       setInput(initialInput);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -162,24 +158,24 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-outfit pb-20 relative selection:bg-blue-100 selection:text-blue-900">
-      {/* Sidebar removed per Rector's request */}
 
       {/* Header */}
       <header className="relative z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 no-print transition-all duration-300 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4 cursor-pointer group" onClick={handleFullReset}>
-            <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-100 group-hover:scale-110 transition-transform duration-500">
-              <img src="/logo_guaimaral.png" alt="Logo" className="w-10 h-10 object-contain" />
+            <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-100 group-hover:scale-110 transition-transform duration-500">
+              <span className="text-2xl">🎓</span>
             </div>
             <div className="hidden sm:block">
               <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none group-hover:text-blue-700 transition-colors">
-                I.E. Guaimaral
+                I.E. Santander
               </h1>
               <p className="text-[10px] text-slate-400 font-black uppercase tracking-[2px] mt-1">
                 AI <span className="text-blue-600">Planner</span>
               </p>
             </div>
           </div>
+
 
           <div className="flex items-center gap-3">
             {/* Nav Tools */}

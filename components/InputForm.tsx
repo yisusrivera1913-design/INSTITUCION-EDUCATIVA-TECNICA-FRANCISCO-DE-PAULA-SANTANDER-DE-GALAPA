@@ -16,53 +16,16 @@ interface InputFormProps {
 export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerate, isLoading, user }) => {
   const [dbaMode, setDbaMode] = useState<'manual' | 'auto'>('manual');
 
-  // Lógica de filtrado personalizada para docentes específicos (Normalizada con authService)
-  const isTransitionTeacher = user?.name.toLowerCase().includes("ibeth charris") || user?.name.toLowerCase().includes("deisy mercado");
-  const isLindaVarela = user?.name.toLowerCase().includes("linda varela");
-  const isAsterioTorres = user?.name.toLowerCase().includes("asterio torres");
-  const isRobertoDaza = user?.name.toLowerCase().includes("roberto daza");
-  const isEduardo = user?.name.toLowerCase() === "eduardo";
-  const isBenavidez = user?.name.toLowerCase().includes("benavides");
-  const isJorgeFerrer = user?.name.toLowerCase().includes("jorge ferrer");
-  const isEvaristoVertel = user?.name.toLowerCase().includes("evaristo vertel");
-  const isJorgeDeLaHoz = user?.name.toLowerCase().includes("jorge de la hoz");
-  const isLeovigilda = user?.name.toLowerCase().includes("leovigilda");
-
-  const filteredGrados = isTransitionTeacher
-    ? GRADOS.filter(g => g === "Transición")
-    : isLeovigilda
-      ? GRADOS.filter(g => g === "Multigrado")
-      : GRADOS;
-
-  const filteredAreas = isTransitionTeacher
-    ? AREAS.filter(a => a.startsWith("Dimensión"))
-    : isLindaVarela
-      ? AREAS.filter(a => a === "Lengua Castellana")
-      : isAsterioTorres
-        ? AREAS.filter(a => a.includes("Naturales") || a.includes("Agropecuaria") || a.includes("Ética"))
-        : isRobertoDaza
-          ? AREAS.filter(a => ["Ciencias Sociales", "Ética y Valores", "Filosofía", "Cátedra de la Paz"].includes(a))
-          : isEduardo
-            ? AREAS.filter(a => ["Tecnología e Informática", "Educación Física"].includes(a))
-            : isBenavidez
-              ? AREAS.filter(a => ["Física", "Estadística", "Matemáticas", "Educación Artística"].includes(a))
-              : isJorgeFerrer
-                ? AREAS.filter(a => ["Matemáticas", "Geometría", "Religión", "Estadística", "Física"].includes(a))
-                : isEvaristoVertel
-                  ? AREAS.filter(a => ["Ciencias Naturales", "Biología", "Química"].includes(a))
-                  : isJorgeDeLaHoz
-                    ? AREAS.filter(a => ["Religión", "Inglés"].includes(a))
-                    : isLeovigilda
-                      ? AREAS.filter(a => a.includes("Integral"))
-                      : AREAS;
+  const filteredGrados = GRADOS;
+  const filteredAreas = AREAS;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setInput(prev => ({ ...prev, [name]: value }));
   };
 
-  // Validation: If auto mode, DBA is optional (valid). If manual, needs content.
-  const isFormValid = input.grado && input.area && input.tema && input.ejeCrese && (dbaMode === 'auto' || (input.dba && input.dba.length > 5));
+  // Validation: Basic check
+  const isFormValid = input.grado && input.area && input.tema && input.asignatura && input.grupos && input.fecha && input.ejeCrese;
 
   return (
     <div className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl shadow-xl border border-white/50 mb-8 no-print relative overflow-hidden ring-1 ring-blue-50">
@@ -71,23 +34,24 @@ export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerat
       <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-50 to-purple-50 rounded-full -mr-32 -mt-32 opacity-50 z-0 pointer-events-none blur-3xl"></div>
 
       <div className="relative z-10 mb-8 border-b border-gray-100/50 pb-6 flex flex-col md:flex-row items-center gap-6">
-        <div className="bg-white p-2 rounded-2xl shadow-md border border-gray-100 transform hover:scale-105 transition-transform duration-300">
-          <img src="/logo_guaimaral.png" alt="Logo I.E. Guaimaral" className="w-24 h-24 object-contain" />
+        <div className="bg-white p-2 rounded-2xl shadow-md border border-gray-100 transform hover:scale-105 transition-transform duration-300 text-center">
+          <span className="text-4xl">🎓</span>
+          <p className="text-[8px] font-bold text-slate-400 mt-1 uppercase">SANTANDER</p>
         </div>
         <div className="text-center md:text-left">
           <h2 className="text-2xl font-black text-slate-800 flex items-center justify-center md:justify-start gap-2">
             <Layers className="text-blue-600 drop-shadow-sm" />
-            Configuración de la Secuencia
+            Planeación de Clase Institucional
           </h2>
-          <p className="text-gray-500 text-sm mt-1 font-medium">Completa todos los campos para diseñar tu experiencia de aprendizaje.</p>
+          <p className="text-gray-500 text-sm mt-1 font-medium">I.E. Técnico Francisco de Paula Santander de Galapa</p>
         </div>
       </div>
 
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-8">
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-6">
 
         {/* Grado */}
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide text-xs">Grado Escolar</label>
+          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide text-xs">Grado</label>
           <div className="relative group transition-all duration-300 transform hover:-translate-y-0.5">
             <div className="absolute left-3 top-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors">
               <BookOpen className="h-5 w-5" />
@@ -101,15 +65,48 @@ export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerat
               <option value="">Seleccionar Grado</option>
               {filteredGrados.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
-            <div className="absolute right-3 top-4 pointer-events-none">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+          </div>
+        </div>
+
+        {/* Grupos */}
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide text-xs">Grupos</label>
+          <div className="relative group transition-all duration-300 transform hover:-translate-y-0.5">
+            <div className="absolute left-3 top-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors">
+              <Layers className="h-5 w-5" />
             </div>
+            <input
+              type="text"
+              name="grupos"
+              value={input.grupos}
+              onChange={handleChange}
+              placeholder="Ej. 501 y 504"
+              className="w-full pl-11 pr-4 py-3.5 bg-white/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm hover:border-blue-300 text-gray-700 font-medium"
+            />
+          </div>
+        </div>
+
+        {/* Fecha */}
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide text-xs">Fecha / Periodo</label>
+          <div className="relative group transition-all duration-300 transform hover:-translate-y-0.5">
+            <div className="absolute left-3 top-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors">
+              <Calendar className="h-5 w-5" />
+            </div>
+            <input
+              type="text"
+              name="fecha"
+              value={input.fecha}
+              onChange={handleChange}
+              placeholder="Ej. Del 24 al 26 de febrero"
+              className="w-full pl-11 pr-4 py-3.5 bg-white/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm hover:border-blue-300 text-gray-700 font-medium"
+            />
           </div>
         </div>
 
         {/* Área */}
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide text-xs">Área del Conocimiento</label>
+          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide text-xs">Área</label>
           <div className="relative group transition-all duration-300 transform hover:-translate-y-0.5">
             <div className="absolute left-3 top-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors">
               <BrainCircuit className="h-5 w-5" />
@@ -123,18 +120,15 @@ export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerat
               <option value="">Seleccionar Área</option>
               {filteredAreas.map(a => <option key={a} value={a}>{a}</option>)}
             </select>
-            <div className="absolute right-3 top-4 pointer-events-none">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-            </div>
           </div>
         </div>
 
         {/* Eje CRESE */}
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide text-xs">Eje Transversal (CRESE)</label>
+          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide text-xs">Eje CRESE</label>
           <div className="relative group transition-all duration-300 transform hover:-translate-y-0.5">
             <div className="absolute left-3 top-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors">
-              <Target className="h-5 w-5" />
+              <Sparkles className="h-5 w-5" />
             </div>
             <select
               name="ejeCrese"
@@ -145,18 +139,33 @@ export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerat
               <option value="">Seleccionar Eje</option>
               {EJES_CRESE.map(e => <option key={e} value={e}>{e}</option>)}
             </select>
-            <div className="absolute right-3 top-4 pointer-events-none">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+          </div>
+        </div>
+
+        {/* Asignatura */}
+        <div>
+          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide text-xs">Asignatura</label>
+          <div className="relative group transition-all duration-300 transform hover:-translate-y-0.5">
+            <div className="absolute left-3 top-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors">
+              <PenTool className="h-5 w-5" />
             </div>
+            <input
+              type="text"
+              name="asignatura"
+              value={input.asignatura}
+              onChange={handleChange}
+              placeholder="Ej. Lenguaje, Matemáticas..."
+              className="w-full pl-11 pr-4 py-3.5 bg-white/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm hover:border-blue-300 text-gray-700 font-medium"
+            />
           </div>
         </div>
 
         {/* Sesiones */}
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide text-xs">Cantidad de Sesiones</label>
+          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide text-xs">Sesiones Sugeridas</label>
           <div className="relative group transition-all duration-300 transform hover:-translate-y-0.5">
             <div className="absolute left-3 top-3.5 text-gray-400 group-focus-within:text-blue-500 transition-colors">
-              <Calendar className="h-5 w-5" />
+              <Target className="h-5 w-5" />
             </div>
             <input
               type="number"
@@ -171,20 +180,20 @@ export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerat
         </div>
 
         {/* Tema */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide text-xs">Tema Principal</label>
+        <div className="md:col-span-3">
+          <label className="block text-sm font-bold text-gray-700 mb-2 uppercase tracking-wide text-xs">Tema Principal / Enseñanza</label>
           <input
             type="text"
             name="tema"
             value={input.tema}
             onChange={handleChange}
-            placeholder="Ej. El ciclo del agua, Suma de fraccionarios..."
+            placeholder="Ej. Figuras literarias en textos líricos..."
             className="w-full px-5 py-4 bg-white/50 border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all shadow-sm hover:border-blue-300 text-lg font-medium text-gray-800 placeholder-gray-400"
           />
         </div>
 
         {/* DBA */}
-        <div className="md:col-span-2 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 p-5 rounded-2xl border border-blue-100/50">
+        <div className="md:col-span-3 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 p-5 rounded-2xl border border-blue-100/50">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 text-sm">
             <label className="block font-bold text-blue-900 mb-2 sm:mb-0 uppercase tracking-wide text-xs">Derecho Básico de Aprendizaje (DBA)</label>
             <div className="flex bg-white p-1 rounded-lg shadow-sm border border-gray-100">
@@ -208,18 +217,16 @@ export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerat
               name="dba"
               value={input.dba}
               onChange={handleChange}
-              rows={3}
+              rows={2}
               placeholder="Escribe o pega aquí el DBA..."
               className="w-full px-4 py-3 bg-white border border-blue-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none shadow-sm text-gray-700"
             />
           ) : (
-            <div className="w-full px-4 py-8 bg-white/60 border border-indigo-100 rounded-xl text-center backdrop-blur-sm relative overflow-hidden group hover:border-indigo-300 transition-colors cursor-default">
+            <div className="w-full px-4 py-6 bg-white/60 border border-indigo-100 rounded-xl text-center backdrop-blur-sm relative overflow-hidden group hover:border-indigo-300 transition-colors cursor-default">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-100/20 to-purple-100/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <div className="inline-flex items-center justify-center p-3 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full text-indigo-600 mb-3 shadow-inner">
-                <Wand2 size={28} className="animate-pulse" />
-              </div>
-              <p className="text-sm font-bold text-indigo-900">Modo Automático Activado</p>
-              <p className="text-xs text-indigo-600/80 mt-1 max-w-sm mx-auto">La Inteligencia Artificial seleccionará el <span className="font-bold">DBA Oficial</span> más adecuado para el tema y grado ingresados.</p>
+              <p className="text-sm font-bold text-indigo-900 flex items-center justify-center gap-2">
+                <Wand2 size={16} className="text-indigo-500" /> Modo Inteligencia Artificial Activa
+              </p>
             </div>
           )}
         </div>
@@ -236,11 +243,11 @@ export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerat
             }`}
         >
           {isLoading ? (
-            "Procesando..."
+            "Diseñando Planeación..."
           ) : (
             <>
               <Sparkles className="h-5 w-5 animate-pulse" />
-              <span className="relative z-10">Generar Secuencia</span>
+              <span className="relative z-10">Diseñar Planeación</span>
               <Play className="h-4 w-4 ml-1 opacity-60" fill="currentColor" />
             </>
           )}

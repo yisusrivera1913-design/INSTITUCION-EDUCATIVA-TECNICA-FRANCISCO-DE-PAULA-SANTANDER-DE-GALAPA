@@ -1,4 +1,4 @@
-# Documentación del Proyecto - Docente AI Pro (I.E. Guaimaral)
+# Documentación del Proyecto - Docente AI Pro (I.E. Santander)
 
 Bienvenido a la guía técnica y de usuario de tu plataforma de gestión académica inteligente. Este documento describe cómo funciona el sistema y cómo mantenerlo.
 
@@ -45,4 +45,4 @@ El sistema está optimizado para trabajar con la última serie de modelos Gemini
 - **Eficiencia:** 99.8% de éxito en la primera llamada gracias al pre-calentamiento del prompt.
 
 ---
-*Institución Educativa Guaimaral &copy; 2026 - Gestión Educativa de Vanguardia.*
+*Institución Educativa Francisco de Paula Santander &copy; 2026 - Gestión Educativa de Vanguardia.*

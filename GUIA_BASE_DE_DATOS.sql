@@ -1,5 +1,5 @@
 -- ==============================================================================
--- 🏫 I.E. GUAIMARAL - SISTEMA DE CONTROL DE USUARIOS Y ESTADÍSTICAS
+-- 🏫 I.E. FRANCISCO DE PAULA SANTANDER - SISTEMA DE CONTROL DE USUARIOS Y ESTADÍSTICAS
 -- ==============================================================================
 -- Copia y pega TODO este código en el "SQL Editor" de tu proyecto en Supabase.
 -- Luego dale al botón "RUN".
@@ -59,35 +59,22 @@ alter publication supabase_realtime add table api_key_logs;
 -- 7. SEMILLA DE DATOS (Usuarios Iniciales)
 insert into app_users (email, password, name, role) values
 -- Administrador
-('admin@guaimaral.edu.co', 'Mw==', 'Admin', 'admin'),
+('admin@santander.edu.co', 'Mw==', 'Admin Santander', 'admin'),
 
--- Guaimaral Bachillerato (Orden Alfabético)
-('alex.sanjuan@guaimaral.edu.co', 'Mw==', 'Alex San Juan', 'docente'),
-('deisy.arroyo@guaimaral.edu.co', 'Mw==', 'Deisy Arroyo', 'docente'),
-('jairo.blanco@guaimaral.edu.co', 'Mw==', 'Jairo Blanco', 'docente'),
-('liliana.valle@guaimaral.edu.co', 'Mw==', 'Liliana Valle', 'docente'),
-('paula.padilla@guaimaral.edu.co', 'Mw==', 'Paula Padilla', 'docente'),
-('rocio.ramirez@guaimaral.edu.co', 'Mw==', 'Rocio Ramírez', 'docente'),
+-- Docente Demo
+('docente.demo@santander.edu.co', 'Mw==', 'Docente Demo', 'docente');
 
--- Guaimaral Primaria (Orden Alfabético)
-('aleida.lara@guaimaral.edu.co', 'Mw==', 'Aleida Lara', 'docente'),
-('alfredo.torres@guaimaral.edu.co', 'Mw==', 'Alfredo Torres', 'docente'),
-('asterio.torres@guaimaral.edu.co', 'Mw==', 'Asterio Torres', 'docente'),
-('carlos.sandoval@guaimaral.edu.co', 'Mw==', 'Carlos Sandoval', 'docente'),
-('deisy.mercado@guaimaral.edu.co', 'Mw==', 'Deisy Mercado', 'docente'),
-('eduardo@guaimaral.edu.co', 'Mw==', 'Eduardo', 'docente'),
-('evaristo.vertel@guaimaral.edu.co', 'Mw==', 'Evaristo Vertel', 'docente'),
-('ibeth.charris@guaimaral.edu.co', 'Mw==', 'Ibeth Charris', 'docente'),
-('jairo.benavides@guaimaral.edu.co', 'Mw==', 'Jairo Benavides', 'docente'),
-('jorge.delahoz@guaimaral.edu.co', 'Mw==', 'Jorge de la Hoz', 'docente'),
-('jorge.ferrer@guaimaral.edu.co', 'Mw==', 'Jorge Ferrer', 'docente'),
-('leovigilda.navarro@guaimaral.edu.co', 'Mw==', 'Leovigilda Navarro', 'docente'),
-('linda.varela@guaimaral.edu.co', 'Mw==', 'Linda Varela', 'docente'),
-('martin.celin@guaimaral.edu.co', 'Mw==', 'Martín Celin', 'docente'),
-('nancy.vargas@guaimaral.edu.co', 'Mw==', 'Nancy Vargas', 'docente'),
-('pedro.arroyo@guaimaral.edu.co', 'Mw==', 'Pedro Arroyo', 'docente'),
-('roberto.daza@guaimaral.edu.co', 'Mw==', 'Roberto Daza', 'docente'),
-('xilena.santiago@guaimaral.edu.co', 'Mw==', 'Xilena Santiago', 'docente')
+/* 
+   PARA ELIMINAR UN USUARIO:
+   DELETE FROM app_users WHERE email = 'correo@santander.edu.co';
+
+   PARA AGREGAR UN USUARIO MANUALMENTE:
+   INSERT INTO app_users (email, password, name, role) 
+   VALUES ('nombre.apellido@santander.edu.co', 'Mw==', 'Nombre Completo', 'docente');
+   
+   Nota: 'Mw==' es la contraseña '3' obfuscada (ejemplo base), 
+   pero el sistema usa 'santander2026' por defecto para nuevos registros.
+*/
 on conflict (email) do nothing;
 
 -- 8. TABLA DE SECUENCIAS GENERADAS (Persistencia solicitada)

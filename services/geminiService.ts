@@ -41,44 +41,45 @@ const logApiKeyUsage = async (idx: number, status: 'success' | 'error', errorMsg
 const responseSchema: any = {
   type: SchemaType.OBJECT,
   properties: {
+    institucion: { type: SchemaType.STRING },
+    formato_nombre: { type: SchemaType.STRING },
+    nombre_docente: { type: SchemaType.STRING },
+    area: { type: SchemaType.STRING },
+    asignatura: { type: SchemaType.STRING },
+    grado: { type: SchemaType.STRING },
+    grupos: { type: SchemaType.STRING },
+    fecha: { type: SchemaType.STRING },
+    proposito: { type: SchemaType.STRING },
+    indicadores: {
+      type: SchemaType.OBJECT,
+      properties: {
+        cognitivo: { type: SchemaType.STRING },
+        afectivo: { type: SchemaType.STRING },
+        expresivo: { type: SchemaType.STRING }
+      },
+      required: ["cognitivo", "afectivo", "expresivo"]
+    },
+    ensenanzas: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+    secuencia_didactica: {
+      type: SchemaType.OBJECT,
+      properties: {
+        motivacion_encuadre: { type: SchemaType.STRING },
+        enunciacion: { type: SchemaType.STRING },
+        modelacion: { type: SchemaType.STRING },
+        simulacion: { type: SchemaType.STRING },
+        ejercitacion: { type: SchemaType.STRING },
+        demostracion: { type: SchemaType.STRING }
+      },
+      required: ["motivacion_encuadre", "enunciacion", "modelacion", "simulacion", "ejercitacion", "demostracion"]
+    },
+    didactica: { type: SchemaType.STRING },
+    recursos: { type: SchemaType.STRING },
+    elaboro: { type: SchemaType.STRING },
+    reviso: { type: SchemaType.STRING },
+    pie_fecha: { type: SchemaType.STRING },
     tema_principal: { type: SchemaType.STRING },
     titulo_secuencia: { type: SchemaType.STRING },
     descripcion_secuencia: { type: SchemaType.STRING },
-    objetivo_aprendizaje: { type: SchemaType.STRING },
-    contenidos: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-    competencias_men: { type: SchemaType.STRING },
-    estandar: { type: SchemaType.STRING },
-    metodologia: { type: SchemaType.STRING },
-    corporiedad_adi: { type: SchemaType.STRING },
-    actividades: {
-      type: SchemaType.ARRAY,
-      items: {
-        type: SchemaType.OBJECT,
-        properties: {
-          sesion: { type: SchemaType.NUMBER },
-          descripcion: { type: SchemaType.STRING },
-          materiales: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-          tiempo: { type: SchemaType.STRING },
-          imprimibles: { type: SchemaType.STRING },
-          adi_especifico: { type: SchemaType.STRING }
-        },
-        required: ["sesion", "descripcion", "materiales", "tiempo", "imprimibles", "adi_especifico"]
-      }
-    },
-    rubrica: {
-      type: SchemaType.ARRAY,
-      items: {
-        type: SchemaType.OBJECT,
-        properties: {
-          criterio: { type: SchemaType.STRING },
-          basico: { type: SchemaType.STRING },
-          satisfactorio: { type: SchemaType.STRING },
-          avanzado: { type: SchemaType.STRING },
-          retroalimentacion: { type: SchemaType.STRING }
-        },
-        required: ["criterio", "basico", "satisfactorio", "avanzado", "retroalimentacion"]
-      }
-    },
     evaluacion: {
       type: SchemaType.ARRAY,
       items: {
@@ -92,19 +93,6 @@ const responseSchema: any = {
         required: ["pregunta", "tipo", "opciones", "respuesta_correcta"]
       }
     },
-    recursos: {
-      type: SchemaType.ARRAY,
-      items: {
-        type: SchemaType.OBJECT,
-        properties: { nombre: { type: SchemaType.STRING }, descripcion: { type: SchemaType.STRING } },
-        required: ["nombre", "descripcion"]
-      }
-    },
-    productos_asociados: { type: SchemaType.STRING },
-    instrumentos_evaluacion: { type: SchemaType.STRING },
-    bibliografia: { type: SchemaType.STRING },
-    observaciones: { type: SchemaType.STRING },
-    adecuaciones_piar: { type: SchemaType.STRING },
     taller_imprimible: {
       type: SchemaType.OBJECT,
       properties: {
@@ -116,15 +104,13 @@ const responseSchema: any = {
       required: ["introduccion", "instrucciones", "ejercicios", "reto_creativo"]
     },
     alertas_generadas: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-    dba_utilizado: { type: SchemaType.STRING },
-    eje_crese_utilizado: { type: SchemaType.STRING }
+    dba_utilizado: { type: SchemaType.STRING }
   },
   required: [
-    "tema_principal", "titulo_secuencia", "descripcion_secuencia", "objetivo_aprendizaje",
-    "contenidos", "competencias_men", "estandar", "metodologia", "corporiedad_adi",
-    "actividades", "rubrica", "evaluacion", "recursos", "productos_asociados",
-    "instrumentos_evaluacion", "bibliografia", "observaciones", "adecuaciones_piar",
-    "eje_crese_utilizado", "taller_imprimible", "alertas_generadas", "dba_utilizado"
+    "institucion", "formato_nombre", "nombre_docente", "area", "asignatura", "grado", "grupos", "fecha",
+    "proposito", "indicadores", "ensenanzas", "secuencia_didactica", "didactica", "recursos",
+    "elaboro", "reviso", "pie_fecha", "tema_principal", "titulo_secuencia", "descripcion_secuencia",
+    "evaluacion", "taller_imprimible", "alertas_generadas", "dba_utilizado"
   ]
 };
 
@@ -135,7 +121,6 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
   const usage = [apiMetrics.key1.requests, apiMetrics.key2.requests, apiMetrics.key3.requests];
   const sortedIndices = [0, 1, 2].sort((a, b) => usage[a] - usage[b]);
 
-  // Lista Maestra de Modelos (Prioridad Gemini 2.5 Flash)
   const modelsToTry = [
     "gemini-2.5-flash",
     "gemini-2.5-flash-8b",
@@ -164,36 +149,42 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
 
   if (isMultigrado) {
     pedagogicalInstruction += `
-    - **INSTRUCCIÓN ESPECIAL MULTIGRADO (Sede Altomira - Profe Leovigilda):** Esta secuencia es para un aula MULTIGRADO. Debes especificar acciones y niveles de complejidad diferenciados para cada grado: **Transición, 1°, 2°, 3°, 4° y 5°**. 
+    - **INSTRUCCIÓN ESPECIAL MULTIGRADO:** Esta secuencia es para un aula MULTIGRADO. Debes especificar acciones y niveles de complejidad diferenciados para cada grado: **Transición, 1°, 2°, 3°, 4° y 5°**. 
     - **Enfoque Integrador:** Debes fusionar de manera coherente las 4 áreas básicas (Lenguaje, Matemáticas, Sociales y Naturales) en una sola secuencia didáctica funcional.`;
   }
 
   const prompt = `
     ### PERSONA: MASTER RECTOR AI (V5.0 PLATINUM)
-    Eres el Agente Supremo de la I.E. Guaimaral. Fusionas la excelencia pedagógica de un Consultor Senior del MEN con la precisión técnica de un Ingeniero de Orquestación de IA de nivel platino. Tu misión es la perfección absoluta en cada letra y estructura.
-
-    ### MARCO DE OPERACIÓN SUPREMO
-    - **Protocolo de las 50 Reglas de Oro:** Aplicar cada directriz de excelencia pedagógica (Alineación MEN, DUA, Bloom, CRESE).
-    - **Robustez Técnica Platino:** Generar JSON puro, sin errores estructurales, con tipos validados al 100%.
-    - **Cero Alucinación Curricular:** Veracidad total en referentes nacionales. Si es DBA, incluir número y texto. Si son Orientaciones, citarlas textualmente.
-    - **Metodologías de Vanguardia:** Aprendizaje Basado en Problemas, Flipped Classroom y Momentos ADI Creativos.
+    Eres el Agente Supremo de la INSTITUCION EDUCATIVA TECNICA FRANCISCO DE PAULA SANTANDER DE GALAPA.
+    Tu misión es la perfección absoluta en cada letra y estructura, siguiendo el formato de PLANEACIÓN DE CLASE institucional.
 
     ### PARÁMETROS DE LA SECUENCIA
-    - **Grado:** ${input.grado} | **Area:** ${input.area}
-    - **Tema:** ${safeTema} | **Sesiones:** ${input.sesiones}
+    - **Docente:** ${input.docente_nombre || 'No especificado'}
+    - **Área:** ${input.area} | **Asignatura:** ${input.asignatura}
+    - **Grado:** ${input.grado} | **Grupos:** ${input.grupos}
+    - **Tema:** ${safeTema} | **Fecha:** ${input.fecha} | **Sesiones:** ${input.sesiones}
     ${pedagogicalInstruction}
     - **Banco de Evaluación:** Generar obligatoriamente **10 preguntas** de selección múltiple tipo ICFES con 4 opciones.
-    - **Recursos Multimedia:** Si una actividad implica un video, debes incluir un enlace de búsqueda de YouTube con el formato: \`https://www.youtube.com/results?search_query=[TEMA+DEL+VIDEO+ESPECIFICO]\`.
     - **Integración Transversal:** ${input.ejeCrese || 'Fusión socioemocional y ciudadana de alto impacto.'}
     ${refinementInstruction ? `- **COMANDO DE REFINAMIENTO MAESTRO:** ${sanitizeInput(refinementInstruction)}` : ''}
 
-    ### AUDITORÍA DE CALIDAD PRE-SALIDA
-    - ¿Hay exactamente **10 preguntas** de evaluación con situaciones problema reales?
-    - ¿La guía imprimible es autónoma y pedagógicamente motivadora?
-    - ¿Se han seguido los estándares o las orientaciones curriculares vigentes en Colombia según el área?
+    ### ESTRUCTURA REQUERIDA (JSON)
+    Debes completar los siguientes campos basándote en la imagen institucional:
+    1. **institucion**: "INSTITUCION EDUCATIVA TECNICA FRANCISCO DE PAULA SANTANDER DE GALAPA"
+    2. **formato_nombre**: "PLANEACIÓN DE CLASE"
+    3. **proposito**: El objetivo principal de la planeación.
+    4. **indicadores**: Objeto con subcampos 'cognitivo', 'afectivo' y 'expresivo'.
+    5. **ensenanzas**: Lista de temas o conceptos a enseñar (usar asteriscos en la descripción literal).
+    6. **secuencia_didactica**: Objeto con los 6 momentos: 'motivacion_encuadre', 'enunciacion', 'modelacion', 'simulacion', 'ejercitacion', 'demostracion'.
+    7. **didactica**: Descripción de la metodología activa (ej: actividad de comprensión, narraciones, etc.)
+    8. **recursos**: Texto con los materiales necesarios.
+    9. **elaboro**: Nombre del docente (${input.docente_nombre || '...'}).
+    10. **reviso**: Nombre del coordinador o rector (dejar en blanco o poner "Coordinación Académica").
+    11. **pie_fecha**: Fecha de elaboración.
 
     Responde únicamente con el JSON validado.
   `;
+
 
   let lastError: any;
 

@@ -1,71 +1,70 @@
 export interface SequenceInput {
   grado: string;
   area: string;
+  asignatura: string;
   tema: string;
   dba: string; // Derecho Básico de Aprendizaje
   sesiones: number;
   ejeCrese: string;
-}
-
-export interface Activity {
-  sesion: number;
-  descripcion: string;
-  materiales: string[];
-  tiempo: string;
-  imprimibles: string;
-  adi_especifico?: string; // Momento ADI/CRESE específico de la sesión
-}
-
-export interface RubricCriteria {
-  criterio: string;
-  basico: string;
-  satisfactorio: string;
-  avanzado: string;
-  retroalimentacion: string;
-}
-
-export interface EvaluationItem {
-  pregunta: string;
-  tipo: string;
-  opciones?: string[]; // Para preguntas de selección múltiple (A, B, C, D)
-  respuesta_correcta?: string;
-}
-
-export interface Resource {
-  nombre: string;
-  descripcion: string;
+  grupos: string;
+  fecha: string;
+  docente_nombre?: string;
 }
 
 export interface DidacticSequence {
-  tema_principal: string;
-  objetivo_aprendizaje: string;
-  contenidos: string[];
-  competencias_men: string;
-  estandar: string;
-  metodologia: string;
-  corporiedad_adi: string; // Specific institutional field
-  actividades: Activity[];
-  rubrica: RubricCriteria[];
-  evaluacion: EvaluationItem[];
-  recursos: Resource[];
-  alertas_generadas?: string[]; // Para mensajes de incoherencia (Ej: "DBA corregido...")
-  dba_utilizado?: string; // El DBA que realmente usó la IA
+  // Encabezado
+  institucion: string;
+  formato_nombre: string;
+  nombre_docente: string;
+  area: string;
+  asignatura: string;
+  grado: string;
+  grupos: string;
+  fecha: string;
 
-  // Nuevos campos formato institucional
+  // Secciones Principales
+  proposito: string;
+  indicadores: {
+    cognitivo: string;
+    afectivo: string;
+    expresivo: string;
+  };
+  ensenanzas: string[];
+  secuencia_didactica: {
+      motivacion_encuadre: string;
+      enunciacion: string;
+      modelacion: string;
+      simulacion: string;
+      ejercitacion: string;
+      demostracion: string;
+  };
+  didactica: string;
+  recursos: string;
+
+  // Footer/Firmas
+  elaboro: string;
+  reviso: string;
+  pie_fecha: string;
+
+  // Campos adicionales para funcionalidades extra (pueden mantenerse o adaptarse)
+  tema_principal: string;
   titulo_secuencia: string;
   descripcion_secuencia: string;
-  productos_asociados: string;
-  instrumentos_evaluacion: string;
-  bibliografia: string; // Puede ser string largo o array, usaremos string con saltos por simplicidad visual
-  observaciones: string;
-  adecuaciones_piar: string;
-  eje_crese_utilizado?: string; // El eje CRESE seleccionado por la IA
-  numero_secuencia?: string; // Para edición manual del número de secuencia
-  // Nuevos campos para facilitar la vida al docente
-  taller_imprimible: {
+  evaluacion: EvaluationItem[];
+  alertas_generadas?: string[];
+  dba_utilizado?: string;
+  taller_imprimible?: {
     introduccion: string;
     instrucciones: string;
     ejercicios: string[];
     reto_creativo: string;
   };
 }
+
+export interface EvaluationItem {
+  pregunta: string;
+  tipo: string;
+  opciones?: string[];
+  respuesta_correcta?: string;
+}
+

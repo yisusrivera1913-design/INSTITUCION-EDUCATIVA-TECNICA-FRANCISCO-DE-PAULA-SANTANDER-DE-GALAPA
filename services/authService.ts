@@ -7,12 +7,12 @@ import { supabase } from './supabaseClient';
  */
 
 const STORAGE_KEYS = {
-    AUTH: 'guaimaral_auth_v2',
-    USER: 'guaimaral_user_v2',
-    ROLE: 'guaimaral_role_v2'
+    AUTH: 'santander_auth_v1',
+    USER: 'santander_user_v1',
+    ROLE: 'santander_role_v1'
 };
 
-const SALT = 'guaimaral-2026-secure-v2';
+const SALT = 'santander-2026-secure-v1';
 
 // Simple XOR obfuscation with UTF-8 support
 const obfuscate = (text: string): string => {
@@ -52,42 +52,16 @@ export interface User {
 // Usuarios locales de respaldo (Solo si falla la nube)
 export const AUTHORIZED_USERS: User[] = [
     // Administrador
-    { name: 'Admin', email: 'admin@guaimaral.edu.co', role: 'admin' },
-
-    // Guaimaral Bachillerato (Orden Alfabético)
-    { name: 'Alex San Juan', email: 'alex.sanjuan@guaimaral.edu.co', role: 'docente' },
-    { name: 'Deisy Arroyo', email: 'deisy.arroyo@guaimaral.edu.co', role: 'docente' },
-    { name: 'Jairo Blanco', email: 'jairo.blanco@guaimaral.edu.co', role: 'docente' },
-    { name: 'Liliana Valle', email: 'liliana.valle@guaimaral.edu.co', role: 'docente' },
-    { name: 'Paula Padilla', email: 'paula.padilla@guaimaral.edu.co', role: 'docente' },
-    { name: 'Rocio Ramírez', email: 'rocio.ramirez@guaimaral.edu.co', role: 'docente' },
-
-    // Guaimaral Primaria (Orden Alfabético)
-    { name: 'Aleida Lara', email: 'aleida.lara@guaimaral.edu.co', role: 'docente' },
-    { name: 'Alfredo Torres', email: 'alfredo.torres@guaimaral.edu.co', role: 'docente' },
-    { name: 'Asterio Torres', email: 'asterio.torres@guaimaral.edu.co', role: 'docente' },
-    { name: 'Carlos Sandoval', email: 'carlos.sandoval@guaimaral.edu.co', role: 'docente' },
-    { name: 'Deisy Mercado', email: 'deisy.mercado@guaimaral.edu.co', role: 'docente' },
-    { name: 'Eduardo', email: 'eduardo@guaimaral.edu.co', role: 'docente' },
-    { name: 'Evaristo Vertel', email: 'evaristo.vertel@guaimaral.edu.co', role: 'docente' },
-    { name: 'Ibeth Charris', email: 'ibeth.charris@guaimaral.edu.co', role: 'docente' },
-    { name: 'Jairo Benavides', email: 'jairo.benavides@guaimaral.edu.co', role: 'docente' },
-    { name: 'Jorge de la Hoz', email: 'jorge.delahoz@guaimaral.edu.co', role: 'docente' },
-    { name: 'Jorge Ferrer', email: 'jorge.ferrer@guaimaral.edu.co', role: 'docente' },
-    { name: 'Leovigilda Navarro', email: 'leovigilda.navarro@guaimaral.edu.co', role: 'docente' },
-    { name: 'Linda Varela', email: 'linda.varela@guaimaral.edu.co', role: 'docente' },
-    { name: 'Martín Celin', email: 'martin.celin@guaimaral.edu.co', role: 'docente' },
-    { name: 'Nancy Vargas', email: 'nancy.vargas@guaimaral.edu.co', role: 'docente' },
-    { name: 'Pedro Arroyo', email: 'pedro.arroyo@guaimaral.edu.co', role: 'docente' },
-    { name: 'Roberto Daza', email: 'roberto.daza@guaimaral.edu.co', role: 'docente' },
-    { name: 'Xilena Santiago', email: 'xilena.santiago@guaimaral.edu.co', role: 'docente' }
+    { name: 'Admin Santander', email: 'admin@santander.edu.co', role: 'admin' },
+    // Docente de Prueba
+    { name: 'Docente Demo', email: 'docente.demo@santander.edu.co', role: 'docente' },
 ];
 
 export const authService = {
     // --- PASSWORD MANAGEMENT ---
     changePassword: async (email: string, newPass: string) => {
         // 1. Local
-        const key = `guaimaral_pwd_${email.toLowerCase()}`;
+        const key = `santander_pwd_${email.toLowerCase()}`;
         localStorage.setItem(key, obfuscate(newPass));
 
         // 2. Cloud (Supabase)
@@ -106,7 +80,7 @@ export const authService = {
 
     verifyPassword: async (email: string, inputPass: string, role?: string): Promise<boolean> => {
         // A. Check Local Overrides First
-        const customPassEnc = localStorage.getItem(`guaimaral_pwd_${email.toLowerCase()}`);
+        const customPassEnc = localStorage.getItem(`santander_pwd_${email.toLowerCase()}`);
         if (customPassEnc) {
             return deobfuscate(customPassEnc) === inputPass;
         }
@@ -124,8 +98,6 @@ export const authService = {
                 try {
                     const cloudPass = deobfuscate(data.password);
                     if (cloudPass === inputPass) return true;
-                    // If obfuscation fails (maybe plaintext in db?), check direct
-                    if (data.password === inputPass) return true;
                 } catch (e) {
                     if (data.password === inputPass) return true;
                 }
@@ -134,9 +106,9 @@ export const authService = {
 
         // C. Default Hardcoded Passwords
         if (role === 'admin') return inputPass === 'admin2026';
-        if (email === 'docente@guaimaral.edu.co') return inputPass === '123456';
-        return inputPass === 'guaimaral2026';
+        return inputPass === 'santander2026';
     },
+
 
     login: async (email: string, password: string): Promise<User | null> => {
         // 1. First, check if user exists in Supabase to get the real name
@@ -178,6 +150,58 @@ export const authService = {
         return null;
     },
 
+    registerTeacher: async (teacher: { name: string, email: string, password?: string }) => {
+        const passwordToSend = teacher.password || 'santander2026';
+        const obfuscatedPassword = obfuscate(passwordToSend);
+
+        // 1. Local Persistence (for backup)
+        const key = `santander_pwd_${teacher.email.toLowerCase()}`;
+        localStorage.setItem(key, obfuscatedPassword);
+
+        // 2. Cloud Persistence (Supabase)
+        if (supabase) {
+            try {
+                const { error } = await supabase
+                    .from('app_users')
+                    .upsert({
+                        name: teacher.name,
+                        email: teacher.email.toLowerCase(),
+                        role: 'docente',
+                        password: obfuscatedPassword
+                    });
+
+                if (error) throw error;
+                return { success: true };
+            } catch (e: any) {
+                console.error("Reg Error:", e);
+                return { success: false, message: e.message };
+            }
+        }
+        return { success: true };
+    },
+
+    deleteUser: async (email: string) => {
+        // 1. Local
+        localStorage.removeItem(`santander_pwd_${email.toLowerCase()}`);
+
+        // 2. Cloud (Supabase)
+        if (supabase) {
+            try {
+                const { error } = await supabase
+                    .from('app_users')
+                    .delete()
+                    .eq('email', email.toLowerCase());
+
+                if (error) throw error;
+                return { success: true };
+            } catch (e: any) {
+                console.error("Delete Error:", e);
+                return { success: false, message: e.message };
+            }
+        }
+        return { success: true };
+    },
+
     // --- GENERATED SEQUENCES PERSISTENCE & LOGGING ---
     saveAndLogSequence: async (user: User, sequence: any, details: { grade: string, area: string, theme: string }) => {
         const email = user.email.toLowerCase().trim();
@@ -185,8 +209,8 @@ export const authService = {
 
         // 1. Respaldo Local (Inmediato)
         try {
-            const statsKey = `guaimaral_stats_${email}`;
-            const seqKey = `guaimaral_saved_sequences_${email}`;
+            const statsKey = `santander_stats_${email}`;
+            const seqKey = `santander_saved_sequences_${email}`;
 
             const stats = JSON.parse(localStorage.getItem(statsKey) || '[]');
             stats.push({ timestamp: Date.now(), action: actionText });
@@ -301,7 +325,7 @@ export const authService = {
     },
 
     getLocalUsageStats: (email: string) => {
-        const key = `guaimaral_stats_${email.toLowerCase()}`;
+        const key = `santander_stats_${email.toLowerCase()}`;
         const logs: any[] = JSON.parse(localStorage.getItem(key) || '[]');
         const now = new Date();
 
@@ -312,7 +336,7 @@ export const authService = {
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
         const yearStart = new Date(now.getFullYear(), 0, 1).getTime();
 
-        const localSavedKey = `guaimaral_saved_sequences_${email.toLowerCase()}`;
+        const localSavedKey = `santander_saved_sequences_${email.toLowerCase()}`;
         const savedCount = JSON.parse(localStorage.getItem(localSavedKey) || '[]').length;
 
         return {
@@ -401,7 +425,7 @@ export const authService = {
 
         try {
             // A. Sincronizar Secuencias Guardadas
-            const seqKey = `guaimaral_saved_sequences_${email}`;
+            const seqKey = `santander_saved_sequences_${email}`;
             const localSeqs = JSON.parse(localStorage.getItem(seqKey) || '[]');
 
             // Ver qué hay ya en la nube para no duplicar
