@@ -151,13 +151,22 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
   };
 
   const currentArea = input.area.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const hasDBA = areaNormativa.conDBA.some(a => currentArea.includes(a));
+  const isMultigrado = input.grado.toLowerCase().includes("multigrado");
+  const isIntegral = input.area.toLowerCase().includes("integral");
 
-  const pedagogicalInstruction = hasDBA
+  const hasDBA = areaNormativa.conDBA.some(a => currentArea.includes(a)) || isIntegral;
+
+  let pedagogicalInstruction = hasDBA
     ? `- **DBA Oficial:** Debes identificar el número exacto del DBA (ej: "DBA #3") y transcribir su contenido literal que se está abordando.
        - **Input del Usuario:** ${sanitizeInput(input.dba) || 'Sin DBA previo'}. Si este input es un número, busca el contenido oficial. Si es texto, valida su correspondencia con el número.`
     : `- **Referencia Pedagógica:** Esta área NO utiliza DBA. Debes citar explícitamente las **"Orientaciones Pedagógicas y Curriculares del MEN para ${input.area}"**. 
        - **Instrucción Especial:** En la casilla de DBA, debes colocar: "Tomado de las Orientaciones Pedagógicas del MEN: [Citar el eje o lineamiento específico usado]". NO inventes un número de DBA.`;
+
+  if (isMultigrado) {
+    pedagogicalInstruction += `
+    - **INSTRUCCIÓN ESPECIAL MULTIGRADO (Sede Altomira - Profe Leovigilda):** Esta secuencia es para un aula MULTIGRADO. Debes especificar acciones y niveles de complejidad diferenciados para cada grado: **Transición, 1°, 2°, 3°, 4° y 5°**. 
+    - **Enfoque Integrador:** Debes fusionar de manera coherente las 4 áreas básicas (Lenguaje, Matemáticas, Sociales y Naturales) en una sola secuencia didáctica funcional.`;
+  }
 
   const prompt = `
     ### PERSONA: MASTER RECTOR AI (V5.0 PLATINUM)

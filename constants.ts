@@ -10,7 +10,8 @@ export const GRADOS = [
   "Octavo",
   "Noveno",
   "Décimo",
-  "Undécimo"
+  "Undécimo",
+  "Multigrado"
 ];
 
 export const AREAS = [
@@ -35,7 +36,8 @@ export const AREAS = [
   "Estadística",
   "Geometría",
   "Biología",
-  "Química"
+  "Química",
+  "Integral (matemáticas+lenguaje+sociales+naturales)"
 ];
 
 export const EJES_CRESE = [
