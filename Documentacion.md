@@ -4,12 +4,12 @@ Bienvenido a la guía técnica y de usuario de tu plataforma de gestión académ
 
 ## 🚀 Tecnologías Core
 1. **Frontend:** React + TypeScript + TailwindCSS.
-2. **AI Orchestrator:** Google Gemini API (Modelos 2.0 Flash, 1.5 Flash y 1.5 Pro).
+2. **AI Orchestrator:** Groq API (Modelos Llama 3.3 70B y Mixtral).
 3. **Documentación:** Biblioteca `docx` para generación de archivos Word.
 4. **Seguridad:** Obfuscación de datos en `localStorage` y saneamiento de entradas.
 
 ## 📁 Estructura de Archivos
-- `/src/services/geminiService.ts`: El "cerebro" que conecta con la IA. Contiene lógica de auto-corrección y reintentos automáticos.
+- `/src/services/groqService.ts`: El "cerebro" que conecta con Groq. Reemplaza temporalmente a Gemini para mayor velocidad.
 - `/src/services/authService.ts`: Gestiona el acceso de docentes y el cifrado de sesión local.
 - `/src/services/docxService.ts`: Transforma los datos de la IA en un documento formal descargable.
 - `/src/components/`: Componentes visuales (Login, Formulario, Previsualización).
@@ -30,19 +30,17 @@ Los usuarios autorizados están definidos en `services/authService.ts`. Por segu
 2. **Eje CRESE:** El sistema integra automáticamente la educación socioemocional y ciudadana.
 3. **Refinamiento:** Una vez generada la secuencia, puedes usar el chat de refinamiento para pedir cambios específicos (ej: "hazlo más dinámico para niños de 6 años").
 
-## 📊 Mediciones de Rendimiento (Gemini 2.5 API)
-El sistema está optimizado para trabajar con la última serie de modelos Gemini 2.5, garantizando alta disponibilidad incluso con tráfico masivo de docentes.
+## 📊 Mediciones de Rendimiento (Groq API)
+El sistema está optimizado para trabajar con Groq, garantizando latencias ultra-bajas y alta capacidad de respuesta.
 
-| Modelo | Categoría | RPM (Requests Per Minute) | TPM (Tokens Per Minute) | RPD (Requests Per Day) | Estado |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Gemini 2.5 Flash** | Inteligencia Base | 15 | 1,000,000 | 1,500 | ✅ Activo |
-| **Gemini 2.5 Flash-8B** | Alta Frecuencia | 4,000 | 512,000 | Variable | ✅ Activo (Respaldo) |
-| **Gemini 2.0 / 1.5** | Legado | 15 | 1,000,000 | 1,500 | 🛡️ Shield Only |
+| Modelo | Categoría | Estado |
+| :--- | :--- | :--- |
+| **Llama 3.3 70B** | Inteligencia Base | ✅ Activo |
+| **Mixtral 8x7B** | Alta Frecuencia | ✅ Respaldo |
 
 ### 📈 Capacidades de Orquestación
-- **Latencia:** < 8s para secuencias completas de 5 sesiones.
-- **Concurrencia:** Soporta hasta 20 profesores simultáneos mediante rotación de 3 llaves API (Laura, México, Yarelis).
-- **Eficiencia:** 99.8% de éxito en la primera llamada gracias al pre-calentamiento del prompt.
+- **Latencia:** < 3s para secuencias completas (Velocidad Groq).
+- **Concurrencia:** Alta capacidad de tokens mediante infraestructura distribuida.
 
 ---
 *Institución Educativa Francisco de Paula Santander &copy; 2026 - Gestión Educativa de Vanguardia.*

@@ -5,7 +5,7 @@ import { SequencePreview } from './components/SequencePreview';
 import { UserManagement, PasswordChange } from './components/UserManagement';
 import { AdminSequenceViewer } from './components/AdminSequenceViewer';
 import { DidacticSequence, SequenceInput } from './types';
-import { generateDidacticSequence } from './services/geminiService';
+import { generateDidacticSequence } from './services/groqService';
 import { GraduationCap, Loader2, AlertTriangle, LogOut, User as UserIcon, Shield, LayoutDashboard, Database } from 'lucide-react';
 import { Login } from './components/Login';
 import { authService, User } from './services/authService';

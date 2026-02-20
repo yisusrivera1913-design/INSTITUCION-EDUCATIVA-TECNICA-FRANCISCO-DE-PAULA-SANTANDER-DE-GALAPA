@@ -1,5 +1,5 @@
 import { Cpu, Zap, Info, BarChart } from 'lucide-react';
-import { modelHealthStatus, apiMetrics } from '../services/geminiService';
+import { modelHealthStatus, apiMetrics } from '../services/groqService';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabaseClient';
 
@@ -12,7 +12,7 @@ export const ApiStats: React.FC = () => {
         if (!supabase) return;
 
         try {
-            const labels = ["Laura", "México", "Yarelis"];
+            const labels = ["Groq"];
             const newCloudMetrics: any = {};
             const now = new Date();
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
@@ -86,7 +86,7 @@ export const ApiStats: React.FC = () => {
     }, []);
 
     const keys = Object.keys(apiMetrics) as (keyof typeof apiMetrics)[];
-    const labels = ["Laura", "México", "Yarelis"];
+    const labels = ["Groq"];
 
     return (
         <div className="w-full bg-white/40 backdrop-blur-xl border border-white/60 rounded-[2.5rem] p-10 shadow-2xl mb-12 animate-fade-in-up relative overflow-hidden group transition-all duration-500 hover:shadow-blue-500/10 hover:border-blue-200/50">
@@ -144,7 +144,7 @@ export const ApiStats: React.FC = () => {
                             <div className="absolute top-0 right-0 -mt-4 -mr-4 w-16 h-16 bg-blue-500/5 rounded-full blur-xl group-hover/card:bg-blue-500/20 transition-colors"></div>
 
                             <div className="flex items-center justify-between mb-4">
-                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Canal {i + 1}: {labels[i]}</span>
+                                <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Motor: {labels[i]} AI</span>
                                 <div className="flex items-center gap-2">
                                     <span className="text-[8px] font-black text-slate-300 uppercase tracking-tighter">Live</span>
                                     <Zap size={18} className={metrics.errors > 2 ? "text-red-500" : "text-yellow-500 animate-pulse"} />
