@@ -36,10 +36,10 @@ export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerat
       <div className="relative z-10 mb-8 border-b border-gray-100/50 pb-6 flex flex-col md:flex-row items-center gap-6">
         <div className="bg-white p-1 rounded-2xl shadow-md border border-gray-100 transform hover:scale-105 transition-transform duration-300 text-center w-[70px] h-[70px] flex items-center justify-center">
           <img
-            src="/logo_santander.png"
+            src="/logo_santander.svg"
             alt="Escudo Francisco de Paula Santander"
             className="w-full h-full object-contain"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            onError={(e) => { (e.target as HTMLImageElement).src = '/logo_santander.png'; }}
           />
         </div>
         <div className="text-center md:text-left">

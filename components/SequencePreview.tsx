@@ -128,10 +128,10 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
           <div className="flex border-b border-gray-400">
             <div className="w-[90px] h-[90px] p-1 flex items-center justify-center border-r border-gray-400 bg-white">
               <img
-                src="/logo_santander.png"
+                src="/logo_santander.svg"
                 alt="Escudo Institución Educativa Técnica Francisco de Paula Santander"
                 className="w-full h-full object-contain"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                onError={(e) => { (e.target as HTMLImageElement).src = '/logo_santander.png'; }}
               />
             </div>
             <div className="flex-1 flex flex-col items-center justify-center p-2 text-center">
