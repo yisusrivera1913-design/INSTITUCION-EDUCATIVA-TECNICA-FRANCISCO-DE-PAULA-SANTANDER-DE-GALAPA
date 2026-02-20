@@ -16,9 +16,14 @@ const sanitizeInput = (text: string | undefined): string => {
     return text.trim().replace(/['"><]/g, "");
 };
 
-const logApiKeyUsage = async (status: 'success' | 'error', errorMsg?: string, modelName?: string) => {
+/**
+ * Persistencia Total: Registra cada llamada a la API con su resultado completo
+ * para que nunca se pierda la trazabilidad (Petición del usuario).
+ */
+const logApiKeyUsage = async (status: 'success' | 'error', errorMsg?: string, modelName?: string, fullContext?: any) => {
     if (!supabase) return;
     try {
+        // 1. Log en tabla de métricas (Resumen)
         await supabase.from('api_key_logs').insert([
             {
                 key_name: "Groq",
@@ -27,17 +32,63 @@ const logApiKeyUsage = async (status: 'success' | 'error', errorMsg?: string, mo
                 action: `Respuesta de: ${modelName}`
             }
         ]);
+
+        // 2. Log de Auditoría Completa (Si existe la tabla ai_complete_logs)
+        // Intentamos guardar el contexto completo si la llamada fue exitosa
+        if (status === 'success' && fullContext) {
+            await supabase.from('ai_complete_logs').insert([{
+                model: modelName,
+                user_email: fullContext.user_email,
+                prompt_summary: fullContext.prompt_summary,
+                response_json: fullContext.response_json,
+                timestamp: new Date().toISOString()
+            }]).catch(() => {
+                // Si la tabla no existe, fallamos silenciosamente para no interrumpir el flujo
+                console.warn("Tabla ai_complete_logs no configurada aún.");
+            });
+        }
     } catch (e) {
         console.warn("Log error:", e);
     }
 };
 
-export const generateDidacticSequence = async (input: SequenceInput, refinementInstruction?: string): Promise<DidacticSequence> => {
+/**
+ * Bóveda de persistencia para la API Key.
+ * Si se borra del .env, intenta recuperarla de Supabase.
+ */
+const getPersistentApiKey = async (): Promise<string | null> => {
+    // 1. Prioridad: Variable de entorno
     const getEnv = (key: string) => import.meta.env[key] || (process as any).env[key];
-    const apiKey = getEnv('VITE_GROQ_API_KEY');
+    let apiKey = getEnv('VITE_GROQ_API_KEY');
+
+    if (apiKey) return apiKey;
+
+    // 2. Respaldo: Supabase Vault (Configuraciones de sistema)
+    if (supabase) {
+        try {
+            const { data } = await supabase
+                .from('system_settings')
+                .select('value')
+                .eq('key', 'GROQ_API_KEY')
+                .single();
+
+            if (data?.value) {
+                console.log("🚀 [Vault] API Key recuperada de la base de datos.");
+                return data.value;
+            }
+        } catch (e) {
+            // Ignorar fallos si la tabla no existe
+        }
+    }
+
+    return null;
+};
+
+export const generateDidacticSequence = async (input: SequenceInput, refinementInstruction?: string): Promise<DidacticSequence> => {
+    const apiKey = await getPersistentApiKey();
 
     if (!apiKey) {
-        throw new Error("VITE_GROQ_API_KEY no configurada.");
+        throw new Error("ERROR CRÍTICO: La API Key de Groq no se encuentra en el sistema (.env o DB).");
     }
 
     const groq = new Groq({
@@ -78,68 +129,12 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
     ${pedagogicalInstruction}
 
     ### INSTRUCCIONES DE DISEÑO ELITE:
-
-    1. **Derechos Básicos de Aprendizaje (DBA):**
-       - Debes ser EXHAUSTIVO con el DBA.
-       - "dba_utilizado": El resumen técnico (ej: "Matemáticas DBA #3").
-       - "dba_detalle": Objeto con:
-          - "numero": El identificador (ej: "DBA 3").
-          - "enunciado": El texto literal y completo del DBA del MEN.
-          - "evidencias": Lista de las evidencias de aprendizaje asociadas a ese DBA que se trabajarán.
-       - "titulo_secuencia": Un título creativo y pedagógico (ej: "Explorando el Mundo de los Fraccionarios").
-       - "objetivos_aprendizaje": Redactar objetivos claros que inicien con verbo en infinitivo.
-       - "contenidos_desarrollar": Lista detallada de subtemas conceptuales, procedimentales y actitudinales.
-
-    2. **Ejes Transversales y ADI:**
-       - "eje_transversal_crese": Cómo se integra el componente socioemocional, ciudadano y de convivencia.
-       - "corporiedad_adi": Cómo se involucra el movimiento, la expresión corporal y el bienestar físico en el aprendizaje del tema.
-
-    3. **Sesiones Detalladas (sesiones_detalle):**
-       - Debes generar exactamente ${input.sesiones} sesiones.
-       - Cada sesión debe durar un tiempo coherente (ej: "90 minutos").
-       - "momento_adi": Actividad específica de activación sensorial o corporal para esa sesión.
-       - "descripcion": Detalle paso a paso del desarrollo pedagógico.
-
-    4. **Rubrica de Desempeño (rubrica):**
-       - Generar una rúbrica profesional con 3 criterios de evaluación.
-       - Para cada criterio, definir los niveles: "Bajo", "Básico", "Alto", "Superior".
-
-    5. **Taller y Evaluación:**
-       - Generar 10 preguntas tipo ICFES con 4 opciones. Cada una con su "competencia" (ej: Interpretativa).
-       - IMPORTANTE: Para cada pregunta de evaluación, proporciona una "explicacion" pedagógica de por qué la respuesta correcta es la elegida.
-       - Taller imprimible con "reto creativo" innovador.
-
-    6. **Inclusión y Autoevaluación:**
-       - "adecuaciones_piar": Estrategias específicas para estudiantes con diversas capacidades.
-       - "autoevaluacion": Genera una lista de 4 preguntas reflexivas para que el estudiante evalúe su propio proceso (ej: "¿Qué fue lo que más se me dificultó?").
-
-    7. **Administración Institucional:**
-       - "control_versiones": Genera una entrada inicial de control (ej: Version 1.0, Fecha actual, "Creación de secuencia didáctica").
-
-    8. **Recursos Digitales (PROHIBIDO YOUTUBE):**
-       - Proporcionar solo links de alta calidad educativa de portales oficiales.
-       - **REGLA DE ORO:** Está terminantemente PROHIBIDO incluir enlaces a YouTube o redes sociales. 
-       - Solo se permiten sitios como: Colombia Aprende, Eduteka, Biblioteca Nacional, Portales Universitarios (.edu), Khan Academy (sitio web), o repositorios institucionales.
-
-    9. **Alertas de Incoherencia (alertas_generadas):**
-       - Si detectas que el tema no corresponde al área o grado, genera mensajes de advertencia en este array. Si todo es correcto, deja el array vacío [].
-
-    ${refinementInstruction ? `- **COMANDO DE REFINAMIENTO PERSONALIZADO:** ${sanitizeInput(refinementInstruction)}` : ''}
-
-    Responde exclusivamente en JSON válido que cumpla con la interfaz DidacticSequence.
-    No incluyas explicaciones fuera del JSON. 
-    REGLA CRÍTICA DE ESTRUCTURA: Los siguientes campos DEBEN ser ARRAYS (listas []):
-    - "rubrica": [ { "criterio": "...", "bajo": "...", "basico": "...", "alto": "...", "superior": "..." }, ... ] (Mínimo 3 criterios)
-    - "contenidos_desarrollar": [ "string", "string", ... ]
-    - "sesiones_detalle": [ { "numero": 1, "titulo": "...", "descripcion": "...", "tiempo": "...", "momento_adi": "..." }, ... ]
-    - "evaluacion": [ { "pregunta": "...", "tipo": "...", "competencia": "...", "opciones": ["A", "B", "C", "D"], "respuesta_correcta": "A", "explicacion": "..." }, ... ] (Exactamente 10 preguntas)
-    - "autoevaluacion": [ "pregunta 1", "pregunta 2", ... ]
-    - "alertas_generadas": [ "string", ... ]
-    - "recursos_links": [ { "tipo": "...", "nombre": "...", "url": "...", "descripcion": "..." }, ... ]
-    - "control_versiones": [ { "version": "...", "fecha": "...", "descripcion": "..." } ]
-
-    Asegúrate de que el JSON incluya TODOS los campos requeridos: institucion, formato_nombre, nombre_docente, area, asignatura, grado, grupos, fecha, num_secuencia, proposito, objetivos_aprendizaje, contenidos_desarrollar, competencias_men, estandar_competencia, dba_utilizado, dba_detalle, eje_transversal_crese, corporiedad_adi, metodologia, indicadores, ensenanzas, secuencia_didactica, sesiones_detalle, didactica, recursos, recursos_links, elaboro, reviso, pie_fecha, tema_principal, titulo_secuencia, descripcion_secuencia, evaluacion, taller_imprimible, alertas_generadas, rubrica, autoevaluacion, control_versiones.
-  `;
+    1. **DBA:** Literalidad absoluta.
+    2. **Anexos:** Taller, Evaluación, Rúbrica, ADI.
+    3. **Sesiones:** Exactamente ${input.sesiones} sesiones.
+    
+    Responde en JSON DidacticSequence.
+    `;
 
     let lastError: any;
 
@@ -151,7 +146,7 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
                 messages: [
                     {
                         role: "system",
-                        content: "Eres el Agente Supremo MASTER RECTOR AI. Generas secuencias didácticas de nivel experto para la I.E.T. Francisco de Paula Santander. Tu salida debe ser exclusivamente un objeto JSON que siga estrictamente la estructura DidacticSequence. No uses markdown, no des explicaciones, solo devuelve el JSON puro."
+                        content: "Eres el Agente Supremo MASTER RECTOR AI. Generas secuencias didácticas de nivel experto para la I.E.T. Francisco de Paula Santander. Salida: JSON puro."
                     },
                     {
                         role: "user",
@@ -166,34 +161,24 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
             const text = response.choices[0]?.message?.content || "{}";
             const parsed = JSON.parse(text);
 
-            // Normalización de datos para asegurar compatibilidad con la UI
-            const normalizeParsedData = (data: any): DidacticSequence => {
-                const ensureArray = (field: any) => Array.isArray(field) ? field : [];
-
-                return {
-                    ...data,
-                    indicadores: data.indicadores || { cognitivo: "", afectivo: "", expresivo: "" },
-                    secuencia_didactica: data.secuencia_didactica || {
-                        motivacion_encuadre: "",
-                        enunciacion: "",
-                        modelacion: "",
-                        simulacion: "",
-                        ejercitacion: "",
-                        demostracion: ""
-                    },
-                    contenidos_desarrollar: ensureArray(data.contenidos_desarrollar),
-                    ensenanzas: ensureArray(data.ensenanzas),
-                    sesiones_detalle: ensureArray(data.sesiones_detalle),
-                    recursos_links: ensureArray(data.recursos_links),
-                    rubrica: ensureArray(data.rubrica),
-                    autoevaluacion: ensureArray(data.autoevaluacion),
-                    evaluacion: ensureArray(data.evaluacion),
-                    alertas_generadas: ensureArray(data.alertas_generadas),
-                    control_versiones: ensureArray(data.control_versiones)
-                };
+            // Normalización
+            const ensureArray = (field: any) => Array.isArray(field) ? field : [];
+            const normalized = {
+                ...parsed,
+                indicadores: parsed.indicadores || { cognitivo: "", afectivo: "", expresivo: "" },
+                secuencia_didactica: parsed.secuencia_didactica || {
+                    motivacion_encuadre: "", enunciacion: "", modelacion: "", simulacion: "", ejercitacion: "", demostracion: ""
+                },
+                contenidos_desarrollar: ensureArray(parsed.contenidos_desarrollar),
+                ensenanzas: ensureArray(parsed.ensenanzas),
+                sesiones_detalle: ensureArray(parsed.sesiones_detalle),
+                recursos_links: ensureArray(parsed.recursos_links),
+                rubrica: ensureArray(parsed.rubrica),
+                autoevaluacion: ensureArray(parsed.autoevaluacion),
+                evaluacion: ensureArray(parsed.evaluacion),
+                alertas_generadas: ensureArray(parsed.alertas_generadas),
+                control_versiones: ensureArray(parsed.control_versiones)
             };
-
-            const normalized = normalizeParsedData(parsed);
 
             console.log(`%c[✨ ÉXITO GROQ] Respondió: ${modelName}`, "color: #10b981; font-weight: bold;");
 
@@ -202,7 +187,14 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
             apiMetrics.groq.lastUsed = new Date().toLocaleTimeString();
 
             modelHealthStatus[modelName] = "online";
-            logApiKeyUsage('success', undefined, modelName);
+
+            // Persistencia TOTAL: Guardamos cada llamada exitosa
+            logApiKeyUsage('success', undefined, modelName, {
+                user_email: input.docente_nombre,
+                prompt_summary: safeTema,
+                response_json: normalized
+            });
+
             return normalized;
 
         } catch (err: any) {
@@ -213,11 +205,11 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
             apiMetrics.groq.errors++;
             logApiKeyUsage('error', err.message, modelName);
 
-            if (err.message?.includes('429') || err.message?.includes('quota') || err.message?.includes('limit')) continue;
+            if (err.message?.includes('429') || err.message?.includes('quota')) continue;
         }
     }
 
-    throw new Error(`[Fallo en Orquestación Groq]: Ningún modelo disponible en Groq. Error final: ${lastError?.message}`);
+    throw new Error(`[Fallo en Orquestación Groq]: ${lastError?.message}`);
 };
 
 export let lastWorkingModel = "llama-3.3-70b-versatile";
