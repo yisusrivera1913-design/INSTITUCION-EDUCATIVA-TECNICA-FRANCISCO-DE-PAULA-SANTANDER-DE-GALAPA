@@ -6,10 +6,9 @@ import { UserManagement, PasswordChange } from './components/UserManagement';
 import { AdminSequenceViewer } from './components/AdminSequenceViewer';
 import { DidacticSequence, SequenceInput } from './types';
 import { generateDidacticSequence } from './services/groqService';
-import { GraduationCap, Loader2, AlertTriangle, LogOut, User as UserIcon, Shield, LayoutDashboard, Database } from 'lucide-react';
+import { GraduationCap, Loader2, AlertTriangle, LogOut, User as UserIcon, Shield, LayoutDashboard, Database, Activity, Users } from 'lucide-react';
 import { Login } from './components/Login';
 import { authService, User } from './services/authService';
-// HistorySidebar removed for total privacy
 
 const initialInput: SequenceInput = {
   grado: '',
@@ -24,8 +23,6 @@ const initialInput: SequenceInput = {
   fecha: '',
 };
 
-// ... (HistoryItem interface stays same)
-
 function App() {
   // Auth State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => authService.isAuthenticated());
@@ -37,7 +34,9 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
-  const [showStats, setShowStats] = useState(false);
+
+  // Dashboard Management
+  const [activeAdminView, setActiveAdminView] = useState<'monitor' | 'users' | 'history' | null>(null);
   const [showProfile, setShowProfile] = useState(false);
 
   const loadingMessages = [
@@ -155,6 +154,14 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  const toggleAdminView = (view: 'monitor' | 'users' | 'history') => {
+    if (activeAdminView === view) {
+      setActiveAdminView(null);
+    } else {
+      setActiveAdminView(view);
+    }
+  };
+
   if (!isAuthenticated) return <Login onLogin={handleLogin} />;
 
   return (
@@ -179,23 +186,46 @@ function App() {
 
 
           <div className="flex items-center gap-3">
-            {/* Nav Tools */}
-            <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50">
-              <button
-                onClick={() => setShowStats(!showStats)}
-                className={`p-2.5 rounded-xl transition-all ${showStats ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600 hover:bg-white'}`}
-                title={currentUser?.role === 'admin' ? "Panel de Control Rector" : "Mi Historial de Secuencias"}
-              >
-                {currentUser?.role === 'admin' ? <LayoutDashboard size={20} /> : <Database size={20} />}
-              </button>
-            </div>
+            {/* Admin Controls - Separado por Tabs */}
+            {currentUser?.role === 'admin' ? (
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                <button
+                  onClick={() => toggleAdminView('monitor')}
+                  className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${activeAdminView === 'monitor' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:bg-white'}`}
+                >
+                  <Activity size={14} /> <span className="hidden sm:inline">Monitor</span>
+                </button>
+                <button
+                  onClick={() => toggleAdminView('users')}
+                  className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${activeAdminView === 'users' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-white'}`}
+                >
+                  <Users size={14} /> <span className="hidden sm:inline">Usuarios</span>
+                </button>
+                <button
+                  onClick={() => toggleAdminView('history')}
+                  className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${activeAdminView === 'history' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:bg-white'}`}
+                >
+                  <Database size={14} /> <span className="hidden sm:inline">Repo</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50">
+                <button
+                  onClick={() => toggleAdminView('history')}
+                  className={`p-2.5 rounded-xl transition-all ${activeAdminView === 'history' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600 hover:bg-white'}`}
+                  title="Mi Historial de Secuencias"
+                >
+                  <Database size={20} />
+                </button>
+              </div>
+            )}
 
             <div className="h-8 w-px bg-slate-200 mx-2 hidden sm:block"></div>
 
             {/* User Profile */}
             <div className="flex items-center gap-3 pl-2">
-              <div className="hidden lg:flex flex-col items-end">
-                <span className="text-xs font-black text-slate-800 leading-none">{currentUser?.name}</span>
+              <div className="hidden lg:flex flex-col items-end text-right">
+                <span className="text-[10px] font-black text-slate-800 leading-none truncate max-w-[100px]">{currentUser?.name}</span>
                 <span className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mt-1">{currentUser?.role}</span>
               </div>
 
@@ -239,17 +269,12 @@ function App() {
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
-        {/* Stats / History Overlay */}
-        {showStats && (
-          <div className="animate-fade-in-up space-y-8 mb-10">
-            {currentUser?.role === 'admin' ? (
-              <>
-                <ApiStats />
-                <UserManagement />
-              </>
-            ) : (
-              <AdminSequenceViewer userEmail={currentUser?.email} />
-            )}
+        {/* Dashboard Views - Ahora Separadas */}
+        {activeAdminView && (
+          <div className="animate-fade-in-up mb-10">
+            {activeAdminView === 'monitor' && <ApiStats />}
+            {activeAdminView === 'users' && <UserManagement />}
+            {activeAdminView === 'history' && <AdminSequenceViewer userEmail={currentUser?.role !== 'admin' ? currentUser?.email : undefined} />}
           </div>
         )}
 
