@@ -49,7 +49,25 @@ const responseSchema: any = {
     grado: { type: SchemaType.STRING },
     grupos: { type: SchemaType.STRING },
     fecha: { type: SchemaType.STRING },
+    num_secuencia: { type: SchemaType.NUMBER },
     proposito: { type: SchemaType.STRING },
+    objetivos_aprendizaje: { type: SchemaType.STRING },
+    contenidos_desarrollar: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+    competencias_men: { type: SchemaType.STRING },
+    estandar_competencia: { type: SchemaType.STRING },
+    dba_utilizado: { type: SchemaType.STRING },
+    dba_detalle: {
+      type: SchemaType.OBJECT,
+      properties: {
+        numero: { type: SchemaType.STRING },
+        enunciado: { type: SchemaType.STRING },
+        evidencias: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+      },
+      required: ["numero", "enunciado", "evidencias"]
+    },
+    eje_transversal_crese: { type: SchemaType.STRING },
+    corporiedad_adi: { type: SchemaType.STRING },
+    metodologia: { type: SchemaType.STRING },
     indicadores: {
       type: SchemaType.OBJECT,
       properties: {
@@ -72,7 +90,6 @@ const responseSchema: any = {
       },
       required: ["motivacion_encuadre", "enunciacion", "modelacion", "simulacion", "ejercitacion", "demostracion"]
     },
-    // NUEVO: Plan detallado por sesión
     sesiones_detalle: {
       type: SchemaType.ARRAY,
       items: {
@@ -80,14 +97,15 @@ const responseSchema: any = {
         properties: {
           numero: { type: SchemaType.NUMBER },
           titulo: { type: SchemaType.STRING },
-          descripcion: { type: SchemaType.STRING }
+          descripcion: { type: SchemaType.STRING },
+          tiempo: { type: SchemaType.STRING },
+          momento_adi: { type: SchemaType.STRING }
         },
-        required: ["numero", "titulo", "descripcion"]
+        required: ["numero", "titulo", "descripcion", "tiempo", "momento_adi"]
       }
     },
     didactica: { type: SchemaType.STRING },
     recursos: { type: SchemaType.STRING },
-    // NUEVO: Recursos con links
     recursos_links: {
       type: SchemaType.ARRAY,
       items: {
@@ -95,9 +113,27 @@ const responseSchema: any = {
         properties: {
           tipo: { type: SchemaType.STRING },
           nombre: { type: SchemaType.STRING },
-          url: { type: SchemaType.STRING }
+          url: { type: SchemaType.STRING },
+          descripcion: { type: SchemaType.STRING }
         },
-        required: ["tipo", "nombre", "url"]
+        required: ["tipo", "nombre", "url", "descripcion"]
+      }
+    },
+    bibliografia: { type: SchemaType.STRING },
+    observaciones: { type: SchemaType.STRING },
+    adecuaciones_piar: { type: SchemaType.STRING },
+    rubrica: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          criterio: { type: SchemaType.STRING },
+          bajo: { type: SchemaType.STRING },
+          basico: { type: SchemaType.STRING },
+          alto: { type: SchemaType.STRING },
+          superior: { type: SchemaType.STRING }
+        },
+        required: ["criterio", "bajo", "basico", "alto", "superior"]
       }
     },
     elaboro: { type: SchemaType.STRING },
@@ -115,9 +151,23 @@ const responseSchema: any = {
           tipo: { type: SchemaType.STRING },
           competencia: { type: SchemaType.STRING },
           opciones: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-          respuesta_correcta: { type: SchemaType.STRING }
+          respuesta_correcta: { type: SchemaType.STRING },
+          explicacion: { type: SchemaType.STRING }
         },
-        required: ["pregunta", "tipo", "competencia", "opciones", "respuesta_correcta"]
+        required: ["pregunta", "tipo", "competencia", "opciones", "respuesta_correcta", "explicacion"]
+      }
+    },
+    autoevaluacion: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+    control_versiones: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          version: { type: SchemaType.STRING },
+          fecha: { type: SchemaType.STRING },
+          descripcion: { type: SchemaType.STRING }
+        },
+        required: ["version", "fecha", "descripcion"]
       }
     },
     taller_imprimible: {
@@ -130,15 +180,15 @@ const responseSchema: any = {
       },
       required: ["introduccion", "instrucciones", "ejercicios", "reto_creativo"]
     },
-    alertas_generadas: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-    dba_utilizado: { type: SchemaType.STRING }
+    alertas_generadas: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
   },
   required: [
-    "institucion", "formato_nombre", "nombre_docente", "area", "asignatura", "grado", "grupos", "fecha",
-    "proposito", "indicadores", "ensenanzas", "secuencia_didactica", "sesiones_detalle",
-    "didactica", "recursos", "recursos_links",
+    "institucion", "formato_nombre", "nombre_docente", "area", "asignatura", "grado", "grupos", "fecha", "num_secuencia",
+    "proposito", "objetivos_aprendizaje", "contenidos_desarrollar", "competencias_men", "estandar_competencia",
+    "dba_utilizado", "eje_transversal_crese", "corporiedad_adi", "metodologia", "indicadores", "ensenanzas",
+    "secuencia_didactica", "sesiones_detalle", "didactica", "recursos", "recursos_links",
     "elaboro", "reviso", "pie_fecha", "tema_principal", "titulo_secuencia", "descripcion_secuencia",
-    "evaluacion", "taller_imprimible", "alertas_generadas", "dba_utilizado"
+    "evaluacion", "taller_imprimible", "alertas_generadas", "rubrica"
   ]
 };
 
@@ -150,11 +200,9 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
   const sortedIndices = [0, 1, 2].sort((a, b) => usage[a] - usage[b]);
 
   const modelsToTry = [
-    "gemini-2.5-flash",
-    "gemini-2.5-flash-8b",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
-    "gemini-1.5-pro"
+    "gemini-2.0-flash", // Use 2.0 as primary
+    "gemini-1.5-pro",
+    "gemini-1.5-flash"
   ];
 
   const safeTema = sanitizeInput(input.tema);
@@ -170,70 +218,72 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
   const hasDBA = areaNormativa.conDBA.some(a => currentArea.includes(a)) || isIntegral;
 
   let pedagogicalInstruction = hasDBA
-    ? `- **DBA Oficial:** Debes identificar el número exacto del DBA (ej: "DBA #3") y transcribir su contenido literal que se está abordando.
-       - **Input del Usuario:** ${sanitizeInput(input.dba) || 'Sin DBA previo'}. Si este input es un número, busca el contenido oficial. Si es texto, valida su correspondencia con el número.`
-    : `- **Referencia Pedagógica:** Esta área NO utiliza DBA. Debes citar explícitamente las **"Orientaciones Pedagógicas y Curriculares del MEN para ${input.area}"**. 
-       - **Instrucción Especial:** En la casilla de DBA, debes colocar: "Tomado de las Orientaciones Pedagógicas del MEN: [Citar el eje o lineamiento específico usado]". NO inventes un número de DBA.`;
-
-  if (isMultigrado) {
-    pedagogicalInstruction += `
-    - **INSTRUCCIÓN ESPECIAL MULTIGRADO:** Esta secuencia es para un aula MULTIGRADO. Debes especificar acciones y niveles de complejidad diferenciados para cada grado: **Transición, 1°, 2°, 3°, 4° y 5°**. 
-    - **Enfoque Integrador:** Debes fusionar de manera coherente las 4 áreas básicas (Lenguaje, Matemáticas, Sociales y Naturales) en una sola secuencia didáctica funcional.`;
-  }
+    ? `- **DBA Oficial:** Debes identificar el número exacto del DBA (ej: "DBA #3") y transcribir su contenido literal que se está abordando. 
+       - **Input del Usuario:** ${sanitizeInput(input.dba) || 'Sin DBA previo'}. Si este input es un número, busca el contenido oficial.`
+    : `- **Referencia Pedagógica:** Esta área NO utiliza DBA. Debes citar explícitamente las **"Orientaciones Pedagógicas y Curriculares del MEN para ${input.area}"**.`;
 
   const prompt = `
-    ### PERSONA: MASTER RECTOR AI (V5.0 PLATINUM)
+    ### PERSONA: MASTER RECTOR AI (V5.1 GOLDEN)
     Eres el Agente Supremo de la INSTITUCION EDUCATIVA TECNICA FRANCISCO DE PAULA SANTANDER DE GALAPA.
-    Tu misión es la perfección absoluta en cada letra y estructura, siguiendo el formato de PLANEACIÓN DE CLASE institucional.
+    Tu misión es la EXCELENCIA PEDAGÓGICA TOTAL siguiendo un formato de ALTO NIVEL INSTITUCIONAL.
 
-    ### PARÁMETROS DE LA SECUENCIA
+    ### PARÁMETROS CLAVE
     - **Docente:** ${input.docente_nombre || 'No especificado'}
     - **Área:** ${input.area} | **Asignatura:** ${input.asignatura}
-    - **Grado:** ${input.grado} | **Grupos:** ${input.grupos}
-    - **Tema:** ${safeTema} | **Fecha:** ${input.fecha} | **Número de Sesiones:** ${input.sesiones}
+    - **Grado:** ${input.grado} | **Tema:** ${safeTema} | **Sesiones:** ${input.sesiones}
     ${pedagogicalInstruction}
-    - **Banco de Evaluación:** Generar obligatoriamente **10 preguntas por competencias** de selección múltiple tipo ICFES con 4 opciones (A, B, C, D). Cada pregunta DEBE indicar la competencia que evalúa (ej: "Interpretativa", "Argumentativa", "Propositiva", "Comunicativa", "Científica", "Matemática", "Lectora", etc.)
-    - **Integración Transversal:** ${input.ejeCrese || 'Fusión socioemocional y ciudadana de alto impacto.'}
-    ${refinementInstruction ? `- **COMANDO DE REFINAMIENTO MAESTRO:** ${sanitizeInput(refinementInstruction)}` : ''}
 
-    ### INSTRUCCIONES ESPECIALES OBLIGATORIAS
+    ### INSTRUCCIONES DE DISEÑO ELITE:
 
-    **A) PLAN DETALLADO POR SESIÓN (campo "sesiones_detalle"):**
-    Debes crear UN objeto por cada sesión de las ${input.sesiones} sesiones programadas. Cada objeto tiene:
-    - "numero": número de sesión (1, 2, 3...)
-    - "titulo": nombre corto de esa sesión (ej: "Sesión 1: Exploración y motivación")
-    - "descripcion": descripción detallada de qué hace el docente y qué hacen los estudiantes en esa sesión específica (mínimo 3 líneas). Incluye actividades, estrategias, tiempos aproximados y producto esperado.
+    1. **Derechos Básicos de Aprendizaje (DBA):**
+       - Debes ser EXHAUSTIVO con el DBA.
+       - "dba_utilizado": El resumen técnico (ej: "Matemáticas DBA #3").
+       - "dba_detalle": Objeto con:
+          - "numero": El identificador (ej: "DBA 3").
+          - "enunciado": El texto literal y completo del DBA del MEN.
+          - "evidencias": Lista de las evidencias de aprendizaje asociadas a ese DBA que se trabajarán.
+       - "titulo_secuencia": Un título creativo y pedagógico (ej: "Explorando el Mundo de los Fraccionarios").
+       - "objetivos_aprendizaje": Redactar objetivos claros que inicien con verbo en infinitivo.
+       - "contenidos_desarrollar": Lista detallada de subtemas conceptuales, procedimentales y actitudinales.
 
-    **B) RECURSOS CON LINKS (campo "recursos_links"):**
-    Debes generar mínimo 4 recursos con links reales y verificables de plataformas educativas:
-    - Sitios como: Colombia Aprende (colombiaaprende.edu.co), MEN (mineducacion.gov.co), Khan Academy (es.khanacademy.org), Eduteka (eduteka.icesi.edu.co), Banco de la República, Biblioteca Digital, etc.
-    - NO uses links de YouTube. Usa solo sitios educativos institucionales o plataformas reconocidas.
-    El campo "url" debe ser una URL real y útil (https://...)
-    El campo "tipo" puede ser: "Material didáctico", "Lectura", "Sitio web", "Juego educativo", "Guía MEN", "Recurso interactivo"
+    2. **Ejes Transversales y ADI:**
+       - "eje_transversal_crese": Cómo se integra el componente socioemocional, ciudadano y de convivencia.
+       - "corporiedad_adi": Cómo se involucra el movimiento, la expresión corporal y el bienestar físico en el aprendizaje del tema.
 
-    **C) PREGUNTAS POR COMPETENCIAS (campo "evaluacion"):**
-    Las 10 preguntas DEBEN:
-    - Ser tipo ICFES con 4 opciones
-    - Cubrir diferentes competencias (Interpretativa, Argumentativa, Propositiva, etc.)
-    - Estar directamente relacionadas con el tema: ${safeTema}
-    - El campo "competencia" indica qué competencia evalúa cada pregunta
-    
-    ### ESTRUCTURA REQUERIDA (JSON)
-    1. **institucion**: "INSTITUCION EDUCATIVA TECNICA FRANCISCO DE PAULA SANTANDER DE GALAPA"
-    2. **formato_nombre**: "PLANEACIÓN DE CLASE"
-    3. **proposito**: El objetivo principal de la planeación.
-    4. **indicadores**: Objeto con subcampos 'cognitivo', 'afectivo' y 'expresivo'.
-    5. **ensenanzas**: Lista de temas o conceptos a enseñar.
-    6. **secuencia_didactica**: Objeto con los 6 momentos (resumen general de la secuencia).
-    7. **sesiones_detalle**: Array con el plan específico de CADA sesión (ver instrucción A).
-    8. **didactica**: Descripción de la metodología activa.
-    9. **recursos**: Texto descriptivo con los materiales necesarios.
-    10. **recursos_links**: Array de recursos con links reales (ver instrucción B).
-    11. **elaboro**: Nombre del docente (${input.docente_nombre || '...'}).
-    12. **reviso**: "Coordinación Académica".
-    13. **pie_fecha**: Fecha de elaboración.
+    3. **Sesiones Detalladas (sesiones_detalle):**
+       - Debes generar exactamente ${input.sesiones} sesiones.
+       - Cada sesión debe durar un tiempo coherente (ej: "90 minutos").
+       - "momento_adi": Actividad específica de activación sensorial o corporal para esa sesión.
+       - "descripcion": Detalle paso a paso del desarrollo pedagógico.
 
-    Responde únicamente con el JSON validado.
+    4. **Rubrica de Desempeño (rubrica):**
+       - Generar una rúbrica profesional con 3 criterios de evaluación.
+       - Para cada criterio, definir los niveles: "Básico" (apenas cumple), "Satisfactorio" (cumple lo esperado) y "Avanzado" (excelencia/supera).
+
+    5. **Taller y Evaluación:**
+       - Generar 10 preguntas tipo ICFES con 4 opciones. Cada una con su "competencia" (ej: Interpretativa).
+       - IMPORTANTE: Para cada pregunta de evaluación, proporciona una "explicacion" pedagógica de por qué la respuesta correcta es la elegida.
+       - Taller imprimible con "reto creativo" innovador.
+
+    6. **Rúbrica de Desempeño (SIEE):**
+       - Debe tener 4 niveles: Bajo, Básico, Alto, Superior.
+       - Los criterios deben evaluar dimensiones Cognitivas, Procedimentales y Actitudinales.
+
+    6. **Inclusión y Autoevaluación:**
+       - "adecuaciones_piar": Estrategias específicas para estudiantes con diversas capacidades.
+       - "autoevaluacion": Genera una lista de 4 preguntas reflexivas para que el estudiante evalúe su propio proceso (ej: "¿Qué fue lo que más se me dificultó?").
+
+    7. **Administración Institucional:**
+       - "control_versiones": Genera una entrada inicial de control (ej: Version 1.0, Fecha actual, "Creación de secuencia didáctica").
+
+    7. **Recursos Digitales (PROHIBIDO YOUTUBE):**
+       - Proporcionar solo links de alta calidad educativa de portales oficiales.
+       - **REGLA DE ORO:** Está terminantemente PROHIBIDO incluir enlaces a YouTube o redes sociales. 
+       - Solo se permiten sitios como: Colombia Aprende, Eduteka, Biblioteca Nacional, Portales Universitarios (.edu), Khan Academy (sitio web), o repositorios institucionales.
+
+    ${refinementInstruction ? `- **COMANDO DE REFINAMIENTO PERSONALIZADO:** ${sanitizeInput(refinementInstruction)}` : ''}
+
+    Responde exclusivamente en JSON siguiendo el esquema proporcionado.
   `;
 
 

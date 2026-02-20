@@ -18,6 +18,7 @@ const initialInput: SequenceInput = {
   tema: '',
   dba: '',
   sesiones: 4,
+  num_secuencia: 1,
   ejeCrese: 'Ciudadanía y Convivencia',
   grupos: '',
   fecha: '',
