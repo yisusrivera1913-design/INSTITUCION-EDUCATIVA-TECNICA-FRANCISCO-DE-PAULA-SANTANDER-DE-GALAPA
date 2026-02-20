@@ -45,7 +45,7 @@ export const generateDocx = async (data: DidacticSequence, input: SequenceInput)
       children: [
         new TableCell({
           columnSpan: 2,
-          shading: { fill: "F2F2F2" },
+          shading: { fill: "D6E4F0" },
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
@@ -56,6 +56,64 @@ export const generateDocx = async (data: DidacticSequence, input: SequenceInput)
       ],
     });
   };
+
+  // --- Sesiones Detalle rows ---
+  const sesionesRows: TableRow[] = [];
+  if (data.sesiones_detalle && data.sesiones_detalle.length > 0) {
+    sesionesRows.push(createSectionHeader("5. PLAN DETALLADO POR SESIÓN"));
+    data.sesiones_detalle.forEach((sesion) => {
+      sesionesRows.push(
+        new TableRow({
+          children: [
+            new TableCell({
+              width: { size: 25, type: WidthType.PERCENTAGE },
+              shading: { fill: "EBF5FB" },
+              children: [new Paragraph({
+                children: [new TextRun({
+                  text: `Sesión ${sesion.numero}: ${sesion.titulo}`,
+                  bold: true,
+                  size: 20
+                })]
+              })]
+            }),
+            new TableCell({
+              width: { size: 75, type: WidthType.PERCENTAGE },
+              children: [new Paragraph({ children: [new TextRun(sesion.descripcion || "")] })]
+            })
+          ]
+        })
+      );
+    });
+  }
+
+  // --- Recursos Links rows ---
+  const recursosLinksRows: TableRow[] = [];
+  if (data.recursos_links && data.recursos_links.length > 0) {
+    recursosLinksRows.push(createSectionHeader("8. RECURSOS DIGITALES CON LINKS"));
+    data.recursos_links.forEach((recurso) => {
+      recursosLinksRows.push(
+        new TableRow({
+          children: [
+            new TableCell({
+              width: { size: 20, type: WidthType.PERCENTAGE },
+              shading: { fill: "E9F7EF" },
+              children: [new Paragraph({
+                children: [new TextRun({ text: recurso.tipo, bold: true, size: 18 })]
+              })]
+            }),
+            new TableCell({
+              width: { size: 35, type: WidthType.PERCENTAGE },
+              children: [new Paragraph({ children: [new TextRun({ text: recurso.nombre, bold: true })] })]
+            }),
+            new TableCell({
+              width: { size: 45, type: WidthType.PERCENTAGE },
+              children: [new Paragraph({ children: [new TextRun({ text: recurso.url, color: "1155CC" })] })]
+            })
+          ]
+        })
+      );
+    });
+  }
 
   // --- Document Assembly ---
   const doc = new Document({
@@ -117,7 +175,7 @@ export const generateDocx = async (data: DidacticSequence, input: SequenceInput)
               }),
 
               // Didactic Sequence
-              createSectionHeader("4. SECUENCIA DIDÁCTICA"),
+              createSectionHeader("4. SECUENCIA DIDÁCTICA (Resumen)"),
               createRow("MOTIVACIÓN Y ENCUADRE", data.secuencia_didactica.motivacion_encuadre),
               createRow("ENUNCIACIÓN", data.secuencia_didactica.enunciacion),
               createRow("MODELACIÓN", data.secuencia_didactica.modelacion),
@@ -125,8 +183,11 @@ export const generateDocx = async (data: DidacticSequence, input: SequenceInput)
               createRow("EJERCITACIÓN", data.secuencia_didactica.ejercitacion),
               createRow("DEMOSTRACIÓN", data.secuencia_didactica.demostracion),
 
+              // Sesiones detalle (NUEVO)
+              ...sesionesRows,
+
               // Didactics
-              createSectionHeader("5. DIDÁCTICA"),
+              createSectionHeader("6. DIDÁCTICA"),
               new TableRow({
                 children: [
                   new TableCell({
@@ -137,7 +198,7 @@ export const generateDocx = async (data: DidacticSequence, input: SequenceInput)
               }),
 
               // Resources
-              createSectionHeader("6. RECURSOS"),
+              createSectionHeader("7. RECURSOS"),
               new TableRow({
                 children: [
                   new TableCell({
@@ -146,6 +207,9 @@ export const generateDocx = async (data: DidacticSequence, input: SequenceInput)
                   }),
                 ],
               }),
+
+              // Recursos con links (NUEVO)
+              ...recursosLinksRows,
             ],
           }),
 
@@ -202,20 +266,44 @@ export const generateDocx = async (data: DidacticSequence, input: SequenceInput)
             })
           ] : []),
 
-          // Evaluation Bank
+          // ============================================================
+          // BANCO DE PREGUNTAS POR COMPETENCIAS (NUEVO - en nueva página)
+          // ============================================================
           new Paragraph({ text: "", pageBreakBefore: true }),
           new Paragraph({
-            text: "BANCO DE PREGUNTAS (TIPO ICFES)",
-            heading: HeadingLevel.HEADING_2,
+            text: "EVALUACIÓN POR COMPETENCIAS — 10 PREGUNTAS TIPO ICFES",
+            heading: HeadingLevel.HEADING_1,
+            alignment: AlignmentType.CENTER,
+          }),
+          new Paragraph({ text: "Francisco de Paula Santander - Galapa", alignment: AlignmentType.CENTER }),
+          new Paragraph({ text: "" }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Nombre: ____________________________________________  ", bold: true }),
+              new TextRun({ text: "Grado: _______ Grupo: _______  ", bold: true }),
+              new TextRun({ text: "Fecha: _______________", bold: true })
+            ]
           }),
           new Paragraph({ text: "" }),
+
           ...data.evaluacion.map((ev, i) => [
+            // Competencia badge
             new Paragraph({
-              children: [new TextRun({ text: `${i + 1}. ${ev.pregunta}`, bold: true })]
+              shading: { fill: "D6E4F0" },
+              children: [
+                new TextRun({ text: `Competencia: ${ev.competencia || 'Interpretativa'}`, bold: true, size: 18, color: "1A5276" })
+              ]
             }),
+            // Pregunta
+            new Paragraph({
+              children: [new TextRun({ text: `${i + 1}. ${ev.pregunta}`, bold: true })],
+              spacing: { before: 120 }
+            }),
+            // Opciones de respuesta
             ...(ev.opciones || []).map((opt, j) => new Paragraph({
               text: `${String.fromCharCode(65 + j)}) ${opt}`,
-              indent: { left: 720 }
+              indent: { left: 720 },
+              spacing: { after: 80 }
             })),
             new Paragraph({ text: "" })
           ]).flat()

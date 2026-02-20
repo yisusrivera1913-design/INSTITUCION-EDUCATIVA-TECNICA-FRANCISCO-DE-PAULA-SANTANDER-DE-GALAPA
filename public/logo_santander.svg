@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 460" width="400" height="460">
+  <!-- Shield outline -->
+  <path d="M200 10 L390 70 L390 250 Q390 390 200 450 Q10 390 10 250 L10 70 Z" 
+        fill="white" stroke="black" stroke-width="12"/>
+  
+  <!-- Blue diagonal band (top-right to bottom-left) -->
+  <clipPath id="shield-clip">
+    <path d="M200 10 L390 70 L390 250 Q390 390 200 450 Q10 390 10 250 L10 70 Z"/>
+  </clipPath>
+  <polygon points="210,10 390,10 390,300 30,440 10,440 10,380" 
+           fill="#1E3A8A" clip-path="url(#shield-clip)"/>
+
+  <!-- TORCH (left white section) -->
+  <!-- Handle -->
+  <rect x="155" y="160" width="16" height="100" rx="4" fill="#2D2D2D" clip-path="url(#shield-clip)"/>
+  <!-- Torch body -->
+  <ellipse cx="163" cy="165" rx="14" ry="22" fill="#4A4A4A" clip-path="url(#shield-clip)"/>
+  <!-- Flame outer -->
+  <ellipse cx="163" cy="128" rx="24" ry="38" fill="#F97316" clip-path="url(#shield-clip)"/>
+  <!-- Flame inner -->
+  <ellipse cx="163" cy="132" rx="15" ry="26" fill="#FBBF24" clip-path="url(#shield-clip)"/>
+  <!-- Flame core -->
+  <ellipse cx="163" cy="138" rx="8" ry="15" fill="#FEF3C7" clip-path="url(#shield-clip)"/>
+
+  <!-- BOOK (right blue section) -->
+  <!-- Book base -->
+  <rect x="220" y="280" width="110" height="75" rx="4" fill="#5D4037" clip-path="url(#shield-clip)"/>
+  <!-- Left page -->
+  <rect x="223" y="275" width="52" height="70" rx="3" fill="#FFF8E1" clip-path="url(#shield-clip)"/>
+  <!-- Right page -->
+  <rect x="277" y="275" width="50" height="70" rx="3" fill="#FFFDE7" clip-path="url(#shield-clip)"/>
+  <!-- Spine line -->
+  <line x1="275" y1="275" x2="275" y2="345" stroke="#5D4037" stroke-width="4" clip-path="url(#shield-clip)"/>
+  <!-- Quill/Feather -->
+  <path d="M280 265 Q310 220 340 200 Q320 235 305 260 Q295 275 280 280 Z" 
+        fill="#F5F5F5" clip-path="url(#shield-clip)"/>
+  <path d="M285 265 Q308 228 332 210" 
+        fill="none" stroke="#DDD" stroke-width="1.5" clip-path="url(#shield-clip)"/>
+
+  <!-- Top arc text: TECNICA FRANCISCO DE -->
+  <defs>
+    <path id="top-arc" d="M55 220 A155 155 0 0 1 345 220"/>
+    <path id="left-arc" d="M45 280 A165 165 0 0 1 85 130"/>
+    <path id="right-arc" d="M315 130 A165 165 0 0 1 355 280"/>
+  </defs>
+  
+  <!-- White banner at top for text -->
+  <path d="M55 100 A155 155 0 0 1 345 100 L340 130 A140 140 0 0 0 60 130 Z" 
+        fill="white" stroke="black" stroke-width="3"/>
+  
+  <!-- Top text -->
+  <text font-family="Arial Black, sans-serif" font-size="17" font-weight="900" fill="black" text-anchor="middle">
+    <textPath href="#top-arc" startOffset="50%">TECNICA FRANCISCO DE</textPath>
+  </text>
+
+  <!-- Left arc text: INSTITUCION EDUCATIVA -->
+  <text font-family="Arial Black, sans-serif" font-size="13" font-weight="900" fill="black" text-anchor="middle">
+    <textPath href="#left-arc" startOffset="50%">INSTITUCIÓN EDUCATIVA</textPath>
+  </text>
+
+  <!-- Right arc text: PAULA SANTANDER -->
+  <text font-family="Arial Black, sans-serif" font-size="14" font-weight="900" fill="black" text-anchor="middle">
+    <textPath href="#right-arc" startOffset="50%">PAULA SANTANDER</textPath>
+  </text>
+
+  <!-- Bottom banner -->
+  <path d="M50 390 Q200 430 350 390 L340 415 Q200 450 60 415 Z" fill="white" stroke="black" stroke-width="3"/>
+  
+  <!-- GALAPA text -->
+  <text x="200" y="415" font-family="Arial Black, sans-serif" font-size="30" font-weight="900" 
+        fill="black" text-anchor="middle" letter-spacing="8">GALAPA</text>
+</svg>

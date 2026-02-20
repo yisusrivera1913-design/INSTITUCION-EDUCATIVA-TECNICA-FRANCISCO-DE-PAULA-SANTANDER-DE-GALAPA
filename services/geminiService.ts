@@ -18,7 +18,7 @@ export const apiMetrics = {
 
 const sanitizeInput = (text: string | undefined): string => {
   if (!text) return "";
-  return text.trim().replace(/['"<>]/g, "");
+  return text.trim().replace(/['"><]/g, "");
 };
 
 const logApiKeyUsage = async (idx: number, status: 'success' | 'error', errorMsg?: string, modelName?: string) => {
@@ -72,8 +72,34 @@ const responseSchema: any = {
       },
       required: ["motivacion_encuadre", "enunciacion", "modelacion", "simulacion", "ejercitacion", "demostracion"]
     },
+    // NUEVO: Plan detallado por sesión
+    sesiones_detalle: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          numero: { type: SchemaType.NUMBER },
+          titulo: { type: SchemaType.STRING },
+          descripcion: { type: SchemaType.STRING }
+        },
+        required: ["numero", "titulo", "descripcion"]
+      }
+    },
     didactica: { type: SchemaType.STRING },
     recursos: { type: SchemaType.STRING },
+    // NUEVO: Recursos con links
+    recursos_links: {
+      type: SchemaType.ARRAY,
+      items: {
+        type: SchemaType.OBJECT,
+        properties: {
+          tipo: { type: SchemaType.STRING },
+          nombre: { type: SchemaType.STRING },
+          url: { type: SchemaType.STRING }
+        },
+        required: ["tipo", "nombre", "url"]
+      }
+    },
     elaboro: { type: SchemaType.STRING },
     reviso: { type: SchemaType.STRING },
     pie_fecha: { type: SchemaType.STRING },
@@ -87,10 +113,11 @@ const responseSchema: any = {
         properties: {
           pregunta: { type: SchemaType.STRING },
           tipo: { type: SchemaType.STRING },
+          competencia: { type: SchemaType.STRING },
           opciones: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
           respuesta_correcta: { type: SchemaType.STRING }
         },
-        required: ["pregunta", "tipo", "opciones", "respuesta_correcta"]
+        required: ["pregunta", "tipo", "competencia", "opciones", "respuesta_correcta"]
       }
     },
     taller_imprimible: {
@@ -108,7 +135,8 @@ const responseSchema: any = {
   },
   required: [
     "institucion", "formato_nombre", "nombre_docente", "area", "asignatura", "grado", "grupos", "fecha",
-    "proposito", "indicadores", "ensenanzas", "secuencia_didactica", "didactica", "recursos",
+    "proposito", "indicadores", "ensenanzas", "secuencia_didactica", "sesiones_detalle",
+    "didactica", "recursos", "recursos_links",
     "elaboro", "reviso", "pie_fecha", "tema_principal", "titulo_secuencia", "descripcion_secuencia",
     "evaluacion", "taller_imprimible", "alertas_generadas", "dba_utilizado"
   ]
@@ -162,25 +190,48 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
     - **Docente:** ${input.docente_nombre || 'No especificado'}
     - **Área:** ${input.area} | **Asignatura:** ${input.asignatura}
     - **Grado:** ${input.grado} | **Grupos:** ${input.grupos}
-    - **Tema:** ${safeTema} | **Fecha:** ${input.fecha} | **Sesiones:** ${input.sesiones}
+    - **Tema:** ${safeTema} | **Fecha:** ${input.fecha} | **Número de Sesiones:** ${input.sesiones}
     ${pedagogicalInstruction}
-    - **Banco de Evaluación:** Generar obligatoriamente **10 preguntas** de selección múltiple tipo ICFES con 4 opciones.
+    - **Banco de Evaluación:** Generar obligatoriamente **10 preguntas por competencias** de selección múltiple tipo ICFES con 4 opciones (A, B, C, D). Cada pregunta DEBE indicar la competencia que evalúa (ej: "Interpretativa", "Argumentativa", "Propositiva", "Comunicativa", "Científica", "Matemática", "Lectora", etc.)
     - **Integración Transversal:** ${input.ejeCrese || 'Fusión socioemocional y ciudadana de alto impacto.'}
     ${refinementInstruction ? `- **COMANDO DE REFINAMIENTO MAESTRO:** ${sanitizeInput(refinementInstruction)}` : ''}
 
+    ### INSTRUCCIONES ESPECIALES OBLIGATORIAS
+
+    **A) PLAN DETALLADO POR SESIÓN (campo "sesiones_detalle"):**
+    Debes crear UN objeto por cada sesión de las ${input.sesiones} sesiones programadas. Cada objeto tiene:
+    - "numero": número de sesión (1, 2, 3...)
+    - "titulo": nombre corto de esa sesión (ej: "Sesión 1: Exploración y motivación")
+    - "descripcion": descripción detallada de qué hace el docente y qué hacen los estudiantes en esa sesión específica (mínimo 3 líneas). Incluye actividades, estrategias, tiempos aproximados y producto esperado.
+
+    **B) RECURSOS CON LINKS (campo "recursos_links"):**
+    Debes generar mínimo 4 recursos con links reales y verificables de plataformas educativas:
+    - Sitios como: Colombia Aprende (colombiaaprende.edu.co), MEN (mineducacion.gov.co), Khan Academy (es.khanacademy.org), Eduteka (eduteka.icesi.edu.co), Banco de la República, Biblioteca Digital, etc.
+    - NO uses links de YouTube. Usa solo sitios educativos institucionales o plataformas reconocidas.
+    El campo "url" debe ser una URL real y útil (https://...)
+    El campo "tipo" puede ser: "Material didáctico", "Lectura", "Sitio web", "Juego educativo", "Guía MEN", "Recurso interactivo"
+
+    **C) PREGUNTAS POR COMPETENCIAS (campo "evaluacion"):**
+    Las 10 preguntas DEBEN:
+    - Ser tipo ICFES con 4 opciones
+    - Cubrir diferentes competencias (Interpretativa, Argumentativa, Propositiva, etc.)
+    - Estar directamente relacionadas con el tema: ${safeTema}
+    - El campo "competencia" indica qué competencia evalúa cada pregunta
+    
     ### ESTRUCTURA REQUERIDA (JSON)
-    Debes completar los siguientes campos basándote en la imagen institucional:
     1. **institucion**: "INSTITUCION EDUCATIVA TECNICA FRANCISCO DE PAULA SANTANDER DE GALAPA"
     2. **formato_nombre**: "PLANEACIÓN DE CLASE"
     3. **proposito**: El objetivo principal de la planeación.
     4. **indicadores**: Objeto con subcampos 'cognitivo', 'afectivo' y 'expresivo'.
-    5. **ensenanzas**: Lista de temas o conceptos a enseñar (usar asteriscos en la descripción literal).
-    6. **secuencia_didactica**: Objeto con los 6 momentos: 'motivacion_encuadre', 'enunciacion', 'modelacion', 'simulacion', 'ejercitacion', 'demostracion'.
-    7. **didactica**: Descripción de la metodología activa (ej: actividad de comprensión, narraciones, etc.)
-    8. **recursos**: Texto con los materiales necesarios.
-    9. **elaboro**: Nombre del docente (${input.docente_nombre || '...'}).
-    10. **reviso**: Nombre del coordinador o rector (dejar en blanco o poner "Coordinación Académica").
-    11. **pie_fecha**: Fecha de elaboración.
+    5. **ensenanzas**: Lista de temas o conceptos a enseñar.
+    6. **secuencia_didactica**: Objeto con los 6 momentos (resumen general de la secuencia).
+    7. **sesiones_detalle**: Array con el plan específico de CADA sesión (ver instrucción A).
+    8. **didactica**: Descripción de la metodología activa.
+    9. **recursos**: Texto descriptivo con los materiales necesarios.
+    10. **recursos_links**: Array de recursos con links reales (ver instrucción B).
+    11. **elaboro**: Nombre del docente (${input.docente_nombre || '...'}).
+    12. **reviso**: "Coordinación Académica".
+    13. **pie_fecha**: Fecha de elaboración.
 
     Responde únicamente con el JSON validado.
   `;
@@ -202,7 +253,7 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
           generationConfig: {
             responseMimeType: "application/json",
             responseSchema,
-            temperature: 0.1 // Reducimos temperatura para máxima precisión y menos alucinación
+            temperature: 0.1
           }
         });
 
@@ -210,7 +261,7 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
         const text = result.response.text();
         const parsed = JSON.parse(text);
 
-        console.log(`% c[✨ ÉXITO]Respondió: ${modelName} | Llave: ${label} `, "color: #10b981; font-weight: bold;");
+        console.log(`%c[✨ ÉXITO] Respondió: ${modelName} | Llave: ${label}`, "color: #10b981; font-weight: bold;");
 
         const mKey = `key${i + 1}` as keyof typeof apiMetrics;
         apiMetrics[mKey].requests++;
@@ -223,7 +274,7 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
 
       } catch (err: any) {
         lastError = err;
-        console.warn(`[❌ Intento Fallido] ${modelName} (${label}): ${err.message} `);
+        console.warn(`[❌ Intento Fallido] ${modelName} (${label}): ${err.message}`);
         modelHealthStatus[modelName] = "offline";
         const mKey = `key${i + 1}` as keyof typeof apiMetrics;
         apiMetrics[mKey].requests++;
@@ -235,7 +286,7 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
     }
   }
 
-  throw new Error(`[Fallo en Orquestación]: Ninguna combinación de llave y modelo tiene cuota disponible.Error final: ${lastError?.message} `);
+  throw new Error(`[Fallo en Orquestación]: Ninguna combinación de llave y modelo tiene cuota disponible. Error final: ${lastError?.message}`);
 };
 
 export let lastWorkingModel = "gemini-2.0-flash";

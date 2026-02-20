@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DidacticSequence, SequenceInput } from '../types';
 import { generateDocx } from '../services/docxService';
-import { Printer, FileDown, CheckCircle, Sparkles, Send, School, ExternalLink, PenTool, Lock } from 'lucide-react';
+import { Printer, FileDown, CheckCircle, Sparkles, Send, ExternalLink, PenTool } from 'lucide-react';
 
 interface SequencePreviewProps {
   data: DidacticSequence;
@@ -67,6 +67,9 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
     </div>
   );
 
+  // Opciones de respuesta: A, B, C, D
+  const optionLetters = ['A', 'B', 'C', 'D'];
+
   return (
     <div className="animate-fade-in-up pb-10">
 
@@ -123,19 +126,19 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
 
           {/* Header: Logo + Title */}
           <div className="flex border-b border-gray-400">
-            <div className="w-[80px] h-[80px] p-2 flex items-center justify-center border-r border-gray-400">
-              <span className="text-4xl">🎓</span>
+            <div className="w-[90px] h-[90px] p-1 flex items-center justify-center border-r border-gray-400 bg-white">
+              <img
+                src="/logo_santander.png"
+                alt="Escudo Institución Educativa Técnica Francisco de Paula Santander"
+                className="w-full h-full object-contain"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
             </div>
             <div className="flex-1 flex flex-col items-center justify-center p-2 text-center">
               <h1 className="text-[12px] font-black uppercase leading-tight">
                 INSTITUCION EDUCATIVA TECNICA FRANCISCO DE PAULA SANTANDER DE GALAPA
               </h1>
-            </div>
-          </div>
-
-          <div className="flex border-b border-gray-400 bg-gray-50/10">
-            <div className="w-full text-center py-1 font-bold text-[11px] uppercase">
-              PLANEACIÓN DE CLASE
+              <p className="text-[10px] font-bold uppercase mt-1">PLANEACIÓN DE CLASE</p>
             </div>
           </div>
 
@@ -307,9 +310,26 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
             </div>
           </div>
 
+          {/* NUEVO: Row 6B - Plan detallado por sesión */}
+          {editableData.sesiones_detalle && editableData.sesiones_detalle.length > 0 && (
+            <div className="flex border-b border-gray-400">
+              <div className="w-[120px] p-2 text-[10px] font-bold uppercase bg-blue-50/60 border-r border-gray-400 text-blue-900">5. PLAN POR SESIÓN:</div>
+              <div className="flex-1 flex flex-col divide-y divide-gray-200">
+                {editableData.sesiones_detalle.map((sesion, i) => (
+                  <div key={i} className="p-2">
+                    <p className="text-[10px] font-black uppercase text-blue-800 mb-1">
+                      Sesión {sesion.numero}: {sesion.titulo}
+                    </p>
+                    <p className="text-[10px] text-gray-700 leading-relaxed">{sesion.descripcion}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Row 7: Didactica */}
           <div className="flex border-b border-gray-400 min-h-[50px]">
-            <div className="w-[120px] p-2 text-[10px] font-bold uppercase bg-gray-50/30 border-r border-gray-400">5. DIDÁCTICA:</div>
+            <div className="w-[120px] p-2 text-[10px] font-bold uppercase bg-gray-50/30 border-r border-gray-400">6. DIDÁCTICA:</div>
             <div className="flex-1">
               <EditableContent
                 value={editableData.didactica}
@@ -320,8 +340,8 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
           </div>
 
           {/* Row 8: Resources */}
-          <div className="flex min-h-[50px]">
-            <div className="w-[120px] p-2 text-[10px] font-bold uppercase bg-gray-50/30 border-r border-gray-400">6. RECURSOS:</div>
+          <div className="flex border-b border-gray-400 min-h-[50px]">
+            <div className="w-[120px] p-2 text-[10px] font-bold uppercase bg-gray-50/30 border-r border-gray-400">7. RECURSOS:</div>
             <div className="flex-1">
               <EditableContent
                 value={editableData.recursos}
@@ -330,6 +350,32 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
               />
             </div>
           </div>
+
+          {/* NUEVO: Row 8B - Recursos con links */}
+          {editableData.recursos_links && editableData.recursos_links.length > 0 && (
+            <div className="flex min-h-[50px]">
+              <div className="w-[120px] p-2 text-[10px] font-bold uppercase bg-green-50/60 border-r border-gray-400 text-green-900">8. RECURSOS DIGITALES:</div>
+              <div className="flex-1 p-2 space-y-1">
+                {editableData.recursos_links.map((recurso, i) => (
+                  <div key={i} className="flex items-start gap-2 text-[10px]">
+                    <span className="font-bold text-gray-600 shrink-0 uppercase bg-gray-100 px-1 py-0.5 rounded text-[8px]">
+                      {recurso.tipo}
+                    </span>
+                    <span className="font-medium text-gray-800 shrink-0">{recurso.nombre}:</span>
+                    <a
+                      href={recurso.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline break-all hover:text-blue-800 no-print"
+                    >
+                      {recurso.url}
+                    </a>
+                    <span className="print-only text-gray-700 break-all">{recurso.url}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* FOOTER FIRMAS */}
@@ -403,6 +449,61 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
             )}
           </div>
         </div>
+
+        {/* BANCO DE PREGUNTAS POR COMPETENCIAS - NUEVO DISEÑO */}
+        {editableData.evaluacion && editableData.evaluacion.length > 0 && (
+          <div className="mt-[1cm] break-before-page border-t-2 border-dashed border-gray-300 pt-6">
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-black uppercase">Evaluación por Competencias</h2>
+              <p className="text-[10px] text-gray-500 font-bold italic">
+                10 Preguntas Tipo ICFES — Francisco de Paula Santander - Galapa
+              </p>
+            </div>
+
+            {/* Info del estudiante */}
+            <div className="grid grid-cols-2 gap-4 text-[11px] mb-4">
+              <div className="border-b border-gray-300 pb-1">
+                <span className="font-bold">Nombre:</span> ___________________________________
+              </div>
+              <div className="border-b border-gray-300 pb-1">
+                <span className="font-bold">Grado:</span> _____________ <span className="font-bold ml-4">Grupo:</span> _____________
+              </div>
+              <div className="border-b border-gray-300 pb-1">
+                <span className="font-bold">Área:</span> {editableData.area}
+              </div>
+              <div className="border-b border-gray-300 pb-1">
+                <span className="font-bold">Fecha:</span> ___________________________________
+              </div>
+            </div>
+
+            <div className="space-y-5 text-[11px]">
+              {editableData.evaluacion.map((ev, i) => (
+                <div key={i} className="border border-gray-200 rounded p-3 bg-gray-50/30">
+                  {/* Competencia badge */}
+                  {ev.competencia && (
+                    <span className="inline-block bg-blue-100 text-blue-800 text-[8px] font-black uppercase px-2 py-0.5 rounded mb-1">
+                      Competencia: {ev.competencia}
+                    </span>
+                  )}
+                  <p className="font-bold mb-2 leading-snug">{i + 1}. {ev.pregunta}</p>
+                  <div className="grid grid-cols-2 gap-1 ml-2">
+                    {(ev.opciones || []).map((opt, j) => (
+                      <div key={j} className="flex items-start gap-1">
+                        <span className="font-bold text-gray-600 shrink-0">{optionLetters[j]})</span>
+                        <span className="text-gray-800">{opt}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {ev.respuesta_correcta && (
+                    <div className="mt-2 text-[9px] text-green-700 font-bold border-t border-green-100 pt-1 no-print">
+                      ✓ Respuesta: {ev.respuesta_correcta}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

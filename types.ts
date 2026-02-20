@@ -11,6 +11,18 @@ export interface SequenceInput {
   docente_nombre?: string;
 }
 
+export interface SesionDetalle {
+  numero: number;
+  titulo: string;
+  descripcion: string;
+}
+
+export interface RecursoLink {
+  tipo: string; // "Video", "Material didáctico", "Libro", "Sitio web", etc.
+  nombre: string;
+  url: string;
+}
+
 export interface DidacticSequence {
   // Encabezado
   institucion: string;
@@ -31,22 +43,29 @@ export interface DidacticSequence {
   };
   ensenanzas: string[];
   secuencia_didactica: {
-      motivacion_encuadre: string;
-      enunciacion: string;
-      modelacion: string;
-      simulacion: string;
-      ejercitacion: string;
-      demostracion: string;
+    motivacion_encuadre: string;
+    enunciacion: string;
+    modelacion: string;
+    simulacion: string;
+    ejercitacion: string;
+    demostracion: string;
   };
+
+  // NUEVO: Plan por sesión
+  sesiones_detalle?: SesionDetalle[];
+
   didactica: string;
   recursos: string;
+
+  // NUEVO: Recursos con links
+  recursos_links?: RecursoLink[];
 
   // Footer/Firmas
   elaboro: string;
   reviso: string;
   pie_fecha: string;
 
-  // Campos adicionales para funcionalidades extra (pueden mantenerse o adaptarse)
+  // Campos adicionales para funcionalidades extra
   tema_principal: string;
   titulo_secuencia: string;
   descripcion_secuencia: string;
@@ -66,5 +85,5 @@ export interface EvaluationItem {
   tipo: string;
   opciones?: string[];
   respuesta_correcta?: string;
+  competencia?: string;
 }
-
