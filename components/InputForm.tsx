@@ -34,12 +34,11 @@ export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerat
       <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-50 to-purple-50 rounded-full -mr-32 -mt-32 opacity-50 z-0 pointer-events-none blur-3xl"></div>
 
       <div className="relative z-10 mb-8 border-b border-gray-100/50 pb-6 flex flex-col md:flex-row items-center gap-6">
-        <div className="bg-white p-1 rounded-2xl shadow-md border border-gray-100 transform hover:scale-105 transition-transform duration-300 text-center w-[70px] h-[70px] flex items-center justify-center">
+        <div className="bg-white p-1 rounded-2xl shadow-md border border-gray-100 transform hover:scale-105 transition-transform duration-300 w-[70px] h-[70px] flex items-center justify-center">
           <img
-            src="/logo_santander.svg"
+            src="/logo_santander.png"
             alt="Escudo Francisco de Paula Santander"
             className="w-full h-full object-contain"
-            onError={(e) => { (e.target as HTMLImageElement).src = '/logo_santander.png'; }}
           />
         </div>
         <div className="text-center md:text-left">
