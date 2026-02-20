@@ -30,17 +30,23 @@ Los usuarios autorizados están definidos en `services/authService.ts`. Por segu
 2. **Eje CRESE:** El sistema integra automáticamente la educación socioemocional y ciudadana.
 3. **Refinamiento:** Una vez generada la secuencia, puedes usar el chat de refinamiento para pedir cambios específicos (ej: "hazlo más dinámico para niños de 6 años").
 
-## 📊 Mediciones de Rendimiento (Groq API)
-El sistema está optimizado para trabajar con Groq, garantizando latencias ultra-bajas y alta capacidad de respuesta.
+## 🌟 Formato Platinum v5.1 (Actualización Reciente)
+El sistema ha sido actualizado al estándar institucional **Platinum v5.1**, que incluye:
+1. **Unified Table Design:** Todas las secciones pedagógicas (1-6) están integradas en una tabla institucional única que respeta el formato oficial de la I.E. Santander.
+2. **Sistema de Anexos Inteligentes:**
+   - **Anexo 1:** Desglose micro-pedagógico de sesiones con momentos ADI.
+   - **Anexo 2:** Rúbrica de evaluación automatizada basada en el SIEE.
+   - **Anexo 3:** Talleres de aplicación listos para imprimir con retos creativos.
+   - **Anexo 4:** Evaluación por competencias (10 preguntas tipo ICFES).
+   - **Anexo 5:** Alertas de rectoría y recursos digitales curados.
+
+## 📊 Mediciones de Rendimiento (Groq API Master)
+El sistema está optimizado con **Groq**, garantizando latencias ultra-bajas (< 3s) facilitadas por la infraestructura de hardware LPU.
 
 | Modelo | Categoría | Estado |
 | :--- | :--- | :--- |
 | **Llama 3.3 70B** | Inteligencia Base | ✅ Activo |
-| **Mixtral 8x7B** | Alta Frecuencia | ✅ Respaldo |
-
-### 📈 Capacidades de Orquestación
-- **Latencia:** < 3s para secuencias completas (Velocidad Groq).
-- **Concurrencia:** Alta capacidad de tokens mediante infraestructura distribuida.
+| **Mixtral 8x7B** | Alta Frecuencia | ✅ Respaldo (Healing activo) |
 
 ---
-*Institución Educativa Francisco de Paula Santander &copy; 2026 - Gestión Educativa de Vanguardia.*
+*Institución Educativa Técnica Francisco de Paula Santander - Galapa &copy; 2026 - Gestión Educativa Pro Platinum.*
