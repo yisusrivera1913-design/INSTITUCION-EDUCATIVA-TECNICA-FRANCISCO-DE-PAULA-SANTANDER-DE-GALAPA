@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DidacticSequence, SequenceInput } from '../types';
-import { Printer, CheckCircle, Sparkles, ExternalLink, Heart, GraduationCap, Lightbulb, ClipboardList, AlertTriangle } from 'lucide-react';
+import { Printer, CheckCircle, Sparkles, ExternalLink, Heart, GraduationCap, Lightbulb, ClipboardList, AlertTriangle, PenTool } from 'lucide-react';
 
 interface SequencePreviewProps {
   data: DidacticSequence;
@@ -30,7 +30,47 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
     window.print();
   };
 
+  const handleUpdateField = (path: string, value: any) => {
+    const newData = { ...editableData };
+    const keys = path.split('.');
+    let current: any = newData;
+    for (let i = 0; i < keys.length - 1; i++) {
+      const key = keys[i];
+      // Handle array indices like "sesiones_detalle.0.titulo"
+      if (!isNaN(Number(keys[i + 1]))) {
+        if (!Array.isArray(current[key])) current[key] = [];
+      } else {
+        if (!current[key]) current[key] = {};
+      }
+      current = current[key];
+    }
+    current[keys[keys.length - 1]] = value;
+    setEditableData(newData);
+  };
+
   const optionLetters = ['A', 'B', 'C', 'D'];
+
+  const EditableSpan = ({ path, value, className = "" }: { path: string, value: string, className?: string }) => (
+    <span
+      contentEditable
+      suppressContentEditableWarning
+      onBlur={(e) => handleUpdateField(path, e.currentTarget.innerText)}
+      className={`hover:bg-yellow-50/50 hover:outline hover:outline-1 hover:outline-blue-200 rounded px-1 transition-all cursor-text min-w-[20px] inline-block ${className}`}
+    >
+      {value}
+    </span>
+  );
+
+  const EditableDiv = ({ path, value, className = "" }: { path: string, value: string, className?: string }) => (
+    <div
+      contentEditable
+      suppressContentEditableWarning
+      onBlur={(e) => handleUpdateField(path, e.currentTarget.innerText)}
+      className={`hover:bg-yellow-50/50 hover:outline hover:outline-1 hover:outline-blue-200 rounded p-1 transition-all cursor-text min-h-[1em] ${className}`}
+    >
+      {value}
+    </div>
+  );
 
   return (
     <div className="animate-fade-in-up pb-10">
@@ -43,7 +83,12 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
           </div>
           <div>
             <h2 className="text-xl font-black text-slate-800 tracking-tight">Diseño Pedagógico Platinum v5.1</h2>
-            <p className="text-[10px] font-bold uppercase text-blue-600 tracking-wider">Francisco de Paula Santander DE GALAPA</p>
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-bold uppercase text-blue-600 tracking-wider">Francisco de Paula Santander DE GALAPA</p>
+              <div className="bg-amber-100 text-amber-700 text-[8px] px-1.5 py-0.5 rounded font-black flex items-center gap-1 animate-pulse">
+                <PenTool size={8} /> MODO EDICIÓN ACTIVO
+              </div>
+            </div>
           </div>
         </div>
         <div className="flex gap-3">
@@ -108,46 +153,48 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
             <div className="grid grid-cols-12 border-b border-black text-[10px]">
               <div className="col-span-6 border-r border-black p-2 flex gap-1">
                 <span className="font-black uppercase shrink-0">NOMBRE DEL DOCENTE:</span>
-                <span className="flex-1 italic font-medium">{editableData.nombre_docente}</span>
+                <EditableSpan path="nombre_docente" value={editableData.nombre_docente} className="flex-1 italic font-medium" />
               </div>
               <div className="col-span-3 border-r border-black p-2 flex gap-1">
                 <span className="font-black uppercase shrink-0">ÁREA:</span>
-                <span className="flex-1 italic font-medium">{editableData.area}</span>
+                <EditableSpan path="area" value={editableData.area} className="flex-1 italic font-medium" />
               </div>
               <div className="col-span-3 p-2 flex gap-1">
                 <span className="font-black uppercase shrink-0">ASIGNATURA:</span>
-                <span className="flex-1 italic font-medium">{editableData.asignatura}</span>
+                <EditableSpan path="asignatura" value={editableData.asignatura} className="flex-1 italic font-medium" />
               </div>
             </div>
 
             <div className="grid grid-cols-12 border-b border-black text-[10px]">
               <div className="col-span-4 border-r border-black p-2 flex gap-1">
                 <span className="font-black uppercase shrink-0">GRADO:</span>
-                <span className="flex-1 italic font-medium">{editableData.grado}</span>
+                <EditableSpan path="grado" value={editableData.grado} className="flex-1 italic font-medium" />
               </div>
               <div className="col-span-4 border-r border-black p-2 flex gap-1">
                 <span className="font-black uppercase shrink-0">GRUPOS:</span>
-                <span className="flex-1 italic font-medium">{editableData.grupos}</span>
+                <EditableSpan path="grupos" value={editableData.grupos} className="flex-1 italic font-medium" />
               </div>
               <div className="col-span-4 p-2 flex gap-1">
                 <span className="font-black uppercase shrink-0">FECHA:</span>
-                <span className="flex-1 italic font-medium">{editableData.fecha}</span>
+                <EditableSpan path="fecha" value={editableData.fecha} className="flex-1 italic font-medium" />
               </div>
             </div>
 
             {/* 1. PROPÓSITO */}
             <div className="grid grid-cols-12 border-b border-black text-[10px]">
               <div className="col-span-2 border-r border-black p-2 bg-gray-50/50 flex items-center font-black uppercase">1.PROPÓSITO</div>
-              <div className="col-span-10 p-2 italic leading-snug font-medium">{editableData.proposito}</div>
+              <div className="col-span-10 p-2 italic leading-snug font-medium">
+                <EditableDiv path="proposito" value={editableData.proposito} />
+              </div>
             </div>
 
             {/* 2. INDICADORES */}
             <div className="grid grid-cols-12 border-b border-black text-[10px] min-h-[80px]">
               <div className="col-span-2 border-r border-black p-2 bg-gray-50/50 flex items-start font-black uppercase">2.INDICADORES.</div>
               <div className="col-span-10 p-2 space-y-1">
-                <div className="flex gap-2"><span className="font-black min-w-[85px] uppercase text-[9px]">COGNITIVO:</span><span className="italic font-medium">{editableData.indicadores?.cognitivo}</span></div>
-                <div className="flex gap-2"><span className="font-black min-w-[85px] uppercase text-[9px]">AFECTIVO:</span><span className="italic font-medium">{editableData.indicadores?.afectivo}</span></div>
-                <div className="flex gap-2"><span className="font-black min-w-[85px] uppercase text-[9px]">EXPRESIVO:</span><span className="italic font-medium">{editableData.indicadores?.expresivo}</span></div>
+                <div className="flex gap-2"><span className="font-black min-w-[85px] uppercase text-[9px]">COGNITIVO:</span><EditableSpan path="indicadores.cognitivo" value={editableData.indicadores?.cognitivo} className="flex-1 italic font-medium" /></div>
+                <div className="flex gap-2"><span className="font-black min-w-[85px] uppercase text-[9px]">AFECTIVO:</span><EditableSpan path="indicadores.afectivo" value={editableData.indicadores?.afectivo} className="flex-1 italic font-medium" /></div>
+                <div className="flex gap-2"><span className="font-black min-w-[85px] uppercase text-[9px]">EXPRESIVO:</span><EditableSpan path="indicadores.expresivo" value={editableData.indicadores?.expresivo} className="flex-1 italic font-medium" /></div>
               </div>
             </div>
 
@@ -159,7 +206,7 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
                   {Array.isArray(editableData.ensenanzas) && editableData.ensenanzas.map((e, idx) => (
                     <li key={idx} className="flex gap-1">
                       <span className="font-black">*</span>
-                      <span>{e}</span>
+                      <EditableSpan path={`ensenanzas.${idx}`} value={e} className="flex-1" />
                     </li>
                   ))}
                 </ul>
@@ -172,27 +219,27 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
               <div className="col-span-10 p-2 space-y-3">
                 <div className="space-y-0.5">
                   <span className="font-black uppercase text-[9px] text-slate-500">MOTIVACIÓN Y ENCUADRE:</span>
-                  <p className="italic font-medium pl-2">{editableData.secuencia_didactica?.motivacion_encuadre}</p>
+                  <EditableDiv path="secuencia_didactica.motivacion_encuadre" value={editableData.secuencia_didactica?.motivacion_encuadre} className="italic font-medium pl-2" />
                 </div>
                 <div className="space-y-0.5">
                   <span className="font-black uppercase text-[9px] text-slate-500">ENUNCIACIÓN:</span>
-                  <p className="italic font-medium pl-2">{editableData.secuencia_didactica?.enunciacion}</p>
+                  <EditableDiv path="secuencia_didactica.enunciacion" value={editableData.secuencia_didactica?.enunciacion} className="italic font-medium pl-2" />
                 </div>
                 <div className="space-y-0.5">
                   <span className="font-black uppercase text-[9px] text-slate-500">MODELACIÓN:</span>
-                  <p className="italic font-medium pl-2">{editableData.secuencia_didactica?.modelacion}</p>
+                  <EditableDiv path="secuencia_didactica.modelacion" value={editableData.secuencia_didactica?.modelacion} className="italic font-medium pl-2" />
                 </div>
                 <div className="space-y-0.5">
                   <span className="font-black uppercase text-[9px] text-slate-500">SIMULACIÓN:</span>
-                  <p className="italic font-medium pl-2">{editableData.secuencia_didactica?.simulacion}</p>
+                  <EditableDiv path="secuencia_didactica.simulacion" value={editableData.secuencia_didactica?.simulacion} className="italic font-medium pl-2" />
                 </div>
                 <div className="space-y-0.5">
                   <span className="font-black uppercase text-[9px] text-slate-500">EJERCITACIÓN:</span>
-                  <p className="italic font-medium pl-2">{editableData.secuencia_didactica?.ejercitacion}</p>
+                  <EditableDiv path="secuencia_didactica.ejercitacion" value={editableData.secuencia_didactica?.ejercitacion} className="italic font-medium pl-2" />
                 </div>
                 <div className="space-y-0.5">
                   <span className="font-black uppercase text-[9px] text-slate-500">DEMOSTRACIÓN:</span>
-                  <p className="italic font-medium pl-2">{editableData.secuencia_didactica?.demostracion}</p>
+                  <EditableDiv path="secuencia_didactica.demostracion" value={editableData.secuencia_didactica?.demostracion} className="italic font-medium pl-2" />
                 </div>
               </div>
             </div>
@@ -200,13 +247,17 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
             {/* 5. DIDÁCTICA */}
             <div className="grid grid-cols-12 border-b border-black text-[10px]">
               <div className="col-span-2 border-r border-black p-2 bg-gray-50/50 flex items-center font-black uppercase">5.DIDÁCTICA</div>
-              <div className="col-span-10 p-2 italic font-medium leading-relaxed">{editableData.didactica}</div>
+              <div className="col-span-10 p-2 font-medium italic leading-relaxed">
+                <EditableDiv path="didactica" value={editableData.didactica} />
+              </div>
             </div>
 
             {/* 6. RECURSOS */}
             <div className="grid grid-cols-12 border-b border-black text-[10px]">
               <div className="col-span-2 border-r border-black p-2 bg-gray-50/50 flex items-center font-black uppercase">6.RECURSOS.</div>
-              <div className="col-span-10 p-2 italic font-black leading-relaxed">{editableData.recursos}</div>
+              <div className="col-span-10 p-2 italic font-black leading-relaxed">
+                <EditableDiv path="recursos" value={editableData.recursos} />
+              </div>
             </div>
 
             {/* Firmas */}
@@ -241,13 +292,17 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
                       Sesión {s.numero}
                     </div>
                     <div className="flex justify-between items-center mb-4 mt-2">
-                      <h4 className="text-[16px] font-black underline underline-offset-4 decoration-black/10">{s.titulo}</h4>
-                      <span className="bg-blue-100 text-blue-900 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">{s.tiempo}</span>
+                      <h4 className="text-[16px] font-black underline underline-offset-4 decoration-black/10">
+                        <EditableSpan path={`sesiones_detalle.${i}.titulo`} value={s.titulo} />
+                      </h4>
+                      <span className="bg-blue-100 text-blue-900 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                        <EditableSpan path={`sesiones_detalle.${i}.tiempo`} value={s.tiempo} />
+                      </span>
                     </div>
-                    <p className="text-[12px] italic font-medium text-slate-700 leading-relaxed mb-4">{s.descripcion}</p>
+                    <EditableDiv path={`sesiones_detalle.${i}.descripcion`} value={s.descripcion} className="text-[12px] italic font-medium text-slate-700 leading-relaxed mb-4" />
                     <div className="bg-orange-50/50 p-4 rounded-2xl border border-orange-100 italic text-[11px] font-medium leading-relaxed">
                       <span className="font-black text-orange-900 uppercase block mb-1">Activación ADI / Corporiedad:</span>
-                      {s.momento_adi}
+                      <EditableDiv path={`sesiones_detalle.${i}.momento_adi`} value={s.momento_adi} />
                     </div>
                   </div>
                 ))}
@@ -274,11 +329,21 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
                   <tbody className="divide-y divide-black/10">
                     {Array.isArray(editableData.rubrica) && editableData.rubrica.map((r, i) => (
                       <tr key={i} className="hover:bg-slate-50 transition-colors">
-                        <td className="p-4 font-black uppercase bg-slate-50 border-r border-black/10 text-[9px]">{r.criterio}</td>
-                        <td className="p-4 italic font-medium text-slate-600 border-r border-black/10">{r.bajo}</td>
-                        <td className="p-4 italic font-medium text-slate-600 border-r border-black/10">{r.basico}</td>
-                        <td className="p-4 italic font-semibold text-slate-900 border-r border-black/10 bg-blue-50/20">{r.alto}</td>
-                        <td className="p-4 italic font-black text-slate-900 bg-emerald-50/20">{r.superior}</td>
+                        <td className="p-4 font-black uppercase bg-slate-50 border-r border-black/10 text-[9px]">
+                          <EditableSpan path={`rubrica.${i}.criterio`} value={r.criterio} />
+                        </td>
+                        <td className="p-4 italic font-medium text-slate-600 border-r border-black/10">
+                          <EditableDiv path={`rubrica.${i}.bajo`} value={r.bajo} />
+                        </td>
+                        <td className="p-4 italic font-medium text-slate-600 border-r border-black/10">
+                          <EditableDiv path={`rubrica.${i}.basico`} value={r.basico} />
+                        </td>
+                        <td className="p-4 italic font-semibold text-slate-900 border-r border-black/10 bg-blue-50/20">
+                          <EditableDiv path={`rubrica.${i}.alto`} value={r.alto} />
+                        </td>
+                        <td className="p-4 italic font-black text-slate-900 bg-emerald-50/20">
+                          <EditableDiv path={`rubrica.${i}.superior`} value={r.superior} />
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -312,9 +377,7 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
                         <div className="border-b-2 border-black pb-1">Fecha: ____</div>
                       </div>
                     </div>
-                    <div className="bg-white p-6 rounded-[2rem] italic text-[14px] text-slate-600 leading-relaxed font-medium shadow-sm border border-slate-100">
-                      {editableData.taller_imprimible.introduccion}
-                    </div>
+                    <EditableDiv path="taller_imprimible.introduccion" value={editableData.taller_imprimible.introduccion} className="bg-white p-6 rounded-[2rem] italic text-[14px] text-slate-600 leading-relaxed font-medium shadow-sm border border-slate-100" />
                   </div>
                   <div className="space-y-12 py-6">
                     {Array.isArray(editableData.taller_imprimible.ejercicios) && editableData.taller_imprimible.ejercicios.map((ej, i) => (
@@ -323,7 +386,7 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
                           {i + 1}
                         </div>
                         <div className="flex-1 space-y-6 pt-2">
-                          <p className="font-bold text-[15px] leading-snug text-slate-900">{ej}</p>
+                          <EditableDiv path={`taller_imprimible.ejercicios.${i}`} value={ej} className="font-bold text-[15px] leading-snug text-slate-900 w-full" />
                           <div className="space-y-4 pr-10">
                             <div className="border-b-2 border-slate-200 h-1 w-full opacity-60"></div>
                             <div className="border-b-2 border-slate-200 h-1 w-full opacity-60"></div>
@@ -336,8 +399,8 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
                   <div className="mt-16 bg-gradient-to-br from-black to-slate-800 p-10 rounded-[3.5rem] text-white relative overflow-hidden shadow-2xl border-4 border-white/10">
                     <Lightbulb className="absolute top-0 right-0 opacity-10 -mr-16 -mt-16" size={240} />
                     <div className="relative z-10">
-                      <div className="bg-white/10 w-fit px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[3px] mb-6 border border-white/5">💡 RETO CREATIVO MASTER</div>
-                      <p className="text-[17px] font-medium leading-relaxed italic opacity-95 pr-20">{editableData.taller_imprimible.reto_creativo}</p>
+                      <div className="bg-white/10 w-fit px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[3px] mb-6 border border-white/50">💡 RETO CREATIVO MASTER</div>
+                      <EditableDiv path="taller_imprimible.reto_creativo" value={editableData.taller_imprimible.reto_creativo} className="text-[17px] font-medium leading-relaxed italic opacity-95 pr-20" />
                     </div>
                   </div>
                 </div>
@@ -357,16 +420,18 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
                         ITEM {i + 1}
                       </div>
                       <div className="flex gap-4 mb-6">
-                        <span className="bg-blue-600 text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight shadow-md">Competencia: {ev.competencia}</span>
+                        <span className="bg-blue-600 text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight shadow-md">
+                          Competencia: <EditableSpan path={`evaluacion.${i}.competencia`} value={ev.competencia} />
+                        </span>
                       </div>
-                      <p className="font-bold text-[16px] leading-[1.4] mb-10 text-slate-900 border-l-4 border-black pl-6">{ev.pregunta}</p>
+                      <EditableDiv path={`evaluacion.${i}.pregunta`} value={ev.pregunta} className="font-bold text-[16px] leading-[1.4] mb-10 text-slate-900 border-l-4 border-black pl-6" />
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-2">
                         {(ev.opciones || []).map((opt, j) => (
                           <div key={j} className="flex items-start gap-5 p-5 border-2 border-slate-100 rounded-2xl bg-white hover:border-black transition-all group/opt shadow-sm hover:shadow-md cursor-pointer">
                             <span className="w-10 h-10 rounded-2xl bg-slate-50 group-hover/opt:bg-black group-hover/opt:text-white border border-slate-200 flex items-center justify-center font-black text-lg transition-all shrink-0">
                               {optionLetters[j]}
                             </span>
-                            <span className="italic font-medium text-[14px] pt-1.5 leading-snug">{opt}</span>
+                            <EditableSpan path={`evaluacion.${i}.opciones.${j}`} value={opt} className="italic font-medium text-[14px] pt-1.5 leading-snug flex-1" />
                           </div>
                         ))}
                       </div>
@@ -374,12 +439,14 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
                         <div className="flex gap-4 items-center text-emerald-600 font-black">
                           <CheckCircle size={22} />
                           <span className="uppercase text-[11px] tracking-widest text-slate-400">Clave de Respuesta:</span>
-                          <span className="text-2xl underline underline-offset-8 decoration-emerald-200 decoration-4 bg-emerald-50 px-4 py-1 rounded-xl">OPCIÓN {ev.respuesta_correcta}</span>
+                          <span className="text-2xl underline underline-offset-8 decoration-emerald-200 decoration-4 bg-emerald-50 px-4 py-1 rounded-xl">
+                            OPCIÓN <EditableSpan path={`evaluacion.${i}.respuesta_correcta`} value={ev.respuesta_correcta} />
+                          </span>
                         </div>
                         {ev.explicacion && (
                           <div className="bg-slate-50 p-6 rounded-[2rem] border-l-8 border-slate-300 italic text-slate-600 text-[12px] font-medium leading-relaxed">
                             <span className="font-black text-slate-400 uppercase text-[10px] block mb-2 tracking-[2px]">Justificación Pedagógica AI:</span>
-                            {ev.explicacion}
+                            <EditableDiv path={`evaluacion.${i}.explicacion`} value={ev.explicacion} />
                           </div>
                         )}
                       </div>
@@ -401,14 +468,14 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
                     <AlertTriangle size={20} /> ALERTAS RECTORÍA
                   </h4>
                   <ul className="space-y-5">
-                    {Array.isArray(editableData.alertas_generated) || (Array.isArray(editableData.alertas_generadas)) ? (
-                      (editableData.alertas_generadas || []).map((a, i) => (
+                    {Array.isArray(editableData.alertas_generadas) && (
+                      editableData.alertas_generadas.map((a, i) => (
                         <li key={i} className="text-[12px] italic font-medium text-slate-700 flex gap-4 leading-relaxed">
                           <span className="w-2.5 h-2.5 rounded-full bg-red-400 mt-2 shrink-0 shadow-sm shadow-red-200"></span>
-                          {a}
+                          <EditableSpan path={`alertas_generadas.${i}`} value={a} className="flex-1" />
                         </li>
                       ))
-                    ) : null}
+                    )}
                   </ul>
                 </div>
                 <div className="space-y-8 bg-blue-50/30 p-8 rounded-[3rem] border-2 border-blue-100/50">
@@ -418,11 +485,16 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
                   <div className="space-y-5">
                     {Array.isArray(editableData.recursos_links) && editableData.recursos_links.map((rl, i) => (
                       <div key={i} className="bg-white p-5 rounded-[2rem] border-2 border-slate-100 italic transition-all hover:border-blue-300 hover:shadow-lg group shadow-sm">
-                        <p className="text-[11px] font-black uppercase tracking-tight text-slate-900 mb-1">{rl.tipo}: {rl.nombre}</p>
-                        <p className="text-[11px] text-slate-500 leading-tight mb-4">{rl.descripcion}</p>
-                        <a href={rl.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[11px] font-black text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 px-4 py-1.5 rounded-full border border-blue-100">
-                          Ver Material <ExternalLink size={12} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                        </a>
+                        <p className="text-[11px] font-black uppercase tracking-tight text-slate-900 mb-1">
+                          <EditableSpan path={`recursos_links.${i}.tipo`} value={rl.tipo} />: <EditableSpan path={`recursos_links.${i}.nombre`} value={rl.nombre} />
+                        </p>
+                        <EditableDiv path={`recursos_links.${i}.descripcion`} value={rl.descripcion} className="text-[11px] text-slate-500 leading-tight mb-4" />
+                        <div className="flex items-center gap-3">
+                          <EditableSpan path={`recursos_links.${i}.url`} value={rl.url} className="text-[10px] text-blue-400 flex-1 truncate" />
+                          <a href={rl.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[11px] font-black text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 px-4 py-1.5 rounded-full border border-blue-100">
+                            Ver <ExternalLink size={12} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                          </a>
+                        </div>
                       </div>
                     ))}
                   </div>
