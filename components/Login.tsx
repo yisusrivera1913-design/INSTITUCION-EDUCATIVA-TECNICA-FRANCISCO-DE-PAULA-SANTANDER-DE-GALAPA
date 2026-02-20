@@ -67,8 +67,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     <div className="text-center mb-10">
                         <div className="relative inline-block mb-6">
                             <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20 rounded-full"></div>
-                            <div className="relative w-24 h-24 bg-white rounded-3xl p-3 shadow-2xl transform hover:scale-105 transition-transform duration-500 overflow-hidden flex items-center justify-center border border-gray-100 italic">
-                                <span className="text-4xl">🎓</span>
+                            <div className="relative w-24 h-24 bg-white rounded-3xl p-2 shadow-2xl transform hover:scale-105 transition-transform duration-500 overflow-hidden flex items-center justify-center border border-gray-100">
+                                <img src="/logo_santander.png" alt="Logo Santander" className="w-full h-full object-contain" />
                             </div>
                             <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-1.5 rounded-xl shadow-lg border-2 border-[#1e293b]">
                                 <ShieldCheck size={18} />
