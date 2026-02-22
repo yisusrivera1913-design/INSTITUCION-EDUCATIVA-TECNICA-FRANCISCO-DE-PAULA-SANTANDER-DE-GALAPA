@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { authService, User } from '../services/authService';
 import { supabase } from '../services/supabaseClient';
-import { Users, Activity, Calendar, Clock, BarChart3, Shield, Key, RefreshCw, Download, Upload, FileText, Database, UserPlus, Wand2, CheckCircle2, UserMinus, Trash2 } from 'lucide-react';
+import { GRADOS, AREAS } from '../constants';
+import { Users, Activity, Calendar, Clock, BarChart3, Shield, Key, RefreshCw, Download, Upload, FileText, Database, UserPlus, Wand2, CheckCircle2, UserMinus, Trash2, BookOpen, GraduationCap, Save } from 'lucide-react';
 
 export const UserManagement: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -11,6 +12,7 @@ export const UserManagement: React.FC = () => {
     const [userSequences, setUserSequences] = useState<Record<string, any[]>>({});
     const [isLoadingSeqs, setIsLoadingSeqs] = useState(false);
     const [showAddUser, setShowAddUser] = useState(false);
+    const [assignmentUser, setAssignmentUser] = useState<User | null>(null);
 
     const fetchUsers = async () => {
         setIsRefreshing(true);
@@ -233,7 +235,9 @@ export const UserManagement: React.FC = () => {
                         <tr className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-200">
                             <th className="pb-4 pl-4">Docente</th>
                             <th className="pb-4">Email Institucional</th>
-                            <th className="pb-4 text-center">Planificaciones</th>
+                            <th className="pb-4 text-center">Planif.</th>
+                            <th className="pb-4">Grados</th>
+                            <th className="pb-4">Materias</th>
                             <th className="pb-4 text-right pr-4">Acciones</th>
                         </tr>
                     </thead>
@@ -264,8 +268,30 @@ export const UserManagement: React.FC = () => {
                                     <td className="py-4">
                                         <div className="text-xs font-medium text-slate-500">{user.email}</div>
                                     </td>
-                                    <td className="py-4 text-center font-bold text-slate-800">
-                                        {user.stats?.total || 0}
+                                    <td className="py-4 text-center">
+                                        <div className="flex flex-col gap-1 items-center">
+                                            <span className="font-bold text-slate-800">{user.stats?.total || 0}</span>
+                                        </div>
+                                    </td>
+                                    <td className="py-4 px-2">
+                                        <div className="flex flex-wrap gap-1 max-w-[150px]">
+                                            {(user.assigned_grades || []).length > 0 ? (
+                                                user.assigned_grades?.slice(0, 2).map(g => (
+                                                    <span key={g} className="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 text-[8px] font-black rounded-md border border-indigo-100">{g}</span>
+                                                ))
+                                            ) : <span className="text-[8px] text-slate-300 italic">Sin asignar</span>}
+                                            {(user.assigned_grades || []).length > 2 && <span className="text-[8px] text-slate-400 font-bold">+{user.assigned_grades!.length - 2}</span>}
+                                        </div>
+                                    </td>
+                                    <td className="py-4 px-2">
+                                        <div className="flex flex-wrap gap-1 max-w-[150px]">
+                                            {(user.assigned_subjects || []).length > 0 ? (
+                                                user.assigned_subjects?.slice(0, 1).map(s => (
+                                                    <span key={s} className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[8px] font-black rounded-md border border-blue-100 truncate max-w-[80px]">{s}</span>
+                                                ))
+                                            ) : <span className="text-[8px] text-slate-300 italic">Sin asignar</span>}
+                                            {(user.assigned_subjects || []).length > 1 && <span className="text-[8px] text-slate-400 font-bold">+{user.assigned_subjects!.length - 1}</span>}
+                                        </div>
                                     </td>
                                     <td className="py-4 text-right pr-4">
                                         <div className="flex items-center justify-end gap-2">
@@ -278,6 +304,14 @@ export const UserManagement: React.FC = () => {
                                             >
                                                 <FileText size={12} />
                                                 {expandedUser === user.email ? 'Ocultar' : 'Ver Repo'}
+                                            </button>
+
+                                            <button
+                                                onClick={() => setAssignmentUser(user)}
+                                                className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all border border-blue-100"
+                                                title="Gestionar Permisos"
+                                            >
+                                                <Shield size={16} />
                                             </button>
 
                                             {user.role !== 'admin' && (
@@ -305,55 +339,65 @@ export const UserManagement: React.FC = () => {
                                                     </h4>
                                                 </div>
 
-                                                {isLoadingSeqs ? (
-                                                    <div className="py-12 flex flex-col items-center gap-3">
-                                                        <RefreshCw size={24} className="text-indigo-600 animate-spin" />
-                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cargando...</span>
+                                                <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+                                                    {/* RIGHT: Sequences Repo */}
+                                                    <div className="flex flex-col">
+                                                        <div className="p-4 bg-slate-50/50 border-b border-slate-100">
+                                                            <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                                                <FileText size={14} /> Historial de Planeaciones
+                                                            </h5>
+                                                        </div>
+
+                                                        {isLoadingSeqs ? (
+                                                            <div className="py-12 flex flex-col items-center gap-3">
+                                                                <RefreshCw size={24} className="text-indigo-600 animate-spin" />
+                                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cargando...</span>
+                                                            </div>
+                                                        ) : (userSequences[user.email]?.length || 0) === 0 ? (
+                                                            <div className="py-12 text-center">
+                                                                <p className="text-xs font-bold text-slate-400 italic">Sin registros.</p>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="max-h-96 overflow-y-auto">
+                                                                <table className="w-full text-left">
+                                                                    <thead className="bg-slate-50/50 sticky top-0 backdrop-blur-sm">
+                                                                        <tr className="text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                                                            <th className="px-6 py-3">Tema</th>
+                                                                            <th className="px-6 py-3">Área / Grado</th>
+                                                                            <th className="px-6 py-3 text-right flex items-center justify-end gap-2">
+                                                                                Acción
+                                                                            </th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody className="divide-y divide-slate-50">
+                                                                        {userSequences[user.email]?.map((seq) => (
+                                                                            <tr key={seq.id} className="hover:bg-slate-50/30 transition-colors">
+                                                                                <td className="px-6 py-4">
+                                                                                    <span className="text-xs font-black text-slate-800 line-clamp-1">{seq.tema}</span>
+                                                                                </td>
+                                                                                <td className="px-6 py-4">
+                                                                                    <span className="text-[10px] font-bold text-slate-500">{seq.area} • {seq.grado}</span>
+                                                                                </td>
+                                                                                <td className="px-6 py-4 text-right">
+                                                                                    <button
+                                                                                        onClick={() => downloadJson(seq)}
+                                                                                        className="p-1.5 bg-slate-50 border border-slate-200 text-slate-500 rounded-lg hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
+                                                                                    >
+                                                                                        <Download size={14} />
+                                                                                    </button>
+                                                                                </td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                ) : (userSequences[user.email]?.length || 0) === 0 ? (
-                                                    <div className="py-12 text-center">
-                                                        <p className="text-sm font-bold text-slate-400 italic">No hay registros.</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="max-h-96 overflow-y-auto">
-                                                        <table className="w-full text-left">
-                                                            <thead className="bg-slate-50/50 sticky top-0 backdrop-blur-sm">
-                                                                <tr className="text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                                                                    <th className="px-6 py-3">Tema</th>
-                                                                    <th className="px-6 py-3">Área / Grado</th>
-                                                                    <th className="px-6 py-3">Fecha</th>
-                                                                    <th className="px-6 py-3 text-right">PDF/JSON</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-slate-50">
-                                                                {userSequences[user.email]?.map((seq) => (
-                                                                    <tr key={seq.id} className="hover:bg-slate-50/30 transition-colors">
-                                                                        <td className="px-6 py-4">
-                                                                            <span className="text-sm font-black text-slate-800">{seq.tema}</span>
-                                                                        </td>
-                                                                        <td className="px-6 py-4">
-                                                                            <span className="text-xs font-bold text-slate-500">{seq.area} • {seq.grado}</span>
-                                                                        </td>
-                                                                        <td className="px-6 py-4">
-                                                                            <div className="flex items-center gap-2 text-slate-400 text-xs font-medium">
-                                                                                <Calendar size={14} />
-                                                                                {new Date(seq.timestamp).toLocaleDateString()}
-                                                                            </div>
-                                                                        </td>
-                                                                        <td className="px-6 py-4 text-right">
-                                                                            <button
-                                                                                onClick={() => downloadJson(seq)}
-                                                                                className="p-2 bg-slate-50 border border-slate-200 text-slate-500 rounded-lg hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm"
-                                                                            >
-                                                                                <Download size={14} />
-                                                                            </button>
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                )}
+                                                </div>
+
+                                                <div className="p-6 bg-slate-50/50 border-t border-slate-100">
+                                                    <PasswordChange email={user.email} />
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
@@ -363,6 +407,50 @@ export const UserManagement: React.FC = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* ASSIGNMENT MODAL */}
+            {assignmentUser && (() => {
+                const refreshedUser = users.find(u => u.email === assignmentUser.email) || assignmentUser;
+                return (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in">
+                        <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100 animate-scale-in">
+                            <div className="bg-slate-900 p-8 text-white flex justify-between items-center">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-blue-500 p-3 rounded-2xl">
+                                        <Shield size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black tracking-tight">{refreshedUser.name}</h3>
+                                        <p className="text-[10px] text-blue-400 font-black uppercase tracking-widest">Configuración de Accesos Académicos</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => { setAssignmentUser(null); fetchUsers(); }}
+                                    className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-all text-white"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <div className="p-8 max-h-[70vh] overflow-y-auto">
+                                <UserAssignmentManager
+                                    user={refreshedUser}
+                                    onUpdate={fetchUsers}
+                                />
+                            </div>
+
+                            <div className="p-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+                                <button
+                                    onClick={() => { setAssignmentUser(null); fetchUsers(); }}
+                                    className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-slate-900/20"
+                                >
+                                    Finalizar Edición
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div >
     );
 };
@@ -390,7 +478,9 @@ export const UserGenerator: React.FC<{ onUserCreated: () => void }> = ({ onUserC
             const result = await authService.registerTeacher({
                 name: name.trim(),
                 email: generatedEmail,
-                password: defaultPassword
+                password: defaultPassword,
+                assigned_grades: GRADOS,
+                assigned_subjects: AREAS
             });
 
             if (result.success) {
@@ -455,58 +545,251 @@ export const UserGenerator: React.FC<{ onUserCreated: () => void }> = ({ onUserC
 
 export const PasswordChange: React.FC<{ email: string }> = ({ email }) => {
     const [newPass, setNewPass] = useState('');
-    const [msg, setMsg] = useState('');
+    const [msg, setMsg] = useState<{ type: 'success' | 'error' | 'info', text: string } | null>(null);
     const [isChanging, setIsChanging] = useState(false);
 
     const handleChange = async () => {
         if (newPass.length < 6) {
-            setMsg('❌ Mínimo 6 caracteres');
-            setTimeout(() => setMsg(''), 3000);
+            setMsg({ type: 'error', text: 'Mínimo 6 caracteres reglamentarios' });
             return;
         }
 
         setIsChanging(true);
-        setMsg('');
+        setMsg({ type: 'info', text: 'Sincronizando con base de datos...' });
 
         try {
-            await authService.changePassword(email, newPass);
-            setMsg('✅ ¡Contraseña actualizada!');
-            setNewPass('');
-            setTimeout(() => setMsg(''), 4000);
+            const result = await authService.changePassword(email, newPass);
+            if (result.success) {
+                setMsg({ type: 'success', text: 'Credenciales actualizadas en la nube y local' });
+                setNewPass('');
+            } else {
+                setMsg({ type: 'error', text: result.message || 'Error de sincronización' });
+            }
         } catch (error) {
-            setMsg('❌ Error en red.');
-            setTimeout(() => setMsg(''), 4000);
+            setMsg({ type: 'error', text: 'Fallo crítico de conexión' });
         } finally {
             setIsChanging(false);
+            setTimeout(() => setMsg(null), 5000);
         }
     };
 
     return (
-        <div className="mt-8 pt-8 border-t border-slate-200">
-            <h4 className="flex items-center gap-2 font-bold text-slate-700 mb-4 text-sm uppercase tracking-widest">
-                <Key size={14} />
-                Seguridad de Cuenta
-            </h4>
-            <div className="flex gap-2 max-w-md">
-                <input
-                    type="password"
-                    value={newPass}
-                    onChange={e => setNewPass(e.target.value)}
-                    placeholder="Nueva contraseña..."
-                    className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                />
+        <div className="mt-6 p-6 bg-slate-50 rounded-[2rem] border border-slate-200/60 shadow-inner">
+            <div className="flex items-center gap-3 mb-5">
+                <div className="bg-slate-800 p-2 rounded-xl text-white">
+                    <Key size={18} />
+                </div>
+                <div>
+                    <h4 className="font-black text-slate-800 text-[11px] uppercase tracking-[2px]">Seguridad de Acceso</h4>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">I.E. Santander • Encriptado AES</p>
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+                <div className="relative group">
+                    <input
+                        type="password"
+                        value={newPass}
+                        onChange={e => setNewPass(e.target.value)}
+                        placeholder="Nueva contraseña maestra..."
+                        className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-3.5 text-sm font-bold focus:ring-4 focus:ring-blue-500/10 focus:border-blue-600 outline-none transition-all shadow-sm group-hover:border-slate-300"
+                    />
+                </div>
+
                 <button
                     onClick={handleChange}
-                    disabled={isChanging}
-                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-colors ${isChanging
-                        ? 'bg-slate-400 text-white cursor-not-allowed'
-                        : 'bg-slate-800 text-white hover:bg-slate-900 border border-slate-800'
+                    disabled={isChanging || !newPass}
+                    className={`w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-[3px] transition-all flex items-center justify-center gap-2 shadow-xl ${isChanging || !newPass
+                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                        : 'bg-slate-800 text-white hover:bg-slate-900 shadow-slate-900/10 active:scale-95'
                         }`}
                 >
-                    {isChanging ? '...' : 'Actualizar'}
+                    {isChanging ? <RefreshCw size={14} className="animate-spin" /> : <Shield size={14} />}
+                    {isChanging ? 'Actualizando Sistema...' : 'Sincronizar Nueva Contraseña'}
                 </button>
             </div>
-            {msg && <p className={`mt-2 text-xs font-bold animate-fade-in-up ${msg.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>{msg}</p>}
+
+            {msg && (
+                <div className={`mt-4 p-4 rounded-2xl border text-[10px] font-black uppercase tracking-widest flex items-center gap-3 animate-fade-in-up ${msg.type === 'success' ? 'bg-green-50 border-green-100 text-green-700' :
+                    msg.type === 'info' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                        'bg-red-50 border-red-100 text-red-700'
+                    }`}>
+                    <div className={`p-1 rounded-full ${msg.type === 'success' ? 'bg-green-500' :
+                        msg.type === 'info' ? 'bg-blue-500' :
+                            'bg-red-500'
+                        } text-white`}>
+                        {msg.type === 'success' ? <CheckCircle2 size={10} /> : <Activity size={10} />}
+                    </div>
+                    {msg.text}
+                </div>
+            )}
+        </div>
+    );
+};
+
+export const UserAssignmentManager: React.FC<{ user: User, onUpdate: () => void }> = ({ user, onUpdate }) => {
+    // Initialize state from sync props
+    const [grades, setGrades] = useState<string[]>(user.assigned_grades || []);
+    const [subjects, setSubjects] = useState<string[]>(user.assigned_subjects || []);
+    const [isSaving, setIsSaving] = useState(false);
+    const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    // Sync state if user prop changes (e.g. from table refresh)
+    useEffect(() => {
+        setGrades(user.assigned_grades || []);
+        setSubjects(user.assigned_subjects || []);
+    }, [user.assigned_grades, user.assigned_subjects]);
+
+    const ALL_GRADES = ["Transición", "Primero", "Segundo", "Tercero", "Cuarto", "Quinto", "Sexto", "Séptimo", "Octavo", "Noveno", "Décimo", "Undécimo", "Multigrado"];
+    const ALL_SUBJECTS = [
+        "Matemáticas", "Lengua Castellana", "Ciencias Naturales", "Ciencias Sociales", "Filosofía",
+        "Inglés", "Educación Artística", "Educación Física", "Tecnología e Informática",
+        "Ética y Valores", "Religión", "Dimensión Corporal", "Dimensión Cognitiva",
+        "Dimensión Socioafectiva", "Dimensión Comunicativa", "Agropecuaria", "Cátedra de la Paz",
+        "Física", "Estadística", "Geometría", "Biología", "Química", "Integral (matemáticas+lenguaje+sociales+naturales)"
+    ];
+
+    const toggle = async (list: string[], setFn: any, item: string, isGrades: boolean) => {
+        setIsSaving(true);
+        const exists = list.includes(item);
+        const newList = exists ? list.filter(i => i !== item) : [...list, item];
+
+        try {
+            // Update local state first
+            setFn(newList);
+
+            // USE LOCAL STATE for both to ensure consistency
+            const finalGrades = isGrades ? newList : grades;
+            const finalSubjects = isGrades ? subjects : newList;
+
+            const result = await authService.updateUserAssignments(user.email, finalGrades, finalSubjects);
+            if (result.success) {
+                setMsg({ type: 'success', text: 'Sincronizado' });
+                await onUpdate(); // Forced refresh to update the 'user' prop
+            } else {
+                setMsg({ type: 'error', text: 'Error de red' });
+                setFn(list); // Revert
+            }
+        } catch (e) {
+            setMsg({ type: 'error', text: 'Fallo crítico' });
+            setFn(list);
+        } finally {
+            setIsSaving(false);
+            setTimeout(() => setMsg(null), 1500);
+        }
+    };
+
+    const selectAll = async (isGrades: boolean) => {
+        setIsSaving(true);
+        const newList = isGrades ? ALL_GRADES : ALL_SUBJECTS;
+
+        const finalGrades = isGrades ? ALL_GRADES : grades;
+        const finalSubjects = isGrades ? subjects : ALL_SUBJECTS;
+
+        const result = await authService.updateUserAssignments(user.email, finalGrades, finalSubjects);
+        if (result.success) {
+            if (isGrades) setGrades(ALL_GRADES); else setSubjects(ALL_SUBJECTS);
+            await onUpdate();
+            setMsg({ type: 'success', text: 'Habilitado total' });
+        }
+        setIsSaving(false);
+        setTimeout(() => setMsg(null), 1500);
+    };
+
+    const clearAll = async (isGrades: boolean) => {
+        setIsSaving(true);
+        const finalGrades = isGrades ? [] : grades;
+        const finalSubjects = isGrades ? subjects : [];
+
+        const result = await authService.updateUserAssignments(user.email, finalGrades, finalSubjects);
+        if (result.success) {
+            if (isGrades) setGrades([]); else setSubjects([]);
+            await onUpdate();
+            setMsg({ type: 'success', text: 'Limpieza total' });
+        }
+        setIsSaving(false);
+        setTimeout(() => setMsg(null), 1500);
+    };
+
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="bg-blue-600 p-2.5 rounded-xl text-white shadow-lg shadow-blue-500/20">
+                        {isSaving ? <RefreshCw size={18} className="animate-spin" /> : <Shield size={18} />}
+                    </div>
+                    <div>
+                        <h4 className="font-black text-slate-800 text-[11px] uppercase tracking-[2px]">Panel de Control Académico</h4>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                            {isSaving ? 'Sincronizando con la nube...' : 'Los cambios se guardan automáticamente'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-6">
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <GraduationCap size={14} className="text-indigo-500" /> Grados Habilitados
+                        </label>
+                        <div className="flex gap-2">
+                            <button onClick={() => selectAll(true)} className="text-[8px] font-black text-indigo-600 uppercase hover:underline">Activar Todos</button>
+                            <span className="text-slate-300">|</span>
+                            <button onClick={() => clearAll(true)} className="text-[8px] font-black text-slate-400 uppercase hover:underline">Quitar Todos</button>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {ALL_GRADES.map(g => (
+                            <button
+                                key={g}
+                                onClick={() => toggle(grades, setGrades, g, true)}
+                                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter transition-all border ${grades.includes(g)
+                                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200'
+                                    : 'bg-white text-slate-400 border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+                                    }`}
+                            >
+                                {g}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <BookOpen size={14} className="text-blue-500" /> Áreas Curriculares
+                        </label>
+                        <div className="flex gap-2">
+                            <button onClick={() => selectAll(false)} className="text-[8px] font-black text-blue-600 uppercase hover:underline">Activar Todas</button>
+                            <span className="text-slate-300">|</span>
+                            <button onClick={() => clearAll(false)} className="text-[8px] font-black text-slate-400 uppercase hover:underline">Quitar Todas</button>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        {ALL_SUBJECTS.map(s => (
+                            <button
+                                key={s}
+                                onClick={() => toggle(subjects, setSubjects, s, false)}
+                                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-tighter transition-all border ${subjects.includes(s)
+                                    ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200'
+                                    : 'bg-white text-slate-400 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+                                    }`}
+                            >
+                                {s}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {msg && (
+                <div className={`p-3 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center gap-2 animate-fade-in-up ${msg.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                    }`}>
+                    <CheckCircle2 size={12} /> {msg.text}
+                </div>
+            )}
         </div>
     );
 };

@@ -124,8 +124,8 @@ export const generateDocx = async (data: DidacticSequence, input: SequenceInput)
                         children: [
                           new ImageRun({
                             data: logoData,
-                            transformation: { width: 60, height: 60 },
-                            //@ts-ignore - fixing type mismatch
+                            transformation: { width: 50, height: 50 },
+                            //@ts-ignore
                             type: "png"
                           }),
                         ],
@@ -133,184 +133,207 @@ export const generateDocx = async (data: DidacticSequence, input: SequenceInput)
                     ] : [new Paragraph("LOGO")],
                   }),
                   createCell([
-                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "INSTITUCIÓN EDUCATIVA TECNICA FRANCISCO DE PAULA SANTANDER DE GALAPA", bold: true, size: 22 })] }),
-                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "GESTIÓN ACADÉMICA - PREPARACIÓN DE CLASES", bold: true, size: 16, color: "4B5563" })] }),
-                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "\"Calidad Humana y Excelencia Académica\"", italics: true, size: 14, color: "6B7280" })] }),
-                  ], { width: 70 }),
+                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "INSTITUCIÓN EDUCATIVA TECNICA FRANCISCO DE PAULA SANTANDER DE GALAPA", bold: true, size: 20 })] }),
+                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "PLANEACIÓN DE CLASE", bold: true, italics: true, size: 18 })] }),
+                  ], { width: 85 }),
+                ]
+              }),
+
+              // Row 1: Nombre/Area/Asig
+              new TableRow({
+                children: [
+                  createCell([new Paragraph({ children: [new TextRun({ text: "NOMBRE DEL DOCENTE: ", bold: true }), new TextRun({ text: data.nombre_docente, italics: true })] })], { width: 40 }),
+                  createCell([new Paragraph({ children: [new TextRun({ text: "ÁREA: ", bold: true }), new TextRun({ text: data.area, italics: true })] })], { width: 30 }),
+                  createCell([new Paragraph({ children: [new TextRun({ text: "ASIGNATURA: ", bold: true }), new TextRun({ text: data.asignatura, italics: true })] })], { width: 30 }),
+                ]
+              }),
+
+              // Row 2: Grado/Grupos/Fecha
+              new TableRow({
+                children: [
+                  createCell([new Paragraph({ children: [new TextRun({ text: "GRADO: ", bold: true }), new TextRun({ text: data.grado, italics: true })] })], { width: 40 }),
+                  createCell([new Paragraph({ children: [new TextRun({ text: "GRUPOS: ", bold: true }), new TextRun({ text: data.grupos || data.grado, italics: true })] })], { width: 30 }),
+                  createCell([new Paragraph({ children: [new TextRun({ text: "FECHA: ", bold: true }), new TextRun({ text: data.fecha, italics: true })] })], { width: 30 }),
+                ]
+              }),
+
+              // Row 3: 1.PROPOSITO
+              new TableRow({
+                children: [
+                  createCell("1.PROPÓSITO", { width: 20, bold: true }),
+                  createCell([new Paragraph({ children: [new TextRun({ text: data.proposito, italics: true, bold: true })] })], { width: 80, columnSpan: 2 }),
+                ]
+              }),
+
+              // Row 4: 2.INDICADORES
+              new TableRow({
+                children: [
+                  createCell("2.INDICADORES.", { width: 20, bold: true }),
                   createCell([
-                    new Paragraph({ children: [new TextRun({ text: "VERSIÓN: 5.1", size: 14 })] }),
-                    new Paragraph({ children: [new TextRun({ text: "CÓDIGO: GA-F03", size: 14 })] }),
-                    new Paragraph({ children: [new TextRun({ text: "PÁGINA: 1 de 1", size: 14 })] }),
-                  ], { width: 15 }),
+                    new Paragraph({ children: [new TextRun({ text: "COGNITIVO: ", bold: true }), new TextRun({ text: data.indicadores.cognitivo, italics: true, bold: true })] }),
+                    new Paragraph({ text: "" }),
+                    new Paragraph({ children: [new TextRun({ text: "AFECTIVO: ", bold: true }), new TextRun({ text: data.indicadores.afectivo, italics: true, bold: true })] }),
+                    new Paragraph({ text: "" }),
+                    new Paragraph({ children: [new TextRun({ text: "EXPRESIVO: ", bold: true }), new TextRun({ text: data.indicadores.expresivo, italics: true, bold: true })] }),
+                  ], { width: 80, columnSpan: 2 }),
                 ]
               }),
 
+              // Row 5: 3.ENSEÑANZAS
               new TableRow({
                 children: [
-                  createCell("TÍTULO DE LA SECUENCIA:", { bold: true, shading: "F8FAFC" }),
-                  createCell(data.titulo_secuencia, { columnSpan: 2, bold: true, size: 24 }),
+                  createCell("3.ENSEÑANZAS.", { width: 20, bold: true }),
+                  createCell([new Paragraph({ children: [new TextRun({ text: data.ensenanzas.map(e => "• " + e).join("\n"), italics: true, bold: true })] })], { width: 80, columnSpan: 2 }),
+                ]
+              }),
+
+              // Row 6: 4.SECUENCIA DIDACTICA
+              new TableRow({
+                children: [
+                  createCell("4.SECUENCIA DIDÁCTICA", { width: 20, bold: true }),
                   createCell([
-                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "SECUENCIA N°:", size: 14, color: "6B7280" })] }),
-                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: String(data.num_secuencia || 1), bold: true, size: 28 })] }),
-                  ], { width: 15 }),
+                    new Paragraph({ children: [new TextRun({ text: "MOTIVACIÓN Y ENCUADRE: ", bold: true }), new TextRun({ text: data.secuencia_didactica.motivacion_encuadre, italics: true, bold: true })] }),
+                    new Paragraph({ text: "" }),
+                    new Paragraph({ children: [new TextRun({ text: "ENUNCIACIÓN: ", bold: true }), new TextRun({ text: data.secuencia_didactica.enunciacion, italics: true, bold: true })] }),
+                    new Paragraph({ text: "" }),
+                    new Paragraph({ children: [new TextRun({ text: "MODELACIÓN: ", bold: true }), new TextRun({ text: data.secuencia_didactica.modelacion, italics: true, bold: true })] }),
+                    new Paragraph({ text: "" }),
+                    new Paragraph({ children: [new TextRun({ text: "SIMULACIÓN: ", bold: true }), new TextRun({ text: data.secuencia_didactica.simulacion, italics: true, bold: true })] }),
+                    new Paragraph({ text: "" }),
+                    new Paragraph({ children: [new TextRun({ text: "EJERCITACIÓN: ", bold: true }), new TextRun({ text: data.secuencia_didactica.ejercitacion, italics: true, bold: true })] }),
+                    new Paragraph({ text: "" }),
+                    new Paragraph({ children: [new TextRun({ text: "DEMOSTRACIÓN / TRANSFERENCIA: ", bold: true }), new TextRun({ text: data.secuencia_didactica.transferencia, italics: true, bold: true })] }),
+                  ], { width: 80, columnSpan: 2 }),
                 ]
               }),
 
+              // Row 7: 5.DIDACTICA
               new TableRow({
                 children: [
-                  createCell("ÁREA:", { bold: true, shading: "F8FAFC" }),
-                  createCell(data.area),
-                  createCell("ASIGNATURA:", { bold: true, shading: "F8FAFC" }),
-                  createCell(data.asignatura)
-                ]
-              }),
-              new TableRow({
-                children: [
-                  createCell("GRADO:", { bold: true, shading: "F8FAFC" }),
-                  createCell(data.grado),
-                  createCell("FECHA:", { bold: true, shading: "F8FAFC" }),
-                  createCell(data.fecha)
-                ]
-              }),
-              new TableRow({
-                children: [
-                  createCell("DOCENTE:", { bold: true, shading: "F8FAFC" }),
-                  createCell(data.nombre_docente, { columnSpan: 3 })
+                  createCell("5.DIDÁCTICA", { width: 20, bold: true }),
+                  createCell([new Paragraph({ children: [new TextRun({ text: data.didactica, italics: true, bold: true })] })], { width: 80, columnSpan: 2 }),
                 ]
               }),
 
-              createSectionHeader("DESCRIPCIÓN DE LA SECUENCIA DIDÁCTICA"),
-              new TableRow({ children: [createCell(data.descripcion_secuencia, { columnSpan: 4, italics: true })] }),
-
-              createSectionHeader("OBJETIVO DE APRENDIZAJE", "ECFDFE"),
-              new TableRow({ children: [createCell(data.objetivos_aprendizaje, { columnSpan: 4, bold: true })] }),
-
+              // Row 8: 6.RECURSOS
               new TableRow({
                 children: [
-                  createCell("CONTENIDOS A DESARROLLAR", { bold: true, shading: "F8FAFC", columnSpan: 2 }),
-                  createCell("COMPETENCIAS DEL MEN", { bold: true, shading: "F8FAFC", columnSpan: 2 }),
-                ]
-              }),
-              new TableRow({
-                children: [
-                  createCell(data.contenidos_desarrollar.join("\n• "), { columnSpan: 2 }),
-                  createCell(data.competencias_men, { columnSpan: 2 }),
+                  createCell("6.RECURSOS.", { width: 20, bold: true }),
+                  createCell([new Paragraph({ children: [new TextRun({ text: data.recursos, italics: true, bold: true })] })], { width: 80, columnSpan: 2 }),
                 ]
               }),
 
+              // Row 9: 7.PIAR
               new TableRow({
                 children: [
-                  createCell("ESTÁNDAR DE COMPETENCIA", { bold: true, shading: "F8FAFC", columnSpan: 2 }),
-                  createCell("DERECHOS BÁSICOS DE APRENDIZAJE (DBA)", { bold: true, shading: "F8FAFC", columnSpan: 2 }),
-                ]
-              }),
-              new TableRow({
-                children: [
-                  createCell(data.estandar_competencia, { columnSpan: 2 }),
-                  createCell(
-                    data.dba_detalle
-                      ? [
-                        new Paragraph({ children: [new TextRun({ text: data.dba_detalle.numero, bold: true, size: 20, color: "1E40AF" })] }),
-                        new Paragraph({ children: [new TextRun({ text: data.dba_detalle.enunciado, bold: true, size: 18 })] }),
-                        new Paragraph({ children: [new TextRun({ text: "EVIDENCIAS DE APRENDIZAJE:", bold: true, size: 14, color: "64748B" })], spacing: { before: 120 } }),
-                        ...data.dba_detalle.evidencias.map(ev => new Paragraph({ children: [new TextRun({ text: "• " + ev, size: 16 })] }))
-                      ]
-                      : data.dba_utilizado,
-                    { columnSpan: 2, bold: true }
-                  ),
+                  createCell("7.ADECUACIONES (PIAR)", { width: 20, bold: true }),
+                  createCell([new Paragraph({ children: [new TextRun({ text: data.adecuaciones_piar || "No aplica", italics: true, bold: true })] })], { width: 80, columnSpan: 2 }),
                 ]
               }),
 
+              // Row 10: 8.OBSERVACIONES
               new TableRow({
                 children: [
-                  createCell("EJE TRANSVERSAL (CRESE)", { bold: true, shading: "EEF2FF", columnSpan: 2 }),
-                  createCell("CORPORIEDAD / ADI", { bold: true, shading: "FFF7ED", columnSpan: 2 }),
-                ]
-              }),
-              new TableRow({
-                children: [
-                  createCell(data.eje_transversal_crese, { columnSpan: 2, italics: true }),
-                  createCell(data.corporiedad_adi, { columnSpan: 2, italics: true }),
-                ]
-              }),
-
-              createSectionHeader("METODOLOGÍA", "F5F3FF"),
-              new TableRow({ children: [createCell(data.metodologia, { columnSpan: 4 })] }),
-
-              createSectionHeader("ANEXO 1: DESGLOSE POR SESIONES", "DBEAFE"),
-              ...sesionesRows,
-
-              createSectionHeader("ANEXO 2: RÚBRICA DE DESEMPEÑO", "F1F5F9"),
-              ...rubricaRows,
-
-              createSectionHeader("ADECUACIONES CURRICULARES (PIAR)", "ECFDF5"),
-              new TableRow({ children: [createCell(data.adecuaciones_piar || "No se requieren adecuaciones específicas.", { columnSpan: 4 })] }),
-
-              createSectionHeader("ANEXO 5: ALERTAS Y RECURSOS DIGITALES", "EEF2FF"),
-              new TableRow({
-                children: [
+                  createCell("8.OBSERVACIONES Y BIBLIOGRAFÍA", { width: 20, bold: true }),
                   createCell([
-                    new Paragraph({ children: [new TextRun({ text: "ALERTAS PEDAGÓGICAS:", bold: true, size: 18, color: "B91C1C" })] }),
-                    ...(data.alertas_generadas || []).map(a => new Paragraph({ children: [new TextRun({ text: "• " + a, size: 16 })] })),
-                  ], { columnSpan: 2, width: 50 }),
-                  createCell([
-                    new Paragraph({ children: [new TextRun({ text: "RECURSOS DE PROFUNDIZACIÓN:", bold: true, size: 18, color: "1E40AF" })] }),
-                    ...(data.recursos_links || []).map(rl => new Paragraph({ children: [new TextRun({ text: `• ${rl.nombre}: ${rl.url}`, size: 16 })] })),
-                  ], { columnSpan: 2, width: 50 })
+                    new Paragraph({ children: [new TextRun({ text: "OBS: " + (data.observaciones || ""), italics: true, bold: true })] }),
+                    new Paragraph({ text: "" }),
+                    new Paragraph({ children: [new TextRun({ text: "BIBLIO: " + (data.bibliografia || ""), italics: true, bold: true })] }),
+                  ], { width: 80, columnSpan: 2 }),
                 ]
               }),
 
-              createSectionHeader("TRAZABILIDAD Y CONTROL DE VERSIONES", "F8FAFC"),
-              ...(data.control_versiones || [{ version: "1.1", fecha: data.fecha, descripcion: "Generación Platinum v5.1" }]).map(v => new TableRow({
+              // Footer: Elaboró/Revisó/Fecha
+              new TableRow({
                 children: [
-                  createCell("V: " + v.version, { width: 15 }),
-                  createCell(v.fecha, { width: 15 }),
-                  createCell(v.descripcion, { columnSpan: 2, width: 70, italics: true })
+                  createCell([new Paragraph({ text: "ELABORÓ:" }), new Paragraph({ text: "" }), new Paragraph({ children: [new TextRun({ text: data.elaboro, italics: true, bold: true })] })], { width: 33 }),
+                  createCell([new Paragraph({ text: "REVISÓ/APROBÓ:" }), new Paragraph({ text: "" }), new Paragraph({ children: [new TextRun({ text: data.reviso, italics: true, bold: true })] })], { width: 33 }),
+                  createCell([new Paragraph({ text: "FECHA:" }), new Paragraph({ text: "" }), new Paragraph({ children: [new TextRun({ text: data.pie_fecha, italics: true, bold: true })] })], { width: 33 }),
                 ]
-              }))
+              }),
             ]
           }),
 
+          // Annexes
           new Paragraph({ text: "" }),
-
-          // Signatures
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [createSectionHeader("FUNDAMENTACIÓN NORMATIVA (DBA & ESTÁNDARES)", "F8FAFC")]
+          }),
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
               new TableRow({
                 children: [
-                  createCell("ELABORÓ: " + data.elaboro, { bold: true }),
-                  createCell("REVISÓ: " + data.reviso, { bold: true }),
-                  createCell("FECHA: " + data.pie_fecha, { bold: true })
+                  createCell([
+                    new Paragraph({ children: [new TextRun({ text: "DBA: ", bold: true }), new TextRun({ text: data.dba_detalle?.numero || "" })] }),
+                    new Paragraph({ text: data.dba_detalle?.enunciado || "" })
+                  ], { width: 50 }),
+                  createCell([
+                    new Paragraph({ children: [new TextRun({ text: "ESTÁNDAR: ", bold: true })] }),
+                    new Paragraph({ text: data.estandar_competencia })
+                  ], { width: 50 }),
                 ]
               })
             ]
           }),
 
-          // TALLER SECTION
+          // SESIONES
           new Paragraph({ text: "", pageBreakBefore: true }),
-          new Paragraph({ text: "ANEXO 3: TALLER DE APLICACIÓN", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: "Guía de Aprendizaje Institucional - Francisco de Paula Santander", alignment: AlignmentType.CENTER }),
+          new Paragraph({ text: "ANEXO 1: DESGLOSE POR SESIONES", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: sesionesRows
+          }),
+
+          // RUBRICA
+          new Paragraph({ text: "", pageBreakBefore: true }),
+          new Paragraph({ text: "ANEXO 2: RÚBRICA DE EVALUACIÓN SIEE", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: rubricaRows
+          }),
+
+          // TALLER
+          new Paragraph({ text: "", pageBreakBefore: true }),
+          new Paragraph({ text: "ANEXO 3: TALLER DE APRENDIZAJE", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
           new Paragraph({ text: "" }),
           new Paragraph({ children: [new TextRun({ text: "Estudiante: _________________________________________________  Grado: " + data.grado, bold: true })] }),
-          new Paragraph({ text: "" }),
-
           ...(data.taller_imprimible ? [
+            new Paragraph({ text: "" }),
             new Paragraph({ children: [new TextRun({ text: "CONTEXTO:", bold: true, underline: {} })] }),
             new Paragraph({ children: [new TextRun({ text: data.taller_imprimible.introduccion, italics: true })] }),
             new Paragraph({ text: "" }),
             new Paragraph({ children: [new TextRun({ text: "ACTIVIDADES:", bold: true, underline: {} })] }),
-            ...data.taller_imprimible.ejercicios.map((ej, i) => new Paragraph({ text: `${i + 1}. ${ej}`, spacing: { before: 200, after: 400 } })),
+            ...data.taller_imprimible.ejercicios.map((ej, i) => new Paragraph({ text: `${i + 1}. ${ej}`, spacing: { before: 200 } })),
             new Paragraph({ text: "" }),
             new Paragraph({ shading: { fill: "F0FDF4" }, children: [new TextRun({ text: "RETO CREATIVO: ", bold: true }), new TextRun({ text: data.taller_imprimible.reto_creativo, italics: true })] })
           ] : []),
 
-          // EVALUATION SECTION
+          // ALERTAS Y RECURSOS
           new Paragraph({ text: "", pageBreakBefore: true }),
-          new Paragraph({ text: "ANEXO 4: EVALUACIÓN POR COMPETENCIAS", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: "10 Preguntas Tipo ICFES", alignment: AlignmentType.CENTER }),
-          new Paragraph({ text: "" }),
+          new Paragraph({ text: "ANEXO 4: ALERTAS PEDAGÓGICAS Y RECURSOS", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+              new TableRow({
+                children: [
+                  createCell([
+                    new Paragraph({ children: [new TextRun({ text: "ALERTAS PEDAGÓGICAS:", bold: true, color: "B91C1C" })] }),
+                    ...(data.alertas_generadas || []).map(a => new Paragraph({ children: [new TextRun({ text: "• " + a })] })),
+                  ], { width: 50 }),
+                  createCell([
+                    new Paragraph({ children: [new TextRun({ text: "RECURSOS DIGITALES:", bold: true, color: "1E40AF" })] }),
+                    ...(data.recursos_links || []).map(rl => new Paragraph({ children: [new TextRun({ text: `• ${rl.nombre}: ${rl.url}` })] })),
+                  ], { width: 50 })
+                ]
+              })
+            ]
+          }),
 
+          // EVALUATION
+          new Paragraph({ text: "", pageBreakBefore: true }),
+          new Paragraph({ text: "ANEXO 5: EVALUACIÓN POR COMPETENCIAS (10 PREGUNTAS TIPO ICFES)", heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER }),
           ...data.evaluacion.map((ev, i) => [
             new Paragraph({ children: [new TextRun({ text: `Competencia: ${ev.competencia}`, bold: true, color: "1E40AF" })], spacing: { before: 200 } }),
             new Paragraph({ children: [new TextRun({ text: `${i + 1}. ${ev.pregunta}`, bold: true })] }),
@@ -319,10 +342,6 @@ export const generateDocx = async (data: DidacticSequence, input: SequenceInput)
             new Paragraph({ children: [new TextRun({ text: `EXPLICACIÓN: ${ev.explicacion}`, italics: true, color: "4B5563" })] }),
             new Paragraph({ text: "" })
           ]).flat(),
-
-          // AUTOEVALUATION
-          new Paragraph({ text: "AUTOEVALUACIÓN DEL ESTUDIANTE", heading: HeadingLevel.HEADING_2, spacing: { before: 400 } }),
-          ...(data.autoevaluacion || []).map((q, i) => new Paragraph({ text: `${i + 1}. ${q}`, spacing: { before: 100 } }))
         ],
       },
     ],

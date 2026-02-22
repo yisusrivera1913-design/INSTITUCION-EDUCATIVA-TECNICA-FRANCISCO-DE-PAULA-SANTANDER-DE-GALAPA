@@ -39,6 +39,9 @@ export interface User {
     name: string;
     email: string;
     role: 'admin' | 'docente';
+    assigned_grades?: string[];
+    assigned_subjects?: string[];
+    session_id?: string;
     stats?: {
         today: number;
         week: number;
@@ -59,22 +62,43 @@ export const AUTHORIZED_USERS: User[] = [
 
 export const authService = {
     // --- PASSWORD MANAGEMENT ---
-    changePassword: async (email: string, newPass: string) => {
-        // 1. Local
-        const key = `santander_pwd_${email.toLowerCase()}`;
-        localStorage.setItem(key, obfuscate(newPass));
+    changePassword: async (email: string, newPass: string): Promise<{ success: boolean; message?: string }> => {
+        const lowEmail = email.toLowerCase().trim();
+        const obfuscatedPassword = obfuscate(newPass);
 
-        // 2. Cloud (Supabase)
+        // 1. Cloud Update (Supabase) - Priority
         if (supabase) {
             try {
-                // Upsert user password in cloud
                 const { error } = await supabase
                     .from('app_users')
-                    .update({ password: obfuscate(newPass) })
-                    .eq('email', email);
+                    .update({ password: obfuscatedPassword })
+                    .eq('email', lowEmail);
 
-                if (error) console.warn("Cloud Pwd Update Error:", error);
-            } catch (e) { console.error(e); }
+                if (error) {
+                    console.error("Cloud Pwd Update Error:", error);
+                    return { success: false, message: `Error en nube: ${error.message}` };
+                }
+            } catch (e: any) {
+                console.error(e);
+                return { success: false, message: "Fallo de conexión con la base de datos cloud." };
+            }
+        }
+
+        // 2. Local Update (Fallback/Sync)
+        try {
+            const key = `santander_pwd_${lowEmail}`;
+            localStorage.setItem(key, obfuscatedPassword);
+
+            // Also update current session if the user is changing their own password
+            const currentUser = authService.getCurrentUser();
+            if (currentUser && currentUser.email.toLowerCase() === lowEmail) {
+                // We keep the same user object, but we could update flags here if needed
+                console.log("🔒 Password updated in current active session.");
+            }
+
+            return { success: true };
+        } catch (e) {
+            return { success: false, message: "Error al guardar localmente." };
         }
     },
 
@@ -117,7 +141,7 @@ export const authService = {
             try {
                 const { data, error } = await supabase
                     .from('app_users')
-                    .select('name, email, role')
+                    .select('name, email, role, assigned_grades, assigned_subjects')
                     .eq('email', email.toLowerCase())
                     .single();
 
@@ -125,7 +149,9 @@ export const authService = {
                     cloudUser = {
                         name: data.name,
                         email: data.email,
-                        role: data.role as 'admin' | 'docente'
+                        role: data.role as 'admin' | 'docente',
+                        assigned_grades: data.assigned_grades || [],
+                        assigned_subjects: data.assigned_subjects || []
                     };
                 }
             } catch (e) {
@@ -139,18 +165,27 @@ export const authService = {
         if (user) {
             const isValid = await authService.verifyPassword(email, password, user.role);
             if (isValid) {
-                // Ensure we use the latest name from cloud if we found one
-                const finalUser = cloudUser || user;
+                const newSessionId = crypto.randomUUID();
+                const finalUser = { ...(cloudUser || user), session_id: newSessionId };
+
+                // Update session in cloud for single-session enforcement
+                if (supabase) {
+                    await supabase
+                        .from('app_users')
+                        .update({ session_id: newSessionId })
+                        .eq('email', email.toLowerCase());
+                }
+
                 localStorage.setItem(STORAGE_KEYS.AUTH, obfuscate('true'));
                 localStorage.setItem(STORAGE_KEYS.USER, obfuscate(JSON.stringify(finalUser)));
-                console.log('✅ Sesión guardada para:', finalUser.email);
+                console.log('✅ Sesión única activada para:', finalUser.email);
                 return finalUser;
             }
         }
         return null;
     },
 
-    registerTeacher: async (teacher: { name: string, email: string, password?: string }) => {
+    registerTeacher: async (teacher: { name: string, email: string, password?: string, assigned_grades?: string[], assigned_subjects?: string[] }) => {
         const passwordToSend = teacher.password || 'santander2026';
         const obfuscatedPassword = obfuscate(passwordToSend);
 
@@ -167,7 +202,9 @@ export const authService = {
                         name: teacher.name,
                         email: teacher.email.toLowerCase(),
                         role: 'docente',
-                        password: obfuscatedPassword
+                        password: obfuscatedPassword,
+                        assigned_grades: teacher.assigned_grades || [],
+                        assigned_subjects: teacher.assigned_subjects || []
                     });
 
                 if (error) throw error;
@@ -356,14 +393,16 @@ export const authService = {
             try {
                 const { data } = await supabase
                     .from('app_users')
-                    .select('name, email, role');
+                    .select('name, email, role, assigned_grades, assigned_subjects');
 
                 if (data && data.length > 0) {
                     // Start with cloud users
                     const cloudUsers: User[] = data.map(u => ({
                         name: u.name,
                         email: u.email,
-                        role: u.role as 'admin' | 'docente'
+                        role: u.role as 'admin' | 'docente',
+                        assigned_grades: u.assigned_grades || [],
+                        assigned_subjects: u.assigned_subjects || []
                     }));
 
                     // Merge: Keep all unique by email
@@ -549,5 +588,64 @@ export const authService = {
             },
             presenceState: () => authService._presenceChannel?.presenceState() || {}
         };
+    },
+
+    updateUserAssignments: async (email: string, grades: string[], subjects: string[]): Promise<{ success: boolean; message?: string }> => {
+        if (!supabase) return { success: false, message: "Sin conexión a la nube" };
+        try {
+            const { error } = await supabase
+                .from('app_users')
+                .update({
+                    assigned_grades: grades,
+                    assigned_subjects: subjects
+                })
+                .eq('email', email.toLowerCase());
+
+            if (error) throw error;
+            return { success: true };
+        } catch (e: any) {
+            console.error("Update Assignments Error:", e);
+            return { success: false, message: e.message };
+        }
+    },
+
+    refreshSession: async (): Promise<User | null> => {
+        if (!supabase) return authService.getCurrentUser();
+
+        const current = authService.getCurrentUser();
+        if (!current) return null;
+
+        try {
+            const { data, error } = await supabase
+                .from('app_users')
+                .select('name, email, role, assigned_grades, assigned_subjects, session_id')
+                .eq('email', current.email.toLowerCase())
+                .single();
+
+            if (data && !error) {
+                // SESSION INTEGRITY CHECK
+                if (current.session_id && data.session_id && current.session_id !== data.session_id) {
+                    console.warn("🚨 [Security] Sesión duplicada detectada. Cerrando esta sesión.");
+                    authService.logout();
+                    return null;
+                }
+
+                const updatedUser: User = {
+                    name: data.name,
+                    email: data.email,
+                    role: data.role as 'admin' | 'docente',
+                    assigned_grades: data.assigned_grades || [],
+                    assigned_subjects: data.assigned_subjects || [],
+                    session_id: data.session_id || current.session_id
+                };
+
+                // Update local storage
+                localStorage.setItem(STORAGE_KEYS.USER, obfuscate(JSON.stringify(updatedUser)));
+                return updatedUser;
+            }
+        } catch (e) {
+            console.error("Session refresh error:", e);
+        }
+        return current;
     }
 };

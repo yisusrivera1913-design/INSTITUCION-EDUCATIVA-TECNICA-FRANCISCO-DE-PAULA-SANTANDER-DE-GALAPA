@@ -2,13 +2,32 @@ import Groq from "groq-sdk";
 import { SequenceInput, DidacticSequence } from "../types";
 import { supabase } from "./supabaseClient";
 
+export let lastWorkingModel = "llama-3.3-70b-versatile";
+
 export const modelHealthStatus: Record<string, 'online' | 'offline' | 'checking'> = {
     "llama-3.3-70b-versatile": "checking",
     "mixtral-8x7b-32768": "checking",
+    "llama-3.1-70b-versatile": "checking",
 };
 
-export const apiMetrics = {
-    groq: { requests: 0, success: 0, errors: 0, lastUsed: "", label: "Groq Main" }
+const STORAGE_KEY = 'santander_groq_metricsv1';
+
+const loadMetrics = () => {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) return JSON.parse(saved);
+    } catch (e) { console.warn("Error loading metrics:", e); }
+    return {
+        groq: { requests: 0, success: 0, errors: 0, lastUsed: "", label: "Groq Main" }
+    };
+};
+
+export const apiMetrics = loadMetrics();
+
+const saveMetrics = () => {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(apiMetrics));
+    } catch (e) { console.warn("Error saving metrics:", e); }
 };
 
 const sanitizeInput = (text: string | undefined): string => {
@@ -18,12 +37,10 @@ const sanitizeInput = (text: string | undefined): string => {
 
 /**
  * Persistencia Total: Registra cada llamada a la API con su resultado completo
- * para que nunca se pierda la trazabilidad (Petición del usuario).
  */
 const logApiKeyUsage = async (status: 'success' | 'error', errorMsg?: string, modelName?: string, fullContext?: any) => {
     if (!supabase) return;
     try {
-        // 1. Log en tabla de métricas (Resumen)
         await supabase.from('api_key_logs').insert([
             {
                 key_name: "Groq",
@@ -33,58 +50,51 @@ const logApiKeyUsage = async (status: 'success' | 'error', errorMsg?: string, mo
             }
         ]);
 
-        // 2. Log de Auditoría Completa (Si existe la tabla ai_complete_logs)
-        // Intentamos guardar el contexto completo si la llamada fue exitosa
         if (status === 'success' && fullContext) {
-            await supabase.from('ai_complete_logs').insert([{
-                model: modelName,
-                user_email: fullContext.user_email,
-                prompt_summary: fullContext.prompt_summary,
-                response_json: fullContext.response_json,
-                timestamp: new Date().toISOString()
-            }]).catch(() => {
-                // Si la tabla no existe, fallamos silenciosamente para no interrumpir el flujo
-                console.warn("Tabla ai_complete_logs no configurada aún.");
-            });
+            try {
+                await supabase.from('ai_complete_logs').insert([{
+                    model: modelName,
+                    user_email: fullContext.user_email,
+                    prompt_summary: fullContext.prompt_summary,
+                    response_json: fullContext.response_json,
+                    timestamp: new Date().toISOString()
+                }]);
+            } catch (e) {
+                console.warn("Tabla ai_complete_logs no configurada aún o error de red:", e);
+            }
         }
     } catch (e) {
         console.warn("Log error:", e);
     }
 };
 
-/**
- * Bóveda de persistencia para la API Key.
- * Si se borra del .env, intenta recuperarla de Supabase.
- */
 const getPersistentApiKey = async (): Promise<string | null> => {
-    // 1. Prioridad: Variable de entorno
-    const getEnv = (key: string) => import.meta.env[key] || (process as any).env[key];
-    let apiKey = getEnv('VITE_GROQ_API_KEY');
+    try {
+        // Acceso seguro a variables de entorno en Vite
+        const env = (import.meta as any).env || {};
+        const proc = (typeof process !== 'undefined') ? (process as any).env : {};
 
-    if (apiKey) return apiKey;
+        let apiKey = env.VITE_GROQ_API_KEY || proc.VITE_GROQ_API_KEY || env.GROQ_API_KEY || proc.GROQ_API_KEY;
 
-    // 2. Respaldo: Supabase Vault (Configuraciones de sistema)
-    if (supabase) {
-        try {
-            const { data } = await supabase
+        if (apiKey) return apiKey;
+
+        if (supabase) {
+            const { data, error } = await supabase
                 .from('system_settings')
                 .select('value')
                 .eq('key', 'GROQ_API_KEY')
-                .single();
+                .maybeSingle();
 
-            if (data?.value) {
-                console.log("🚀 [Vault] API Key recuperada de la base de datos.");
-                return data.value;
-            }
-        } catch (e) {
-            // Ignorar fallos si la tabla no existe
+            if (data?.value) return (data.value as string);
         }
+    } catch (e) {
+        console.warn("Error recuperando API Key:", e);
     }
 
     return null;
 };
 
-export const generateDidacticSequence = async (input: SequenceInput, refinementInstruction?: string): Promise<DidacticSequence> => {
+export const generateDidacticSequence = async (input: SequenceInput, refinementInstruction?: string, currentContext?: DidacticSequence): Promise<DidacticSequence> => {
     const apiKey = await getPersistentApiKey();
 
     if (!apiKey) {
@@ -98,7 +108,8 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
 
     const modelsToTry = [
         "llama-3.3-70b-versatile",
-        "mixtral-8x7b-32768"
+        "mixtral-8x7b-32768",
+        "llama-3.1-70b-versatile"
     ];
 
     const safeTema = sanitizeInput(input.tema);
@@ -109,44 +120,100 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
 
     const currentArea = input.area.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const isIntegral = input.area.toLowerCase().includes("integral");
-
     const hasDBA = areaNormativa.conDBA.some(a => currentArea.includes(a)) || isIntegral;
 
     let pedagogicalInstruction = hasDBA
-        ? `- **DBA Oficial:** Debes identificar el número exacto del DBA (ej: "DBA #3") y transcribir su contenido literal que se está abordando. 
-       - **Input del Usuario:** ${sanitizeInput(input.dba) || 'Sin DBA previo'}. Si este input es un número, busca el contenido oficial.`
-        : `- **Referencia Pedagógica:** Esta área NO utiliza DBA. Debes citar explícitamente las **"Orientaciones Pedagógicas y Curriculares del MEN para ${input.area}"**.`;
+        ? `- **DBA Oficial:** Identificar el número exacto del DBA y transcribir su contenido literal. 
+       - **Input:** ${sanitizeInput(input.dba) || 'Sin DBA previo'}.`
+        : `- **Referencia Pedagógica:** Citar las Orientaciones Curriculares del MEN para ${input.area}.`;
+
+    // Función de limpieza institucional
+    const cleanText = (text: any): string => {
+        if (typeof text !== 'string') return String(text || "");
+        return text.replace(/\*/g, "").trim();
+    };
+
+    // Limpieza recursiva profunda para garantizar CERO asteriscos
+    const deepClean = (obj: any): any => {
+        if (Array.isArray(obj)) {
+            return obj.map(item => deepClean(item));
+        } else if (obj !== null && typeof obj === 'object') {
+            const cleaned: any = {};
+            for (const key in obj) {
+                cleaned[key] = deepClean(obj[key]);
+            }
+            return cleaned;
+        } else if (typeof obj === 'string') {
+            return cleanText(obj);
+        }
+        return obj;
+    };
 
     const prompt = `
-    ### PERSONA: MASTER RECTOR AI (V5.1 GOLDEN)
-    Eres el Agente Supremo de la INSTITUCION EDUCATIVA TECNICA FRANCISCO DE PAULA SANTANDER DE GALAPA.
-    Tu misión es la EXCELENCIA PEDAGÓGICA TOTAL siguiendo un formato de ALTO NIVEL INSTITUCIONAL.
+    ### PERSONA: COORDINADOR PEDAGÓGICO IA - FRANCISCO DE PAULA SANTANDER
+    Eres el experto en currículo de la I.E.T. FRANCISCO DE PAULA SANTANDER. 
+    Tu objetivo es generar planeaciones de clase con RIGOR ACADÉMICO y EXCELENCIA PEDAGÓGICA.
 
-    ### PARÁMETROS CLAVE
-    - **Docente:** ${input.docente_nombre || 'No especificado'}
-    - **Área:** ${input.area} | **Asignatura:** ${input.asignatura}
+    ### PARÁMETROS:
+    - **Docente:** ${input.docente_nombre || 'Docente'} | **Área:** ${input.area}
     - **Grado:** ${input.grado} | **Tema:** ${safeTema} | **Sesiones:** ${input.sesiones}
     ${pedagogicalInstruction}
 
-    ### INSTRUCCIONES DE DISEÑO ELITE:
-    1. **DBA:** Literalidad absoluta.
-    2. **Anexos:** Taller, Evaluación, Rúbrica, ADI.
-    3. **Sesiones:** Exactamente ${input.sesiones} sesiones.
+    ### REGLAS ORO DE CALIDAD:
+    1. **DBA PERFECTO:** Si se proporciona un número de DBA o tema, DEBES buscar y transcribir el enunciado LITERAL del Derecho Básico de Aprendizaje oficial del MEN. NO lo parafrasees. Las evidencias deben ser precisas y coherentes con el grado.
+    2. **EVALUACIÓN ICFES SUPERIOR:** Genera **EXACTAMENTE 10 PREGUNTAS** que sigan estrictamente el modelo de evaluación por competencias del ICFES (Contexto -> Enunciado -> 4 Opciones -> Clave -> Explicación Pedagógica). Deben estar profundamente ligadas al TEMA ESPECÍFICO y al DBA. Ni una más ni una menos.
+    3. **INTEGRACIÓN INTELIGENTE:** Si se solicitan áreas incompatibles (ej: Religión y Geometría), NO inventes conexiones forzadas. Si no existe un puente pedagógico natural, deja los campos de integración en blanco o sepáralos estrictamente. Prioriza siempre el rigor técnico de cada área por separado.
+    4. **Propósito Holístico:** Síntesis clara de Saber (Cognitivo), Ser (Afectivo) y Hacer (Expresivo).
+    5. **Terminología Institucional:** Fase final: "transferencia". PROHIBIDO: "ABP".
+    6. **Sin Tiempos Rígidos:** No incluyas minutos en las sesiones.
+    7. **LIMPIEZA TOTAL:** PROHIBIDO EL USO DE ASTERISCOS (*) EN CUALQUIER PARTE DEL TEXTO (ni siquiera para viñetas o negritas). Usa puntos o guiones si es necesario.
+    8. **Formato Sobrio:** Evita el marketing ("Platinum", "Supreme"). Usa lenguaje institucional formal.
+
+    ### ESTRUCTURA JSON OBLIGATORIA (DidacticSequence):
+    - "institucion": "I.E.T. Francisco de Paula Santander"
+    - "formato_nombre": "Planeación de Clase Institucional"
+    - "nombre_docente": "${input.docente_nombre || 'Docente'}"
+    - "area", "asignatura", "grado", "grupos", "fecha", "num_secuencia": (del input)
+    - "proposito": (Suma de indicadores Cognitivo + Afectivo + Expresivo)
+    - "objetivos_aprendizaje", "contenidos_desarrollar": (lista de subtemas)
+    - "competencias_men", "estandar_competencia", "dba_utilizado".
+    - "dba_detalle": { "numero", "enunciado", "evidencias": [] }
+    - "eje_transversal_crese", "corporiedad_adi", "metodologia".
+    - "indicadores": { "cognitivo", "afectivo", "expresivo" }
+    - "ensenanzas": (lista de conceptos clave SIN asteriscos)
+    - "secuencia_didactica": { "motivacion_encuadre", "enunciacion", "modelacion", "simulacion", "ejercitacion", "transferencia" } (Cada campo DEBE tener al menos 2-3 líneas de contenido altamente educativo y detallado, explicando la acción pedagógica técnica).
+    - "sesiones_detalle": [ { "numero", "titulo", "descripcion", "momento_adi" } ]
+    - "didactica", "recursos", "recursos_links": [ { "tipo", "nombre", "url", "descripcion" } ]
+    - "taller_imprimible": { "introduccion", "instrucciones", "ejercicios": [], "reto_creativo" }
+    - "evaluacion": **LISTA DE EXACTAMENTE 10 PREGUNTAS** ICFES con { "pregunta", "tipo": "multiple_choice", "opciones": [], "respuesta_correcta", "competencia", "explicacion" }
+    - "rubrica": [ { "criterio", "bajo", "basico", "alto", "superior" } ]
+    - "autoevaluacion": [], "control_versiones": [], "alertas_generadas": []
+    - "bibliografia": (Fuentes citadas)
+    - "observaciones": (Notas pedagógicas)
+    - "adecuaciones_piar": (Ajustes razonables si aplica)
+    - "elaboro": "${input.docente_nombre || 'Docente'}", "reviso": "Coordinación Académica", "pie_fecha": "${new Date().toLocaleDateString()}"
+    - "tema_principal", "titulo_secuencia", "descripcion_secuencia"
+
+    ${currentContext ? `### CONTEXTO ACTUAL (MODIFICACIÓN DIRECTA):
+    JSON ACTUAL: ${JSON.stringify(currentContext)}
+    INSTRUCCIÓN ESPECÍFICA: ${refinementInstruction}
+    REGLA: Solo modifica lo solicitado en la instrucción. Mantén el resto idéntico. Ahorra tokens.
+    ` : refinementInstruction ? `### REFINAMIENTO PERSONALIZADO: ${refinementInstruction}` : ''}
     
-    Responde en JSON DidacticSequence.
+    RESPONDE EXCLUSIVAMENTE CON EL OBJETO JSON.
     `;
 
     let lastError: any;
 
     for (const modelName of modelsToTry) {
         try {
-            console.log(`[🔍 Orquestador Groq] Probando ${modelName}...`);
+            console.log(`[🔍 Groq] Probando ${modelName}...`);
 
             const response = await groq.chat.completions.create({
                 messages: [
                     {
                         role: "system",
-                        content: "Eres el Agente Supremo MASTER RECTOR AI. Generas secuencias didácticas de nivel experto para la I.E.T. Francisco de Paula Santander. Salida: JSON puro."
+                        content: "Eres un Coordinador Pedagógico Institucional. Generas planeaciones profesionales en JSON puro. Sin avisos, sin asteriscos, solo el objeto JSON."
                     },
                     {
                         role: "user",
@@ -161,55 +228,133 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
             const text = response.choices[0]?.message?.content || "{}";
             const parsed = JSON.parse(text);
 
-            // Normalización
+            // Normalización Robusta Platinum
             const ensureArray = (field: any) => Array.isArray(field) ? field : [];
-            const normalized = {
-                ...parsed,
-                indicadores: parsed.indicadores || { cognitivo: "", afectivo: "", expresivo: "" },
-                secuencia_didactica: parsed.secuencia_didactica || {
-                    motivacion_encuadre: "", enunciacion: "", modelacion: "", simulacion: "", ejercitacion: "", demostracion: ""
+            const normalized: DidacticSequence = {
+                institucion: cleanText(parsed.institucion) || "I.E.T. Francisco de Paula Santander",
+                formato_nombre: "Planeación de Clase Institucional v5.3",
+                nombre_docente: cleanText(parsed.nombre_docente) || input.docente_nombre || "Docente",
+                area: cleanText(parsed.area) || input.area,
+                asignatura: cleanText(parsed.asignatura) || input.asignatura,
+                grado: cleanText(parsed.grado) || input.grado,
+                grupos: cleanText(parsed.grupos) || input.grupos || "",
+                fecha: cleanText(parsed.fecha) || input.fecha || new Date().toLocaleDateString(),
+                num_secuencia: Number(parsed.num_secuencia || input.num_secuencia || 1),
+                proposito: cleanText(parsed.proposito),
+                objetivos_aprendizaje: cleanText(parsed.objetivos_aprendizaje || parsed.objetivo_aprendizaje),
+                contenidos_desarrollar: ensureArray(parsed.contenidos_desarrollar).map(cleanText),
+                competencias_men: cleanText(parsed.competencias_men),
+                estandar_competencia: cleanText(parsed.estandar_competencia),
+                dba_utilizado: cleanText(parsed.dba_utilizado),
+                dba_detalle: {
+                    numero: cleanText(parsed.dba_detalle?.numero),
+                    enunciado: cleanText(parsed.dba_detalle?.enunciado),
+                    evidencias: ensureArray(parsed.dba_detalle?.evidencias).map(cleanText)
                 },
-                contenidos_desarrollar: ensureArray(parsed.contenidos_desarrollar),
-                ensenanzas: ensureArray(parsed.ensenanzas),
-                sesiones_detalle: ensureArray(parsed.sesiones_detalle),
-                recursos_links: ensureArray(parsed.recursos_links),
-                rubrica: ensureArray(parsed.rubrica),
-                autoevaluacion: ensureArray(parsed.autoevaluacion),
-                evaluacion: ensureArray(parsed.evaluacion),
-                alertas_generadas: ensureArray(parsed.alertas_generadas),
-                control_versiones: ensureArray(parsed.control_versiones)
+                eje_transversal_crese: cleanText(parsed.eje_transversal_crese),
+                corporiedad_adi: cleanText(parsed.corporiedad_adi),
+                metodologia: cleanText(parsed.metodologia),
+                indicadores: {
+                    cognitivo: cleanText(parsed.indicadores?.cognitivo),
+                    afectivo: cleanText(parsed.indicadores?.afectivo),
+                    expresivo: cleanText(parsed.indicadores?.expresivo)
+                },
+                ensenanzas: ensureArray(parsed.ensenanzas).map(cleanText),
+                secuencia_didactica: {
+                    motivacion_encuadre: cleanText(parsed.secuencia_didactica?.motivacion_encuadre),
+                    enunciacion: cleanText(parsed.secuencia_didactica?.enunciacion),
+                    modelacion: cleanText(parsed.secuencia_didactica?.modelacion),
+                    simulacion: cleanText(parsed.secuencia_didactica?.simulacion),
+                    ejercitacion: cleanText(parsed.secuencia_didactica?.ejercitacion),
+                    transferencia: cleanText(parsed.secuencia_didactica?.transferencia || parsed.secuencia_didactica?.demostracion)
+                },
+                sesiones_detalle: ensureArray(parsed.sesiones_detalle).map((s: any) => ({
+                    numero: Number(s.numero) || 1,
+                    titulo: cleanText(s.titulo),
+                    descripcion: cleanText(s.descripcion),
+                    tiempo: cleanText(s.tiempo) || "Sesión Completa",
+                    momento_adi: cleanText(s.momento_adi)
+                })),
+                didactica: cleanText(parsed.didactica),
+                recursos: cleanText(parsed.recursos),
+                recursos_links: ensureArray(parsed.recursos_links || parsed.recursos_digitales).map((l: any) => ({
+                    tipo: cleanText(l.tipo || "Link"),
+                    nombre: cleanText(l.nombre || "Recurso"),
+                    url: cleanText(l.url),
+                    descripcion: cleanText(l.descripcion)
+                })),
+                rubrica: ensureArray(parsed.rubrica).map((r: any) => ({
+                    criterio: cleanText(r.criterio),
+                    bajo: cleanText(r.bajo),
+                    basico: cleanText(r.basico),
+                    alto: cleanText(r.alto),
+                    superior: cleanText(r.superior)
+                })),
+                autoevaluacion: ensureArray(parsed.autoevaluacion).map(cleanText),
+                evaluacion: ensureArray(parsed.evaluacion).map((ev: any) => ({
+                    pregunta: cleanText(ev.pregunta),
+                    tipo: cleanText(ev.tipo || "multiple_choice"),
+                    opciones: ensureArray(ev.opciones).map(cleanText),
+                    respuesta_correcta: cleanText(ev.respuesta_correcta),
+                    competencia: cleanText(ev.competencia),
+                    explicacion: cleanText(ev.explicacion)
+                })),
+                alertas_generadas: ensureArray(parsed.alertas_generadas).map(cleanText),
+                control_versiones: ensureArray(parsed.control_versiones).map((cv: any) => ({
+                    version: cleanText(cv.version || "1.0"),
+                    fecha: cleanText(cv.fecha || new Date().toLocaleDateString()),
+                    descripcion: cleanText(cv.descripcion || "Generación")
+                })),
+                bibliografia: cleanText(parsed.bibliografia),
+                observaciones: cleanText(parsed.observaciones),
+                adecuaciones_piar: cleanText(parsed.adecuaciones_piar),
+                elaboro: cleanText(parsed.elaboro) || input.docente_nombre || "Docente",
+                reviso: cleanText(parsed.reviso) || "Coordinación Académica",
+                pie_fecha: cleanText(parsed.pie_fecha) || new Date().toLocaleDateString(),
+                tema_principal: cleanText(parsed.tema_principal) || safeTema,
+                titulo_secuencia: cleanText(parsed.titulo_secuencia) || safeTema,
+                descripcion_secuencia: cleanText(parsed.descripcion_secuencia),
+                taller_imprimible: {
+                    introduccion: cleanText(parsed.taller_imprimible?.introduccion),
+                    instrucciones: cleanText(parsed.taller_imprimible?.instrucciones),
+                    ejercicios: ensureArray(parsed.taller_imprimible?.ejercicios).map(cleanText),
+                    reto_creativo: cleanText(parsed.taller_imprimible?.reto_creativo)
+                }
             };
 
-            console.log(`%c[✨ ÉXITO GROQ] Respondió: ${modelName}`, "color: #10b981; font-weight: bold;");
+            console.log(`%c[✨ EXITO GROQ] ${modelName}`, "color: #10b981; font-weight: bold;");
 
             apiMetrics.groq.requests++;
             apiMetrics.groq.success++;
             apiMetrics.groq.lastUsed = new Date().toLocaleTimeString();
-
+            saveMetrics();
             modelHealthStatus[modelName] = "online";
+            lastWorkingModel = modelName;
 
-            // Persistencia TOTAL: Guardamos cada llamada exitosa
             logApiKeyUsage('success', undefined, modelName, {
                 user_email: input.docente_nombre,
                 prompt_summary: safeTema,
-                response_json: normalized
+                response_json: deepClean(normalized)
             });
 
-            return normalized;
+            return deepClean(normalized);
 
         } catch (err: any) {
             lastError = err;
-            console.warn(`[❌ Intento Fallido Groq] ${modelName}: ${err.message}`);
+            console.warn(`[❌ Fallo Groq] ${modelName}: ${err.message}`);
             modelHealthStatus[modelName] = "offline";
             apiMetrics.groq.requests++;
             apiMetrics.groq.errors++;
+            saveMetrics();
             logApiKeyUsage('error', err.message, modelName);
 
             if (err.message?.includes('429') || err.message?.includes('quota')) continue;
+            // Si el error es de JSON parse, reintentar con el siguiente modelo
+            if (err instanceof SyntaxError) continue;
         }
     }
 
     throw new Error(`[Fallo en Orquestación Groq]: ${lastError?.message}`);
 };
 
-export let lastWorkingModel = "llama-3.3-70b-versatile";
+

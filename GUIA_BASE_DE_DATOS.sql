@@ -11,6 +11,9 @@ create table if not exists app_users (
   password text not null, 
   name text not null,
   role text not null check (role in ('admin', 'docente')),
+  assigned_grades text[] default '{}',
+  assigned_subjects text[] default '{}',
+  session_id text,
   created_at timestamptz default now()
 );
 
@@ -56,14 +59,6 @@ commit;
 alter publication supabase_realtime add table usage_logs;
 alter publication supabase_realtime add table api_key_logs;
 
--- 7. SEMILLA DE DATOS (Usuarios Iniciales)
-insert into app_users (email, password, name, role) values
--- Administrador
-('admin@santander.edu.co', 'Mw==', 'Admin Santander', 'admin'),
-
--- Docente Demo
-('docente.demo@santander.edu.co', 'Mw==', 'Docente Demo', 'docente');
-
 /* 
    PARA ELIMINAR UN USUARIO:
    DELETE FROM app_users WHERE email = 'correo@santander.edu.co';
@@ -75,6 +70,14 @@ insert into app_users (email, password, name, role) values
    Nota: 'Mw==' es la contraseña '3' obfuscada (ejemplo base), 
    pero el sistema usa 'santander2026' por defecto para nuevos registros.
 */
+
+-- 7. SEMILLA DE DATOS (Usuarios Iniciales)
+insert into app_users (email, password, name, role) values
+-- Administrador
+('admin@santander.edu.co', 'Mw==', 'Admin Santander', 'admin'),
+
+-- Docente Demo
+('docente.demo@santander.edu.co', 'Mw==', 'Docente Demo', 'docente')
 on conflict (email) do nothing;
 
 -- 8. TABLA DE SECUENCIAS GENERADAS (Persistencia solicitada)

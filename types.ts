@@ -87,7 +87,7 @@ export interface DidacticSequence {
     modelacion: string;
     simulacion: string;
     ejercitacion: string;
-    demostracion: string;
+    transferencia: string;
   };
 
   // Plan por sesión

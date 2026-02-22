@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DidacticSequence, SequenceInput } from '../types';
-import { Printer, CheckCircle, Sparkles, ExternalLink, Heart, GraduationCap, Lightbulb, ClipboardList, AlertTriangle, PenTool } from 'lucide-react';
+import { Printer, CheckCircle, Sparkles, ExternalLink, Heart, GraduationCap, Lightbulb, ClipboardList, AlertTriangle, PenTool, BookOpen } from 'lucide-react';
 
 interface SequencePreviewProps {
   data: DidacticSequence;
@@ -75,67 +75,87 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
   return (
     <div className="animate-fade-in-up pb-10">
 
-      {/* Action Bar */}
-      <div className="bg-white/95 backdrop-blur-md sticky top-20 z-40 p-4 rounded-3xl shadow-2xl border border-white/50 mb-10 no-print flex justify-between items-center transition-all hover:shadow-blue-500/10 ring-1 ring-blue-50">
+      {/* Action Bar - Simplified */}
+      <div className="bg-white sticky top-20 z-40 p-5 rounded-2xl shadow-md border border-slate-200 mb-8 no-print flex justify-between items-center transition-all">
         <div className="flex items-center gap-4 pl-2">
-          <div className="bg-blue-600 p-2.5 rounded-2xl text-white shadow-lg shadow-blue-500/30">
+          <div className="bg-slate-800 p-2.5 rounded-xl text-white">
             <CheckCircle className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-slate-800 tracking-tight">Diseño Pedagógico Platinum v5.1</h2>
-            <div className="flex items-center gap-2">
-              <p className="text-[10px] font-bold uppercase text-blue-600 tracking-wider">Francisco de Paula Santander DE GALAPA</p>
-              <div className="bg-amber-100 text-amber-700 text-[8px] px-1.5 py-0.5 rounded font-black flex items-center gap-1 animate-pulse">
-                <PenTool size={8} /> MODO EDICIÓN ACTIVO
-              </div>
-            </div>
+            <h2 className="text-lg font-bold text-slate-800 tracking-tight">Formato Institucional de Planeación v5.3</h2>
+            <p className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">Francisco de Paula Santander DE GALAPA</p>
           </div>
         </div>
-        <div className="flex gap-3">
-          <button onClick={onReset} className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 transition-all font-bold">
+        <div className="flex gap-2">
+          <button onClick={onReset} className="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all font-bold text-sm">
             Nueva
           </button>
-          <button onClick={handlePrint} className="flex items-center gap-2 px-8 py-3 bg-slate-900 text-white rounded-xl hover:bg-black transition-all font-bold shadow-xl">
-            <Printer className="h-5 w-5" /> Imprimir / PDF
+          <button onClick={handlePrint} className="flex items-center gap-2 px-6 py-2.5 bg-slate-800 text-white rounded-lg hover:bg-black transition-all font-bold text-sm shadow-sm">
+            <Printer className="h-4 w-4" /> Imprimir / PDF
           </button>
         </div>
       </div>
 
-      {/* Refinement Studio */}
-      <div className="bg-blue-50/50 border border-blue-100 rounded-3xl p-6 mb-10 no-print shadow-sm backdrop-blur-sm">
-        <h3 className="text-blue-900 font-black text-lg mb-4 flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-blue-600 animate-pulse" />
-          Refinar con Master Rector AI
-        </h3>
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={refinementText}
-            onChange={(e) => setRefinementText(e.target.value)}
-            placeholder="Ej: 'Incluye más actividades lúdicas' o 'Mejora el lenguaje técnico'..."
-            className="flex-1 bg-white border border-blue-200 rounded-2xl px-5 py-3 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all shadow-sm font-medium"
-          />
+      {/* Refinement Studio - Professional Executive Design */}
+      <div className="bg-white rounded-xl shadow-lg border border-slate-200 mb-10 no-print overflow-hidden transition-all hover:shadow-xl">
+        <div className="bg-slate-800 px-5 py-3 flex items-center justify-between">
+          <h3 className="text-white font-bold text-[11px] flex items-center gap-2 uppercase tracking-[0.2em]">
+            <Sparkles className="h-4 w-4 text-blue-400" />
+            Estudio de Refinamiento Curricular Directo
+          </h3>
+          <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest">Motor de Optimización IA</span>
+        </div>
+        <div className="p-6 flex gap-3 items-center bg-gray-50/50">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={refinementText}
+              onChange={(e) => setRefinementText(e.target.value)}
+              placeholder="Ej: 'Aumenta el nivel técnico de las preguntas' o 'Ajusta el propósito pedagógico'..."
+              className="w-full bg-white border border-slate-300 rounded-lg pl-4 pr-12 py-3 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition-all text-[13px] shadow-sm font-medium"
+            />
+            <PenTool className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          </div>
           <button
             onClick={handleRefineSubmit}
             disabled={!refinementText.trim() || isRefining}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-2xl font-black transition-all disabled:opacity-50 shadow-lg shadow-blue-500/20 active:scale-95"
+            className="bg-slate-800 text-white px-8 py-3 rounded-lg font-black disabled:opacity-50 text-[11px] uppercase tracking-widest hover:bg-black transition-all shadow-md active:scale-95 flex items-center gap-2"
           >
-            {isRefining ? "Refinando..." : "Refinar Diseño"}
+            {isRefining ? (
+              <>
+                <div className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                Procesando...
+              </>
+            ) : "Actualizar Secuencia"}
           </button>
+        </div>
+        <div className="px-6 py-2 bg-slate-100 border-t border-slate-200 flex items-center gap-4">
+          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter italic">Sugerencia:</span>
+          <div className="flex gap-4">
+            {['Profundizar Actividades', 'Mejorar Evaluación', 'Ajustar DBA'].map(tag => (
+              <button
+                key={tag}
+                onClick={() => setRefinementText(tag)}
+                className="text-[9px] text-slate-400 font-bold hover:text-slate-800 transition-colors uppercase cursor-pointer"
+              >
+                #{tag.replace(/\s+/g, '')}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* DOCUMENTO INSTITUCIONAL - ÁREA DE IMPRESIÓN */}
-      <div id="preview-container" className="bg-white mx-auto max-w-[21.5cm] min-h-[29.7cm] p-[1cm] text-black border shadow-2xl print:shadow-none print:border-none print:p-0 print:w-full font-serif relative">
+      <div id="preview-container" className="bg-white mx-auto max-w-[21.5cm] min-h-[29.7cm] p-[1.5cm] text-black border border-slate-300 shadow-xl print:shadow-none print:border-none print:p-0 print:w-full font-serif relative">
 
-        {/* Marca de Agua */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] opacity-[0.03] pointer-events-none z-0">
+        {/* Marca de Agua - Muy Sutil */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] opacity-[0.02] pointer-events-none z-0">
           <img src="/logo_santander.png" alt="" className="w-full h-full object-contain grayscale" />
         </div>
 
         <div className="relative z-10 w-full">
           {/* TABLA PRINCIPAL - FORMATO INSTITUCIONAL */}
-          <div className="border-[1.5px] border-black w-full mb-8 text-black bg-white shadow-[2px_2px_0_0_rgba(0,0,0,1)]">
+          <div className="border-[1px] border-black w-full mb-8 text-black bg-white">
             {/* Cabecera */}
             <div className="flex border-b border-black h-[100px]">
               <div className="w-[120px] p-2 flex items-center justify-center border-r border-black">
@@ -150,358 +170,408 @@ export const SequencePreview: React.FC<SequencePreviewProps> = ({ data, input, o
             </div>
 
             {/* Datos Generales */}
-            <div className="grid grid-cols-12 border-b border-black text-[10px]">
-              <div className="col-span-6 border-r border-black p-2 flex gap-1">
-                <span className="font-black uppercase shrink-0">NOMBRE DEL DOCENTE:</span>
+            <div className="grid grid-cols-12 border-b border-black text-[10px] font-black">
+              <div className="col-span-6 border-r border-black p-2 flex gap-1 uppercase">
+                <span className="shrink-0">NOMBRE DEL DOCENTE:</span>
                 <EditableSpan path="nombre_docente" value={editableData.nombre_docente} className="flex-1 italic font-medium" />
               </div>
-              <div className="col-span-3 border-r border-black p-2 flex gap-1">
-                <span className="font-black uppercase shrink-0">ÁREA:</span>
+              <div className="col-span-3 border-r border-black p-2 flex gap-1 uppercase">
+                <span className="shrink-0">ÁREA:</span>
                 <EditableSpan path="area" value={editableData.area} className="flex-1 italic font-medium" />
               </div>
-              <div className="col-span-3 p-2 flex gap-1">
-                <span className="font-black uppercase shrink-0">ASIGNATURA:</span>
+              <div className="col-span-3 p-2 flex gap-1 uppercase">
+                <span className="shrink-0">ASIGNATURA:</span>
                 <EditableSpan path="asignatura" value={editableData.asignatura} className="flex-1 italic font-medium" />
               </div>
             </div>
 
-            <div className="grid grid-cols-12 border-b border-black text-[10px]">
-              <div className="col-span-4 border-r border-black p-2 flex gap-1">
-                <span className="font-black uppercase shrink-0">GRADO:</span>
+            <div className="grid grid-cols-12 border-b border-black text-[10px] font-black">
+              <div className="col-span-4 border-r border-black p-2 flex gap-1 uppercase">
+                <span className="shrink-0">GRADO:</span>
                 <EditableSpan path="grado" value={editableData.grado} className="flex-1 italic font-medium" />
               </div>
-              <div className="col-span-4 border-r border-black p-2 flex gap-1">
-                <span className="font-black uppercase shrink-0">GRUPOS:</span>
+              <div className="col-span-4 border-r border-black p-2 flex gap-1 uppercase">
+                <span className="shrink-0">GRUPOS:</span>
                 <EditableSpan path="grupos" value={editableData.grupos} className="flex-1 italic font-medium" />
               </div>
-              <div className="col-span-4 p-2 flex gap-1">
-                <span className="font-black uppercase shrink-0">FECHA:</span>
+              <div className="col-span-4 p-2 flex gap-1 uppercase">
+                <span className="shrink-0">FECHA:</span>
                 <EditableSpan path="fecha" value={editableData.fecha} className="flex-1 italic font-medium" />
               </div>
             </div>
 
             {/* 1. PROPÓSITO */}
-            <div className="grid grid-cols-12 border-b border-black text-[10px]">
-              <div className="col-span-2 border-r border-black p-2 bg-gray-50/50 flex items-center font-black uppercase">1.PROPÓSITO</div>
-              <div className="col-span-10 p-2 italic leading-snug font-medium">
+            <div className="grid grid-cols-12 border-b border-black text-[11px]">
+              <div className="col-span-2 border-r border-black p-2 flex items-center font-black uppercase">1.PROPÓSITO</div>
+              <div className="col-span-10 p-2 italic font-black text-justify">
                 <EditableDiv path="proposito" value={editableData.proposito} />
               </div>
             </div>
 
             {/* 2. INDICADORES */}
-            <div className="grid grid-cols-12 border-b border-black text-[10px] min-h-[80px]">
-              <div className="col-span-2 border-r border-black p-2 bg-gray-50/50 flex items-start font-black uppercase">2.INDICADORES.</div>
-              <div className="col-span-10 p-2 space-y-1">
-                <div className="flex gap-2"><span className="font-black min-w-[85px] uppercase text-[9px]">COGNITIVO:</span><EditableSpan path="indicadores.cognitivo" value={editableData.indicadores?.cognitivo} className="flex-1 italic font-medium" /></div>
-                <div className="flex gap-2"><span className="font-black min-w-[85px] uppercase text-[9px]">AFECTIVO:</span><EditableSpan path="indicadores.afectivo" value={editableData.indicadores?.afectivo} className="flex-1 italic font-medium" /></div>
-                <div className="flex gap-2"><span className="font-black min-w-[85px] uppercase text-[9px]">EXPRESIVO:</span><EditableSpan path="indicadores.expresivo" value={editableData.indicadores?.expresivo} className="flex-1 italic font-medium" /></div>
+            <div className="grid grid-cols-12 border-b border-black text-[11px] font-black">
+              <div className="col-span-2 border-r border-black p-2 flex items-start uppercase">2.INDICADORES.</div>
+              <div className="col-span-10 p-2 space-y-4">
+                <div className="flex gap-2">
+                  <span className="min-w-[85px] uppercase shrink-0">COGNITIVO:</span>
+                  <EditableDiv path="indicadores.cognitivo" value={editableData.indicadores?.cognitivo} className="flex-1 italic text-justify font-black" />
+                </div>
+                <div className="flex gap-2">
+                  <span className="min-w-[85px] uppercase shrink-0">AFECTIVO:</span>
+                  <EditableDiv path="indicadores.afectivo" value={editableData.indicadores?.afectivo} className="flex-1 italic text-justify font-black" />
+                </div>
+                <div className="flex gap-2">
+                  <span className="min-w-[85px] uppercase shrink-0">EXPRESIVO:</span>
+                  <EditableDiv path="indicadores.expresivo" value={editableData.indicadores?.expresivo} className="flex-1 italic text-justify font-black" />
+                </div>
               </div>
             </div>
 
             {/* 3. ENSEÑANZAS */}
-            <div className="grid grid-cols-12 border-b border-black text-[10px]">
-              <div className="col-span-2 border-r border-black p-2 bg-gray-50/50 flex items-start font-black uppercase">3.ENSEÑANZAS.</div>
-              <div className="col-span-10 p-2 italic font-medium leading-relaxed">
-                <ul className="list-none space-y-1">
-                  {Array.isArray(editableData.ensenanzas) && editableData.ensenanzas.map((e, idx) => (
-                    <li key={idx} className="flex gap-1">
-                      <span className="font-black">*</span>
-                      <EditableSpan path={`ensenanzas.${idx}`} value={e} className="flex-1" />
+            <div className="grid grid-cols-12 border-b border-black text-[11px] font-black">
+              <div className="col-span-2 border-r border-black p-2 flex items-center uppercase">3.ENSEÑANZAS.</div>
+              <div className="col-span-10 p-2">
+                <ul className="space-y-1">
+                  {editableData.ensenanzas?.map((ens, idx) => (
+                    <li key={idx} className="italic flex gap-2">
+                      <span>•</span>
+                      <EditableSpan path={`ensenanzas.${idx}`} value={ens} />
                     </li>
                   ))}
+                  {(!editableData.ensenanzas || editableData.ensenanzas.length === 0) && (
+                    <li className="italic text-gray-400">Sin enseñanzas definidas</li>
+                  )}
                 </ul>
               </div>
             </div>
 
             {/* 4. SECUENCIA DIDÁCTICA */}
-            <div className="grid grid-cols-12 border-b border-black text-[10px]">
-              <div className="col-span-2 border-r border-black p-2 bg-gray-50/50 flex items-start font-black uppercase">4.SECUENCIA DIDÁCTICA</div>
-              <div className="col-span-10 p-2 space-y-3">
-                <div className="space-y-0.5">
-                  <span className="font-black uppercase text-[9px] text-slate-500">MOTIVACIÓN Y ENCUADRE:</span>
-                  <EditableDiv path="secuencia_didactica.motivacion_encuadre" value={editableData.secuencia_didactica?.motivacion_encuadre} className="italic font-medium pl-2" />
+            <div className="grid grid-cols-12 border-b border-black text-[11px] font-black">
+              <div className="col-span-2 border-r border-black p-2 flex items-start uppercase">4.SECUENCIA DIDÁCTICA</div>
+              <div className="col-span-10 p-2 space-y-4">
+                <div>
+                  <span className="uppercase block mb-1">MOTIVACIÓN Y ENCUADRE:</span>
+                  <EditableDiv path="secuencia_didactica.motivacion_encuadre" value={editableData.secuencia_didactica?.motivacion_encuadre} className="italic text-justify font-black" />
                 </div>
-                <div className="space-y-0.5">
-                  <span className="font-black uppercase text-[9px] text-slate-500">ENUNCIACIÓN:</span>
-                  <EditableDiv path="secuencia_didactica.enunciacion" value={editableData.secuencia_didactica?.enunciacion} className="italic font-medium pl-2" />
+                <div>
+                  <span className="uppercase block mb-1">ENUNCIACIÓN:</span>
+                  <EditableDiv path="secuencia_didactica.enunciacion" value={editableData.secuencia_didactica?.enunciacion} className="italic text-justify font-black" />
                 </div>
-                <div className="space-y-0.5">
-                  <span className="font-black uppercase text-[9px] text-slate-500">MODELACIÓN:</span>
-                  <EditableDiv path="secuencia_didactica.modelacion" value={editableData.secuencia_didactica?.modelacion} className="italic font-medium pl-2" />
+                <div>
+                  <span className="uppercase block mb-1">MODELACIÓN:</span>
+                  <EditableDiv path="secuencia_didactica.modelacion" value={editableData.secuencia_didactica?.modelacion} className="italic text-justify font-black" />
                 </div>
-                <div className="space-y-0.5">
-                  <span className="font-black uppercase text-[9px] text-slate-500">SIMULACIÓN:</span>
-                  <EditableDiv path="secuencia_didactica.simulacion" value={editableData.secuencia_didactica?.simulacion} className="italic font-medium pl-2" />
+                <div>
+                  <span className="uppercase block mb-1">SIMULACIÓN:</span>
+                  <EditableDiv path="secuencia_didactica.simulacion" value={editableData.secuencia_didactica?.simulacion} className="italic text-justify font-black" />
                 </div>
-                <div className="space-y-0.5">
-                  <span className="font-black uppercase text-[9px] text-slate-500">EJERCITACIÓN:</span>
-                  <EditableDiv path="secuencia_didactica.ejercitacion" value={editableData.secuencia_didactica?.ejercitacion} className="italic font-medium pl-2" />
+                <div>
+                  <span className="uppercase block mb-1">EJERCITACIÓN:</span>
+                  <EditableDiv path="secuencia_didactica.ejercitacion" value={editableData.secuencia_didactica?.ejercitacion} className="italic text-justify font-black" />
                 </div>
-                <div className="space-y-0.5">
-                  <span className="font-black uppercase text-[9px] text-slate-500">DEMOSTRACIÓN:</span>
-                  <EditableDiv path="secuencia_didactica.demostracion" value={editableData.secuencia_didactica?.demostracion} className="italic font-medium pl-2" />
+                <div>
+                  <span className="uppercase block mb-1">DEMOSTRACIÓN / TRANSFERENCIA:</span>
+                  <EditableDiv path="secuencia_didactica.transferencia" value={editableData.secuencia_didactica?.transferencia} className="italic text-justify font-black" />
                 </div>
               </div>
             </div>
 
             {/* 5. DIDÁCTICA */}
-            <div className="grid grid-cols-12 border-b border-black text-[10px]">
-              <div className="col-span-2 border-r border-black p-2 bg-gray-50/50 flex items-center font-black uppercase">5.DIDÁCTICA</div>
-              <div className="col-span-10 p-2 font-medium italic leading-relaxed">
+            <div className="grid grid-cols-12 border-b border-black text-[11px] font-black">
+              <div className="col-span-2 border-r border-black p-2 flex items-center uppercase">5.DIDÁCTICA</div>
+              <div className="col-span-10 p-2 italic text-justify font-black">
                 <EditableDiv path="didactica" value={editableData.didactica} />
               </div>
             </div>
 
             {/* 6. RECURSOS */}
-            <div className="grid grid-cols-12 border-b border-black text-[10px]">
-              <div className="col-span-2 border-r border-black p-2 bg-gray-50/50 flex items-center font-black uppercase">6.RECURSOS.</div>
-              <div className="col-span-10 p-2 italic font-black leading-relaxed">
+            <div className="grid grid-cols-12 border-b border-black text-[11px] font-black">
+              <div className="col-span-2 border-r border-black p-2 flex items-center uppercase">6.RECURSOS.</div>
+              <div className="col-span-10 p-2 italic text-justify font-black">
                 <EditableDiv path="recursos" value={editableData.recursos} />
               </div>
             </div>
 
-            {/* Firmas */}
-            <div className="grid grid-cols-12 text-[9px] min-h-[60px]">
+            {/* 7. ADECUACIONES (PIAR) */}
+            <div className="grid grid-cols-12 border-b border-black text-[11px] font-black">
+              <div className="col-span-2 border-r border-black p-2 flex items-center uppercase text-[9px]">7.ADECUACIONES (PIAR)</div>
+              <div className="col-span-10 p-2 italic text-justify font-black min-h-[40px]">
+                <EditableDiv path="adecuaciones_piar" value={editableData.adecuaciones_piar || "No aplica"} />
+              </div>
+            </div>
+
+            {/* 8. OBSERVACIONES Y BIBLIOGRAFÍA */}
+            <div className="grid grid-cols-12 border-b border-black text-[11px] font-black">
+              <div className="col-span-2 border-r border-black p-2 flex items-center uppercase text-[9px]">8.OBSERVACIONES Y BIBLIOGRAFÍA</div>
+              <div className="col-span-5 border-r border-black p-2 italic text-justify font-black min-h-[40px]">
+                <EditableDiv path="observaciones" value={editableData.observaciones} />
+              </div>
+              <div className="col-span-5 p-2 italic text-justify font-black min-h-[40px]">
+                <EditableDiv path="bibliografia" value={editableData.bibliografia} />
+              </div>
+            </div>
+
+            {/* FOOTER FIRMAS */}
+            <div className="grid grid-cols-12 text-[10px] font-black min-h-[70px]">
               <div className="col-span-4 border-r border-black p-2 flex flex-col justify-between">
-                <span className="font-black uppercase">ELABORÓ:</span>
-                <span className="italic font-bold text-center border-t border-black/10 pt-1">{editableData.nombre_docente}</span>
+                <span className="uppercase">ELABORÓ:</span>
+                <EditableSpan path="elaboro" value={editableData.elaboro} className="italic text-center border-t border-black/10 pt-2" />
               </div>
               <div className="col-span-4 border-r border-black p-2 flex flex-col justify-between">
-                <span className="font-black uppercase">REVISÓ/APROBÓ:</span>
-                <div className="h-6 border-b border-black/20"></div>
+                <span className="uppercase">REVISÓ/APROBÓ:</span>
+                <EditableSpan path="reviso" value={editableData.reviso} className="italic text-center border-t border-black/10 pt-2" />
               </div>
-              <div className="col-span-4 p-2 flex flex-col justify-between text-center">
-                <span className="font-black uppercase">FECHA:</span>
-                <span className="italic font-black text-lg">{editableData.fecha}</span>
+              <div className="col-span-4 p-2 flex flex-col justify-between">
+                <span className="uppercase">FECHA:</span>
+                <EditableSpan path="pie_fecha" value={editableData.pie_fecha} className="italic text-center border-t border-black/10 pt-2" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ANEXOS DEL SISTEMA (Standards, DBA, Sessions, etc.) */}
+        <div className="mt-8 space-y-12">
+          {/* DBA REFORZADO */}
+          <div className="border border-black p-4 bg-gray-50/30">
+            <h4 className="text-[12px] font-black uppercase border-b border-black mb-2 flex items-center gap-2">
+              <BookOpen size={16} /> Fundamentación Normativa (DBA & Estándares)
+            </h4>
+            <div className="grid grid-cols-2 gap-4 text-[10px]">
+              <div>
+                <span className="font-black uppercase block underline mb-1">Derechos Básicos (DBA):</span>
+                <div className="bg-white p-2 border border-black italic">
+                  <p className="font-black">{editableData.dba_detalle?.numero}</p>
+                  <p>{editableData.dba_detalle?.enunciado}</p>
+                </div>
+              </div>
+              <div>
+                <span className="font-black uppercase block underline mb-1">Estándar de Competencia:</span>
+                <div className="bg-white p-2 border border-black italic">
+                  <p>{editableData.estandar_competencia}</p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* ANEXOS */}
-          <div className="space-y-12">
-            {/* ANEXO 1: SESIONES */}
-            <div className="break-before-page border-t-2 border-black pt-8">
-              <div className="flex items-center gap-3 mb-6 font-black uppercase tracking-tighter italic">
-                <ClipboardList size={22} />
-                <h3 className="text-xl">Anexo 1: Desglose Pedagógico de Sesiones</h3>
-              </div>
-              <div className="space-y-6">
-                {Array.isArray(editableData.sesiones_detalle) && editableData.sesiones_detalle.map((s, i) => (
-                  <div key={i} className="border-2 border-black p-5 rounded-3xl relative hover:bg-slate-50 transition-colors">
-                    <div className="absolute top-0 left-8 -translate-y-1/2 bg-black text-white px-4 py-1 rounded-full text-[10px] font-black uppercase">
-                      Sesión {s.numero}
-                    </div>
-                    <div className="flex justify-between items-center mb-4 mt-2">
-                      <h4 className="text-[16px] font-black underline underline-offset-4 decoration-black/10">
-                        <EditableSpan path={`sesiones_detalle.${i}.titulo`} value={s.titulo} />
-                      </h4>
-                      <span className="bg-blue-100 text-blue-900 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
-                        <EditableSpan path={`sesiones_detalle.${i}.tiempo`} value={s.tiempo} />
-                      </span>
-                    </div>
-                    <EditableDiv path={`sesiones_detalle.${i}.descripcion`} value={s.descripcion} className="text-[12px] italic font-medium text-slate-700 leading-relaxed mb-4" />
-                    <div className="bg-orange-50/50 p-4 rounded-2xl border border-orange-100 italic text-[11px] font-medium leading-relaxed">
-                      <span className="font-black text-orange-900 uppercase block mb-1">Activación ADI / Corporiedad:</span>
-                      <EditableDiv path={`sesiones_detalle.${i}.momento_adi`} value={s.momento_adi} />
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {/* ANEXO 1: SESIONES */}
+          <div className="break-before-page border-t-2 border-black pt-8">
+            <div className="flex items-center gap-3 mb-6 font-black uppercase tracking-tight">
+              <ClipboardList size={20} className="text-black" />
+              <h3 className="text-lg">Anexo 1: Desglose Pedagógico de Sesiones</h3>
             </div>
+            <div className="grid grid-cols-2 gap-4">
+              {Array.isArray(editableData.sesiones_detalle) && editableData.sesiones_detalle.map((s, i) => (
+                <div key={i} className="border border-black p-4 bg-white">
+                  <div className="flex justify-between items-center mb-2 border-b border-gray-100 pb-1">
+                    <span className="text-[9px] font-black text-gray-500 uppercase">SESIÓN {s.numero}</span>
+                    <EditableSpan path={`sesiones_detalle.${i}.tiempo`} value={s.tiempo} className="text-[9px] italic text-gray-400" />
+                  </div>
+                  <h4 className="text-[12px] font-black mb-1 uppercase tracking-tight">
+                    <EditableSpan path={`sesiones_detalle.${i}.titulo`} value={s.titulo} />
+                  </h4>
+                  <EditableDiv path={`sesiones_detalle.${i}.descripcion`} value={s.descripcion} className="text-[10px] text-gray-700 leading-normal mb-3 text-justify" />
+                  <div className="bg-gray-50 p-2 border border-gray-200 italic text-[9px] text-gray-500">
+                    <span className="font-black text-gray-700 uppercase block mb-0.5">ACCIÓN DE ACTIVACIÓN (ADI):</span>
+                    <EditableDiv path={`sesiones_detalle.${i}.momento_adi`} value={s.momento_adi} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
-            {/* ANEXO 2: RÚBRICA */}
-            <div className="break-before-page border-t-2 border-black pt-8">
-              <div className="flex items-center gap-3 mb-6 font-black uppercase tracking-tighter italic">
-                <GraduationCap size={22} />
-                <h3 className="text-xl">Anexo 2: Rúbrica de Evaluación SIEE Platinum</h3>
-              </div>
-              <div className="border-2 border-black rounded-[2rem] overflow-hidden bg-white shadow-xl">
-                <table className="w-full border-collapse text-[10px]">
-                  <thead>
-                    <tr className="bg-black text-white uppercase font-black">
-                      <th className="p-4 text-center border-r border-white/20">Criterio</th>
-                      <th className="p-4 text-center border-r border-white/20 bg-red-950/80">Bajo</th>
-                      <th className="p-4 text-center border-r border-white/20 bg-orange-950/80">Básico</th>
-                      <th className="p-4 text-center border-r border-white/20 bg-blue-950/80">Alto</th>
-                      <th className="p-4 text-center bg-emerald-950/80">Superior</th>
+          {/* ANEXO 2: RÚBRICA - Simplified */}
+          <div className="break-before-page border-t-2 border-black pt-8 mt-12">
+            <div className="flex items-center gap-3 mb-6 font-black uppercase tracking-tight">
+              <GraduationCap size={20} className="text-slate-800" />
+              <h3 className="text-lg">Anexo 2: Rúbrica de Evaluación SIEE</h3>
+            </div>
+            <div className="border border-black overflow-hidden bg-white">
+              <table className="w-full border-collapse text-[10px]">
+                <thead>
+                  <tr className="bg-gray-100 border-b border-black uppercase font-black">
+                    <th className="p-3 text-left border-r border-black w-[15%]">CRITERIO</th>
+                    <th className="p-3 text-center border-r border-black w-[21%]">BAJO</th>
+                    <th className="p-3 text-center border-r border-black w-[21%]">BÁSICO</th>
+                    <th className="p-3 text-center border-r border-black w-[21%] text-slate-900 bg-slate-50">ALTO</th>
+                    <th className="p-3 text-center w-[21%] text-slate-900 bg-gray-50">SUPERIOR</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black">
+                  {Array.isArray(editableData.rubrica) && editableData.rubrica.map((r, i) => (
+                    <tr key={i} className="hover:bg-slate-50 transition-colors">
+                      <td className="p-3 font-black uppercase bg-gray-50 border-r border-black text-[9px]">
+                        <EditableSpan path={`rubrica.${i}.criterio`} value={r.criterio} />
+                      </td>
+                      <td className="p-3 italic font-medium text-slate-600 border-r border-black leading-tight text-justify">
+                        <EditableDiv path={`rubrica.${i}.bajo`} value={r.bajo} />
+                      </td>
+                      <td className="p-3 italic font-medium text-slate-600 border-r border-black leading-tight text-justify">
+                        <EditableDiv path={`rubrica.${i}.basico`} value={r.basico} />
+                      </td>
+                      <td className="p-3 italic font-semibold text-slate-800 border-r border-black bg-slate-50/50 leading-tight text-justify">
+                        <EditableDiv path={`rubrica.${i}.alto`} value={r.alto} />
+                      </td>
+                      <td className="p-3 italic font-black text-slate-900 leading-tight text-justify">
+                        <EditableDiv path={`rubrica.${i}.superior`} value={r.superior} />
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-black/10">
-                    {Array.isArray(editableData.rubrica) && editableData.rubrica.map((r, i) => (
-                      <tr key={i} className="hover:bg-slate-50 transition-colors">
-                        <td className="p-4 font-black uppercase bg-slate-50 border-r border-black/10 text-[9px]">
-                          <EditableSpan path={`rubrica.${i}.criterio`} value={r.criterio} />
-                        </td>
-                        <td className="p-4 italic font-medium text-slate-600 border-r border-black/10">
-                          <EditableDiv path={`rubrica.${i}.bajo`} value={r.bajo} />
-                        </td>
-                        <td className="p-4 italic font-medium text-slate-600 border-r border-black/10">
-                          <EditableDiv path={`rubrica.${i}.basico`} value={r.basico} />
-                        </td>
-                        <td className="p-4 italic font-semibold text-slate-900 border-r border-black/10 bg-blue-50/20">
-                          <EditableDiv path={`rubrica.${i}.alto`} value={r.alto} />
-                        </td>
-                        <td className="p-4 italic font-black text-slate-900 bg-emerald-50/20">
-                          <EditableDiv path={`rubrica.${i}.superior`} value={r.superior} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ANEXO 3: TALLER - Simplified */}
+          {editableData.taller_imprimible && (
+            <div className="break-before-page border-t-2 border-black pt-8 mt-12">
+              <div className="flex justify-between items-center mb-6">
+                <div className="w-16 h-16 border border-black p-2 bg-white">
+                  <img src="/logo_santander.png" alt="Logo" className="w-full h-full object-contain grayscale" />
+                </div>
+                <div className="text-center flex-1">
+                  <h2 className="text-xl font-black uppercase tracking-tight">Anexo 3: Taller de Aplicación</h2>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Instrumento de Aprendizaje Institucional</p>
+                </div>
+                <div className="text-right border-l border-black pl-4">
+                  <p className="text-[12px] font-black uppercase">F-PA-03</p>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase">Santander AI</p>
+                </div>
+              </div>
+
+              <div className="border border-black p-8 space-y-6">
+                <div className="grid grid-cols-2 gap-8 text-[11px] border-b border-black pb-6">
+                  <div className="space-y-4">
+                    <div className="border-b border-black pb-1 italic font-bold">Estudiante: ____________________________</div>
+                    <div className="grid grid-cols-3 gap-4 font-black uppercase text-[9px]">
+                      <div className="border-b border-black pb-1">Grado: {editableData.grado}</div>
+                      <div className="border-b border-black pb-1">Grupo: ____</div>
+                      <div className="border-b border-black pb-1">Fecha: ____</div>
+                    </div>
+                  </div>
+                  <EditableDiv path="taller_imprimible.introduccion" value={editableData.taller_imprimible.introduccion} className="bg-gray-50 p-4 border border-slate-200 italic text-[11px] text-slate-700 leading-relaxed font-medium" />
+                </div>
+
+                <div className="space-y-8 py-4">
+                  {Array.isArray(editableData.taller_imprimible.ejercicios) && editableData.taller_imprimible.ejercicios.map((ej, i) => (
+                    <div key={i} className="flex gap-6 group">
+                      <div className="w-10 h-10 border border-black flex items-center justify-center font-black text-lg bg-white shrink-0">
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 space-y-4 pt-1">
+                        <EditableDiv path={`taller_imprimible.ejercicios.${i}`} value={ej} className="font-bold text-[13px] leading-snug text-slate-900 w-full" />
+                        <div className="space-y-4 pr-10 opacity-30">
+                          <div className="border-b border-slate-400 h-1 w-full"></div>
+                          <div className="border-b border-slate-400 h-1 w-full"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-8 bg-slate-900 p-8 text-white relative border-4 border-slate-200">
+                  <div className="relative z-10">
+                    <div className="inline-block border border-white/50 px-3 py-1 text-[9px] font-black uppercase tracking-widest mb-4">RETO CREATIVO INSTITUCIONAL</div>
+                    <EditableDiv path="taller_imprimible.reto_creativo" value={editableData.taller_imprimible.reto_creativo} className="text-[14px] font-medium leading-relaxed italic opacity-95 pr-10" />
+                  </div>
+                </div>
               </div>
             </div>
+          )}
 
-            {/* ANEXO 3: TALLER */}
-            {editableData.taller_imprimible && (
-              <div className="break-before-page border-t-2 border-black pt-8">
-                <div className="flex justify-between items-center mb-10 border-b-2 border-dashed border-slate-200 pb-8">
-                  <div className="w-24 h-24 p-2 bg-white border border-slate-100 rounded-3xl shadow-sm flex items-center justify-center">
-                    <img src="/logo_santander.png" alt="Logo" className="w-full h-full object-contain" />
-                  </div>
-                  <div className="text-center flex-1">
-                    <h2 className="text-3xl font-black uppercase tracking-tighter">Anexo 3: Taller de Aplicación</h2>
-                    <p className="text-[11px] text-gray-400 font-black uppercase tracking-[8px] mt-1">Guía del Estudiante</p>
-                  </div>
-                  <div className="text-right pr-4 border-r-4 border-black px-4">
-                    <p className="text-[14px] font-black text-blue-900">SANTANDER</p>
-                    <p className="text-[9px] font-bold text-gray-400">EXCELENCIA AI</p>
-                  </div>
-                </div>
-                <div className="border-4 border-black rounded-[3rem] p-10 space-y-8 bg-slate-50/30">
-                  <div className="grid grid-cols-2 gap-12 text-[12px] border-b-2 border-black/10 pb-10">
-                    <div className="space-y-6">
-                      <div className="border-b-2 border-black pb-1 italic font-bold">Estudiante: ____________________________</div>
-                      <div className="grid grid-cols-3 gap-6 font-black uppercase text-[10px]">
-                        <div className="border-b-2 border-black pb-1">Grado: {editableData.grado}</div>
-                        <div className="border-b-2 border-black pb-1">Grupo: ____</div>
-                        <div className="border-b-2 border-black pb-1">Fecha: ____</div>
-                      </div>
-                    </div>
-                    <EditableDiv path="taller_imprimible.introduccion" value={editableData.taller_imprimible.introduccion} className="bg-white p-6 rounded-[2rem] italic text-[14px] text-slate-600 leading-relaxed font-medium shadow-sm border border-slate-100" />
-                  </div>
-                  <div className="space-y-12 py-6">
-                    {Array.isArray(editableData.taller_imprimible.ejercicios) && editableData.taller_imprimible.ejercicios.map((ej, i) => (
-                      <div key={i} className="flex gap-8 group">
-                        <div className="w-14 h-14 rounded-[1.5rem] bg-black text-white flex items-center justify-center font-black text-2xl shrink-0 shadow-lg group-hover:scale-110 transition-all">
-                          {i + 1}
-                        </div>
-                        <div className="flex-1 space-y-6 pt-2">
-                          <EditableDiv path={`taller_imprimible.ejercicios.${i}`} value={ej} className="font-bold text-[15px] leading-snug text-slate-900 w-full" />
-                          <div className="space-y-4 pr-10">
-                            <div className="border-b-2 border-slate-200 h-1 w-full opacity-60"></div>
-                            <div className="border-b-2 border-slate-200 h-1 w-full opacity-60"></div>
-                            <div className="border-b-2 border-slate-200 h-1 w-full opacity-60"></div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-16 bg-gradient-to-br from-black to-slate-800 p-10 rounded-[3.5rem] text-white relative overflow-hidden shadow-2xl border-4 border-white/10">
-                    <Lightbulb className="absolute top-0 right-0 opacity-10 -mr-16 -mt-16" size={240} />
-                    <div className="relative z-10">
-                      <div className="bg-white/10 w-fit px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[3px] mb-6 border border-white/50">💡 RETO CREATIVO MASTER</div>
-                      <EditableDiv path="taller_imprimible.reto_creativo" value={editableData.taller_imprimible.reto_creativo} className="text-[17px] font-medium leading-relaxed italic opacity-95 pr-20" />
-                    </div>
-                  </div>
-                </div>
+          {/* ANEXO 5: ALERTAS Y MATERIAL - Simplified */}
+          <div className="break-before-page border-t-2 border-black pt-8">
+            <div className="flex items-center gap-3 mb-6 font-black uppercase tracking-tight">
+              <AlertTriangle size={20} className="text-slate-800" />
+              <h3 className="text-lg">Anexo 4: Alertas Pedagógicas y Material de Apoyo Maestro</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-8">
+              <div className="space-y-6 border border-black p-6 bg-slate-50">
+                <h4 className="text-[11px] font-black uppercase text-slate-900 border-b border-black pb-2 flex items-center gap-2">
+                  <AlertTriangle size={16} /> ALERTAS PEDAGÓGICAS
+                </h4>
+                <ul className="space-y-4">
+                  {Array.isArray(editableData.alertas_generadas) && (
+                    editableData.alertas_generadas.map((a, i) => (
+                      <li key={i} className="text-[11px] italic font-medium text-slate-700 flex gap-3 leading-relaxed">
+                        <span className="font-black">•</span>
+                        <EditableSpan path={`alertas_generadas.${i}`} value={a} className="flex-1" />
+                      </li>
+                    ))
+                  )}
+                </ul>
               </div>
-            )}
-
-            {/* ANEXO 4: EVALUACIÓN ICFES */}
-            {Array.isArray(editableData.evaluacion) && editableData.evaluacion.length > 0 && (
-              <div className="break-before-page border-t-2 border-black pt-8">
-                <div className="text-center mb-12">
-                  <h3 className="text-2xl font-black uppercase tracking-tighter italic underline decoration-4 decoration-black/10 underline-offset-8">Anexo 4: Banco de Evaluación por Competencias SIEE (Tipo ICFES)</h3>
-                </div>
-                <div className="grid grid-cols-1 gap-10">
-                  {editableData.evaluacion.map((ev, i) => (
-                    <div key={i} className="border-2 border-black rounded-[2.5rem] p-10 relative hover:bg-slate-50 transition-all group overflow-hidden bg-white">
-                      <div className="absolute top-0 right-10 -translate-y-1/2 bg-black text-white px-8 py-2.5 rounded-full text-[12px] font-black uppercase tracking-widest shadow-xl">
-                        ITEM {i + 1}
-                      </div>
-                      <div className="flex gap-4 mb-6">
-                        <span className="bg-blue-600 text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tight shadow-md">
-                          Competencia: <EditableSpan path={`evaluacion.${i}.competencia`} value={ev.competencia} />
-                        </span>
-                      </div>
-                      <EditableDiv path={`evaluacion.${i}.pregunta`} value={ev.pregunta} className="font-bold text-[16px] leading-[1.4] mb-10 text-slate-900 border-l-4 border-black pl-6" />
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-2">
-                        {(ev.opciones || []).map((opt, j) => (
-                          <div key={j} className="flex items-start gap-5 p-5 border-2 border-slate-100 rounded-2xl bg-white hover:border-black transition-all group/opt shadow-sm hover:shadow-md cursor-pointer">
-                            <span className="w-10 h-10 rounded-2xl bg-slate-50 group-hover/opt:bg-black group-hover/opt:text-white border border-slate-200 flex items-center justify-center font-black text-lg transition-all shrink-0">
-                              {optionLetters[j]}
-                            </span>
-                            <EditableSpan path={`evaluacion.${i}.opciones.${j}`} value={opt} className="italic font-medium text-[14px] pt-1.5 leading-snug flex-1" />
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-10 pt-8 border-t-2 border-dashed border-slate-200 no-print space-y-4">
-                        <div className="flex gap-4 items-center text-emerald-600 font-black">
-                          <CheckCircle size={22} />
-                          <span className="uppercase text-[11px] tracking-widest text-slate-400">Clave de Respuesta:</span>
-                          <span className="text-2xl underline underline-offset-8 decoration-emerald-200 decoration-4 bg-emerald-50 px-4 py-1 rounded-xl">
-                            OPCIÓN <EditableSpan path={`evaluacion.${i}.respuesta_correcta`} value={ev.respuesta_correcta} />
-                          </span>
-                        </div>
-                        {ev.explicacion && (
-                          <div className="bg-slate-50 p-6 rounded-[2rem] border-l-8 border-slate-300 italic text-slate-600 text-[12px] font-medium leading-relaxed">
-                            <span className="font-black text-slate-400 uppercase text-[10px] block mb-2 tracking-[2px]">Justificación Pedagógica AI:</span>
-                            <EditableDiv path={`evaluacion.${i}.explicacion`} value={ev.explicacion} />
-                          </div>
-                        )}
+              <div className="space-y-6 border border-black p-6 bg-white">
+                <h4 className="text-[11px] font-black uppercase text-slate-900 border-b border-black pb-2 flex items-center gap-2">
+                  <ExternalLink size={16} /> RECURSOS DIGITALES
+                </h4>
+                <div className="space-y-4">
+                  {Array.isArray(editableData.recursos_links) && editableData.recursos_links.map((rl, i) => (
+                    <div key={i} className="border-b border-gray-100 last:border-0 pb-4 italic">
+                      <p className="text-[10px] font-black uppercase text-slate-900">
+                        <EditableSpan path={`recursos_links.${i}.tipo`} value={rl.tipo} />: <EditableSpan path={`recursos_links.${i}.nombre`} value={rl.nombre} />
+                      </p>
+                      <EditableDiv path={`recursos_links.${i}.descripcion`} value={rl.descripcion} className="text-[10px] text-slate-500 leading-snug my-2" />
+                      <div className="flex items-center gap-2">
+                        <EditableSpan path={`recursos_links.${i}.url`} value={rl.url} className="text-[9px] text-blue-800 underline flex-1 truncate" />
+                        <a href={rl.url} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold text-slate-800 no-print underline">
+                          Link
+                        </a>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
-
-            {/* ANEXO 5: ALERTAS Y MATERIAL */}
-            <div className="break-before-page border-t-2 border-black pt-8 mb-20">
-              <div className="flex items-center gap-3 mb-10 font-black uppercase tracking-tighter italic">
-                <AlertTriangle size={22} className="text-red-600" />
-                <h3 className="text-xl">Anexo 5: Alertas Pedagógicas y Material de Apoyo Maestro</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-12">
-                <div className="space-y-8 bg-red-50/30 p-8 rounded-[3rem] border-2 border-red-100/50">
-                  <h4 className="text-[13px] font-black uppercase text-red-700 flex items-center gap-3 tracking-widest">
-                    <AlertTriangle size={20} /> ALERTAS RECTORÍA
-                  </h4>
-                  <ul className="space-y-5">
-                    {Array.isArray(editableData.alertas_generadas) && (
-                      editableData.alertas_generadas.map((a, i) => (
-                        <li key={i} className="text-[12px] italic font-medium text-slate-700 flex gap-4 leading-relaxed">
-                          <span className="w-2.5 h-2.5 rounded-full bg-red-400 mt-2 shrink-0 shadow-sm shadow-red-200"></span>
-                          <EditableSpan path={`alertas_generadas.${i}`} value={a} className="flex-1" />
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                </div>
-                <div className="space-y-8 bg-blue-50/30 p-8 rounded-[3rem] border-2 border-blue-100/50">
-                  <h4 className="text-[13px] font-black uppercase text-blue-700 flex items-center gap-3 tracking-widest">
-                    <ExternalLink size={20} /> RECURSOS DIGITALES
-                  </h4>
-                  <div className="space-y-5">
-                    {Array.isArray(editableData.recursos_links) && editableData.recursos_links.map((rl, i) => (
-                      <div key={i} className="bg-white p-5 rounded-[2rem] border-2 border-slate-100 italic transition-all hover:border-blue-300 hover:shadow-lg group shadow-sm">
-                        <p className="text-[11px] font-black uppercase tracking-tight text-slate-900 mb-1">
-                          <EditableSpan path={`recursos_links.${i}.tipo`} value={rl.tipo} />: <EditableSpan path={`recursos_links.${i}.nombre`} value={rl.nombre} />
-                        </p>
-                        <EditableDiv path={`recursos_links.${i}.descripcion`} value={rl.descripcion} className="text-[11px] text-slate-500 leading-tight mb-4" />
-                        <div className="flex items-center gap-3">
-                          <EditableSpan path={`recursos_links.${i}.url`} value={rl.url} className="text-[10px] text-blue-400 flex-1 truncate" />
-                          <a href={rl.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-[11px] font-black text-blue-600 hover:text-blue-800 transition-colors bg-blue-50 px-4 py-1.5 rounded-full border border-blue-100">
-                            Ver <ExternalLink size={12} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                          </a>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
+
+          {/* ANEXO 5: EVALUACIÓN ICFES - Simplified */}
+          {Array.isArray(editableData.evaluacion) && editableData.evaluacion.length > 0 && (
+            <div className="break-before-page border-t-2 border-black pt-8 mt-12 mb-20">
+              <div className="text-center mb-8">
+                <h3 className="text-xl font-black uppercase tracking-tight">Anexo 5: Banco de Evaluación por Competencias SIEE (Tipo ICFES)</h3>
+                <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase">Validación Nacional por Competencias (10 PREGUNTAS)</p>
+              </div>
+              <div className="grid grid-cols-1 gap-8">
+                {editableData.evaluacion.map((ev, i) => (
+                  <div key={i} className="border border-black p-8 relative bg-white">
+                    <div className="absolute top-0 right-8 -translate-y-1/2 bg-slate-800 text-white px-3 py-1 font-bold text-[9px] uppercase tracking-widest border border-black">
+                      ITEM No. {i + 1}
+                    </div>
+                    <div className="mb-4">
+                      <span className="text-slate-500 text-[10px] font-bold uppercase">COMPETENCIA: <EditableSpan path={`evaluacion.${i}.competencia`} value={ev.competencia} /></span>
+                    </div>
+                    <div className="bg-gray-50 border-l border-black p-4 mb-6">
+                      <EditableDiv path={`evaluacion.${i}.pregunta`} value={ev.pregunta} className="font-bold text-[14px] leading-relaxed text-slate-900" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-4">
+                      {(ev.opciones || []).map((opt, j) => (
+                        <div key={j} className="flex items-start gap-4">
+                          <span className="w-8 h-8 border border-black flex items-center justify-center font-black text-sm shrink-0">
+                            {optionLetters[j]}
+                          </span>
+                          <EditableSpan path={`evaluacion.${i}.opciones.${j}`} value={opt} className="italic font-medium text-[12px] pt-1 leading-snug flex-1" />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-8 pt-6 border-t border-dashed border-slate-300 no-print">
+                      <div className="flex gap-4 items-center mb-4">
+                        <span className="uppercase text-[10px] font-black text-slate-400">CLAVE:</span>
+                        <span className="text-xl font-black border-b-2 border-black inline-block px-2">
+                          OPCIÓN <EditableSpan path={`evaluacion.${i}.respuesta_correcta`} value={ev.respuesta_correcta} />
+                        </span>
+                      </div>
+                      {ev.explicacion && (
+                        <div className="bg-gray-50 p-4 border border-slate-200 italic text-slate-600 text-[11px] font-medium leading-relaxed">
+                          <span className="font-black text-slate-500 uppercase text-[9px] block mb-1 underline">Justificación Pedagógica:</span>
+                          <EditableDiv path={`evaluacion.${i}.explicacion`} value={ev.explicacion} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -5,8 +5,9 @@ import { SequencePreview } from './components/SequencePreview';
 import { UserManagement, PasswordChange } from './components/UserManagement';
 import { AdminSequenceViewer } from './components/AdminSequenceViewer';
 import { DidacticSequence, SequenceInput } from './types';
-import { generateDidacticSequence } from './services/groqService';
-import { GraduationCap, Loader2, AlertTriangle, LogOut, User as UserIcon, Shield, LayoutDashboard, Database, Activity, Users } from 'lucide-react';
+import { generateDidacticSequence as generateGroq } from './services/groqService';
+import { generateDidacticSequence as generateGemini } from './services/geminiService';
+import { GraduationCap, Loader2, AlertTriangle, LogOut, User as UserIcon, Shield, LayoutDashboard, Database, Activity, Users, Sparkles, PenTool } from 'lucide-react';
 import { Login } from './components/Login';
 import { authService, User } from './services/authService';
 
@@ -35,8 +36,8 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
 
-  // Dashboard Management
-  const [activeAdminView, setActiveAdminView] = useState<'monitor' | 'users' | 'history' | null>(null);
+  // Navigation State
+  const [currentTab, setCurrentTab] = useState<'planner' | 'history' | 'users' | 'monitor'>('planner');
   const [showProfile, setShowProfile] = useState(false);
 
   const loadingMessages = [
@@ -61,7 +62,7 @@ function App() {
     return () => clearInterval(interval);
   }, [isLoading]);
 
-  // 1. Initial Load
+  // 1. Initial Load & Session Refresh
   useEffect(() => {
     if (isAuthenticated && currentUser) {
       const inputKey = authService.getUserStorageKey('santander_input_v1');
@@ -73,12 +74,33 @@ function App() {
         setInput(initialInput);
       }
 
+      // Track presence
       const sub = authService.trackPresence(currentUser);
+
+      // PERIODIC REFRESH: Ensures teacher assignments stay in sync & enforces single session
+      const refreshInterval = setInterval(async () => {
+        const refreshed = await authService.refreshSession();
+        if (refreshed) {
+          if (JSON.stringify(refreshed) !== JSON.stringify(currentUser)) {
+            console.log("♻️ [Session] Datos de usuario actualizados");
+            setCurrentUser(refreshed);
+          }
+        } else {
+          // Null means session was invalidated (Identity clash)
+          console.error("🚨 [Security] Sesión invalidada externamente.");
+          setIsAuthenticated(false);
+          setCurrentUser(null);
+          authService.logout();
+          alert("Tu sesión ha sido abierta en otro dispositivo. Se cerrará esta sesión por seguridad.");
+        }
+      }, 10000);
+
       return () => {
         if (sub) sub.unsubscribe();
+        clearInterval(refreshInterval);
       };
     }
-  }, [isAuthenticated, currentUser]);
+  }, [isAuthenticated, currentUser?.email]); // Re-run if email changes or auth state changes
 
   // 2. Persistencia de entrada
   useEffect(() => {
@@ -114,10 +136,22 @@ function App() {
     setIsLoading(true);
     setError(null);
     try {
-      const result = await generateDidacticSequence({
-        ...input,
-        docente_nombre: currentUser?.name
-      }, refinementConfig?.instruction);
+      let result: DidacticSequence;
+
+      try {
+        console.log("🚀 [Orquestador] Intentando con Groq (Refinamiento eficiente)...");
+        result = await generateGroq({
+          ...input,
+          docente_nombre: currentUser?.name
+        }, refinementConfig?.instruction, refinementConfig ? (sequence || undefined) : undefined);
+      } catch (groqErr) {
+        console.warn("⚠️ Groq falló, activando Fallback a Gemini...", groqErr);
+        result = await generateGemini({
+          ...input,
+          docente_nombre: currentUser?.name
+        }, refinementConfig?.instruction, refinementConfig ? (sequence || undefined) : undefined);
+      }
+
       setSequence(result);
 
       if (currentUser) {
@@ -130,7 +164,7 @@ function App() {
 
     } catch (err) {
       console.error(err);
-      setError(err instanceof Error ? err.message : "Fallo en la generación.");
+      setError(err instanceof Error ? err.message : "Fallo crítico en ambos motores de IA.");
     } finally {
       setIsLoading(false);
     }
@@ -154,147 +188,208 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  const toggleAdminView = (view: 'monitor' | 'users' | 'history') => {
-    if (activeAdminView === view) {
-      setActiveAdminView(null);
-    } else {
-      setActiveAdminView(view);
-    }
-  };
-
   if (!isAuthenticated) return <Login onLogin={handleLogin} />;
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-outfit pb-20 relative selection:bg-blue-100 selection:text-blue-900">
 
-      {/* Header */}
-      <header className="relative z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 no-print transition-all duration-300 shadow-sm">
+      {/* Header Ejecutivo de Navegación */}
+      <header className="relative z-40 bg-white border-b border-slate-200 sticky top-0 no-print transition-all duration-300 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4 cursor-pointer group" onClick={handleFullReset}>
-            <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-100 group-hover:scale-110 transition-transform duration-500 w-12 h-12 flex items-center justify-center">
-              <img src="/logo_santander.png" alt="Logo Santander" className="w-full h-full object-contain" />
+
+          {/* Logo y Nombre */}
+          <div className="flex items-center gap-4 cursor-pointer group" onClick={() => setCurrentTab('planner')}>
+            <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-100 group-hover:rotate-6 transition-transform w-12 h-12 flex items-center justify-center">
+              <img src="/logo_santander.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div className="hidden sm:block">
-              <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none group-hover:text-blue-700 transition-colors">
-                I.E. Santander
+              <h1 className="text-xl font-black text-slate-800 tracking-tighter leading-none">
+                SANTANDER <span className="text-blue-600">AI</span>
               </h1>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-[2px] mt-1">
-                AI <span className="text-blue-600">Planner</span>
+              <p className="text-[9px] text-slate-400 font-black uppercase tracking-[2px] mt-1">
+                SISTEMA CURRICULAR ELITE
               </p>
             </div>
           </div>
 
+          {/* Navegación por Pestañas Maestro/Admin */}
+          <nav className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+            <button
+              onClick={() => setCurrentTab('planner')}
+              className={`px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-wider ${currentTab === 'planner' ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              <PenTool size={14} /> <span className="hidden md:inline">Creación</span>
+            </button>
+            <button
+              onClick={() => setCurrentTab('history')}
+              className={`px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-wider ${currentTab === 'history' ? 'bg-white text-indigo-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              <Database size={14} /> <span className="hidden md:inline">Repositorio</span>
+            </button>
 
-          <div className="flex items-center gap-3">
-            {/* Admin Controls - Separado por Tabs */}
-            {currentUser?.role === 'admin' ? (
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200">
+            {currentUser?.role === 'admin' && (
+              <>
+                <div className="h-6 w-px bg-slate-200 mx-1"></div>
                 <button
-                  onClick={() => toggleAdminView('monitor')}
-                  className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${activeAdminView === 'monitor' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:bg-white'}`}
+                  onClick={() => setCurrentTab('users')}
+                  className={`px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-wider ${currentTab === 'users' ? 'bg-white text-orange-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-800'}`}
                 >
-                  <Activity size={14} /> <span className="hidden sm:inline">Monitor</span>
+                  <Users size={14} /> <span className="hidden md:inline">Docentes</span>
                 </button>
                 <button
-                  onClick={() => toggleAdminView('users')}
-                  className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${activeAdminView === 'users' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-white'}`}
+                  onClick={() => setCurrentTab('monitor')}
+                  className={`px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-wider ${currentTab === 'monitor' ? 'bg-white text-emerald-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-800'}`}
                 >
-                  <Users size={14} /> <span className="hidden sm:inline">Usuarios</span>
+                  <Activity size={14} /> <span className="hidden md:inline">Métricas</span>
                 </button>
-                <button
-                  onClick={() => toggleAdminView('history')}
-                  className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${activeAdminView === 'history' ? 'bg-slate-800 text-white shadow-lg' : 'text-slate-500 hover:bg-white'}`}
-                >
-                  <Database size={14} /> <span className="hidden sm:inline">Repo</span>
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50">
-                <button
-                  onClick={() => toggleAdminView('history')}
-                  className={`p-2.5 rounded-xl transition-all ${activeAdminView === 'history' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600 hover:bg-white'}`}
-                  title="Mi Historial de Secuencias"
-                >
-                  <Database size={20} />
-                </button>
-              </div>
+              </>
             )}
+          </nav>
 
-            <div className="h-8 w-px bg-slate-200 mx-2 hidden sm:block"></div>
-
-            {/* User Profile */}
-            <div className="flex items-center gap-3 pl-2">
-              <div className="hidden lg:flex flex-col items-end text-right">
-                <span className="text-[10px] font-black text-slate-800 leading-none truncate max-w-[100px]">{currentUser?.name}</span>
-                <span className="text-[9px] font-bold text-blue-500 uppercase tracking-widest mt-1">{currentUser?.role}</span>
-              </div>
-
-              <button
-                onClick={() => setShowProfile(!showProfile)}
-                className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all shadow-sm ${showProfile ? 'bg-indigo-600 text-white shadow-indigo-500/30' : 'bg-white text-slate-400 hover:text-indigo-600 border border-slate-200'}`}
-                title="Mi Cuenta"
-              >
-                <UserIcon size={18} />
-              </button>
-
-              <button
-                onClick={handleLogout}
-                className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-100 transition-all shadow-sm"
-                title="Cerrar Sesión"
-              >
-                <LogOut size={18} />
-              </button>
-            </div>
+          {/* Menú de Usuario */}
+          <div className="flex items-center gap-3 pl-2">
+            <button
+              onClick={() => setShowProfile(!showProfile)}
+              className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all bg-white text-slate-400 hover:text-blue-600 border border-slate-200 shadow-sm`}
+            >
+              <UserIcon size={18} />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-red-500 transition-all shadow-sm"
+            >
+              <LogOut size={18} />
+            </button>
           </div>
         </div>
 
-        {/* Profile / Password Modal Overlay */}
+        {/* Perfil Popover */}
         {showProfile && currentUser && (
-          <div className="absolute top-full right-4 mt-4 w-80 bg-white rounded-2xl shadow-2xl p-6 border border-slate-100 animate-fade-in-up z-50">
-            <div className="flex items-center gap-3 mb-4 text-slate-800">
-              <Shield size={24} className="text-indigo-600" />
-              <h3 className="font-black text-lg">Mi Cuenta</h3>
+          <div className="absolute top-full right-4 mt-2 w-80 bg-white rounded-2xl shadow-2xl p-6 border border-slate-100 animate-fade-in-up z-50">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <UserIcon size={32} className="text-slate-400" />
+              </div>
+              <h3 className="font-black text-slate-800">{currentUser.name}</h3>
+              <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest">{currentUser.role}</p>
             </div>
-            <p className="text-xs text-slate-500 mb-4">Gestiona tu seguridad, contraseña y acceso.</p>
             <PasswordChange email={currentUser.email} />
-
-            <div className="mt-4 pt-4 border-t border-slate-100 text-center">
-              <button onClick={() => setShowProfile(false)} className="text-xs font-bold text-slate-400 hover:text-slate-600">
-                Cerrar Panel
-              </button>
-            </div>
+            <button onClick={() => setShowProfile(false)} className="w-full mt-4 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest">
+              Cerrar Panel
+            </button>
           </div>
         )}
       </header>
 
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
-        {/* Dashboard Views - Ahora Separadas */}
-        {activeAdminView && (
-          <div className="animate-fade-in-up mb-10">
-            {activeAdminView === 'monitor' && <ApiStats />}
-            {activeAdminView === 'users' && <UserManagement />}
-            {activeAdminView === 'history' && <AdminSequenceViewer userEmail={currentUser?.role !== 'admin' ? currentUser?.email : undefined} />}
+        {/* VISTA: PLANIFICADOR (Creación) */}
+        {currentTab === 'planner' && (
+          <div className="animate-fade-in-up">
+            {!sequence ? (
+              <div className="space-y-12">
+                <div className="max-w-4xl mx-auto text-center">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full text-blue-600 text-[10px] font-black uppercase tracking-[3px] mb-6 shadow-sm border border-blue-100">
+                    <Sparkles size={14} /> Motor de Inteligencia Pedagógica
+                  </div>
+                  <h2 className="text-5xl md:text-7xl font-black text-slate-800 mb-6 tracking-tighter">
+                    Crea tu <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent italic">Planeación</span>
+                  </h2>
+                  <p className="text-slate-500 text-lg max-w-2xl mx-auto leading-relaxed font-medium">
+                    Diseña secuencias didácticas de alta calidad alineadas con el MEN. <br />
+                    <span className="text-blue-600 text-[10px] font-black uppercase tracking-widest">Rigor Académico I.E.T. Francisco de Paula Santander</span>
+                  </p>
+                </div>
+
+                <div className="max-w-5xl mx-auto">
+                  <InputForm
+                    input={input}
+                    setInput={setInput}
+                    onGenerate={() => handleGenerate()}
+                    isLoading={isLoading}
+                    user={currentUser}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="max-w-6xl mx-auto">
+                <div className="mb-10 no-print flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200">
+                  <button
+                    onClick={handleEdit}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-all font-bold text-sm"
+                  >
+                    ← Nueva Consulta
+                  </button>
+                  <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl border border-green-100">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-[10px] font-black text-green-700 uppercase tracking-widest">Secuencia Generada Correctamente</span>
+                  </div>
+                </div>
+
+                <SequencePreview
+                  data={sequence}
+                  input={input}
+                  onRefine={(instruction) => handleGenerate({ instruction })}
+                  onReset={handleReset}
+                />
+              </div>
+            )}
           </div>
         )}
 
-        {/* Error Message */}
-        {error && (
-          <div className="max-w-4xl mx-auto bg-red-50/90 backdrop-blur border border-red-100 p-5 mb-8 rounded-3xl shadow-xl flex items-center justify-between animate-shake">
-            <div className="flex items-center gap-4">
-              <div className="bg-red-500 text-white p-2 rounded-xl shadow-lg shadow-red-500/20">
-                <AlertTriangle size={20} />
+        {/* VISTA: REPOSITORIO (Historial) */}
+        {currentTab === 'history' && (
+          <div className="animate-fade-in-up">
+            <div className="mb-10 flex items-center gap-4">
+              <div className="bg-indigo-600 p-3 rounded-2xl text-white shadow-lg shadow-indigo-500/20">
+                <Database size={24} />
               </div>
               <div>
-                <h3 className="text-red-900 font-bold">Error del Sistema</h3>
-                <p className="text-red-700/80 text-xs font-medium mt-0.5">{error}</p>
+                <h2 className="text-3xl font-black text-slate-800 tracking-tighter">Repositorio Curricular</h2>
+                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Base de Datos de Planeaciones Institucionales</p>
               </div>
             </div>
-            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 bg-white/50 p-2 rounded-xl transition-all">✕</button>
+            <AdminSequenceViewer userEmail={currentUser?.role !== 'admin' ? currentUser?.email : undefined} />
           </div>
         )}
 
-        {/* Loading Overlay */}
+        {/* VISTA: GESTIÓN DE DOCENTES */}
+        {currentTab === 'users' && currentUser?.role === 'admin' && (
+          <div className="animate-fade-in-up">
+            <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="bg-orange-500 p-3 rounded-2xl text-white shadow-lg shadow-orange-500/20">
+                  <Users size={24} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-800 tracking-tight">Gestión Docente</h2>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Control de Acceso y Perfiles de Usuario</p>
+                </div>
+              </div>
+              <UserManagement />
+            </div>
+          </div>
+        )}
+
+        {/* VISTA: MÉTRICAS DE API */}
+        {currentTab === 'monitor' && currentUser?.role === 'admin' && (
+          <div className="animate-fade-in-up">
+            <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="bg-emerald-600 p-3 rounded-2xl text-white shadow-lg shadow-emerald-500/20">
+                  <Activity size={24} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-800 tracking-tight">Estado del Sistema</h2>
+                  <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Rendimiento de las LLaves de API y Salud de IA</p>
+                </div>
+              </div>
+              <ApiStats />
+            </div>
+          </div>
+        )}
+
+        {/* Loading Overlay Global */}
         {isLoading && (
           <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[100] flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-white p-12 rounded-[3rem] shadow-2xl text-center relative overflow-hidden animate-pulse">
@@ -316,81 +411,17 @@ function App() {
           </div>
         )}
 
-        {/* Main Interface */}
-        <div className={sequence ? 'hidden' : 'block animate-fade-in-up'}>
-          <div className="max-w-4xl mx-auto mb-16 text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full text-blue-600 text-[10px] font-black uppercase tracking-[3px] mb-6 shadow-sm border border-blue-100">
-              <GraduationCap size={14} /> Nueva Planificación
+        {/* Error Notification */}
+        {error && (
+          <div className="fixed bottom-10 right-10 max-w-md bg-white border-l-4 border-red-500 p-5 rounded-2xl shadow-2xl flex items-center gap-4 animate-fade-in-up z-50">
+            <div className="bg-red-50 text-red-500 p-2 rounded-xl">
+              <AlertTriangle size={24} />
             </div>
-            <h2 className="text-5xl md:text-7xl font-black text-slate-800 mb-6 tracking-tighter">
-              Docente <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent italic">AI Pro</span>
-            </h2>
-            <p className="text-slate-500 text-lg max-w-2xl mx-auto leading-relaxed font-medium">
-              Crea secuencias didácticas de alta calidad alineadas con el MEN en segundos. <br />
-              <span className="text-blue-600 text-xs font-bold uppercase tracking-wider">🔒 Persistencia Activa: Tus secuencias se guardan automáticamente en el panel administrativo.</span>
-            </p>
-          </div>
-
-          <div className="max-w-5xl mx-auto">
-            <InputForm
-              input={input}
-              setInput={setInput}
-              onGenerate={() => handleGenerate()}
-              isLoading={isLoading}
-              user={currentUser}
-            />
-          </div>
-        </div>
-
-        {sequence && (
-          <div className="animate-fade-in-up max-w-6xl mx-auto">
-            <div className="mb-10 no-print flex justify-between items-center">
-              <button
-                onClick={handleEdit}
-                className="group flex items-center gap-3 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:text-blue-600 hover:border-blue-200 hover:shadow-lg transition-all font-bold"
-              >
-                <span className="group-hover:-translate-x-1 transition-transform">←</span>
-                Nueva Consulta
-              </button>
-
-              <div className="flex gap-2">
-                <div className="px-5 py-3 bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-500/20 text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                  <Shield size={14} /> Vista Protegida
-                </div>
-              </div>
+            <div className="flex-1">
+              <h4 className="text-slate-800 font-black text-sm uppercase">Error detectado</h4>
+              <p className="text-slate-500 text-xs font-medium">{error}</p>
             </div>
-
-            {/* ALERTAS DE INCOHERENCIA */}
-            {sequence.alertas_generadas && sequence.alertas_generadas.length > 0 && (
-              <div className="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm animate-soft-bounce relative overflow-hidden no-print">
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                  <AlertTriangle size={100} className="text-amber-500" />
-                </div>
-                <div className="flex gap-4 relative z-10">
-                  <div className="bg-amber-100 p-3 rounded-xl text-amber-600 h-fit">
-                    <AlertTriangle size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-amber-900 font-bold text-lg mb-2">Ajuste Curricular Automático</h3>
-                    <div className="space-y-2">
-                      {sequence.alertas_generadas.map((alerta, i) => (
-                        <div key={i} className="flex gap-2 text-amber-800 bg-amber-100/50 px-3 py-2 rounded-lg text-sm font-medium border border-amber-200">
-                          <span>•</span>
-                          <p>{alerta}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <SequencePreview
-              data={sequence}
-              input={input}
-              onRefine={(instruction) => handleGenerate({ instruction })}
-              onReset={handleReset}
-            />
+            <button onClick={() => setError(null)} className="text-slate-300 hover:text-slate-500 transition-colors">✕</button>
           </div>
         )}
       </main>

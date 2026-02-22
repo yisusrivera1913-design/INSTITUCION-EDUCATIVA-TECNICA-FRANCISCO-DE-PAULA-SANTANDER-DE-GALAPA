@@ -1,9 +1,14 @@
 import { Cpu, Zap, Info, BarChart } from 'lucide-react';
-import { modelHealthStatus, apiMetrics } from '../services/groqService';
+import { modelHealthStatus as groqHealth, apiMetrics as groqMetrics } from '../services/groqService';
+import { modelHealthStatus as geminiHealth, apiMetrics as geminiMetrics } from '../services/geminiService';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../services/supabaseClient';
 
 export const ApiStats: React.FC = () => {
+    // Combine health status and metrics
+    const modelHealthStatus = { ...groqHealth, ...geminiHealth };
+    const apiMetrics = { ...groqMetrics, ...geminiMetrics };
+
     // Force re-render periodically for local metrics
     const [, setTick] = useState(0);
     const [cloudMetrics, setCloudMetrics] = useState<any>(null);
@@ -12,7 +17,7 @@ export const ApiStats: React.FC = () => {
         if (!supabase) return;
 
         try {
-            const labels = ["Groq"];
+            const labels = ["Groq", "Laura", "México", "Yarelis"];
             const newCloudMetrics: any = {};
             const now = new Date();
             const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
@@ -86,7 +91,7 @@ export const ApiStats: React.FC = () => {
     }, []);
 
     const keys = Object.keys(apiMetrics) as (keyof typeof apiMetrics)[];
-    const labels = ["Groq"];
+    const labels = ["Groq Main", "Laura", "México", "Yarelis"];
 
     return (
         <div className="w-full bg-white/40 backdrop-blur-xl border border-white/60 rounded-[2.5rem] p-10 shadow-2xl mb-12 animate-fade-in-up relative overflow-hidden group transition-all duration-500 hover:shadow-blue-500/10 hover:border-blue-200/50">

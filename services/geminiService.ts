@@ -10,15 +10,53 @@ export const modelHealthStatus: Record<string, 'online' | 'offline' | 'checking'
   "gemini-1.5-pro": "checking",
 };
 
-export const apiMetrics = {
-  key1: { requests: 0, success: 0, errors: 0, lastUsed: "", label: "Laura" },
-  key2: { requests: 0, success: 0, errors: 0, lastUsed: "", label: "México" },
-  key3: { requests: 0, success: 0, errors: 0, lastUsed: "", label: "Yarelis" }
+const STORAGE_KEY = 'santander_gemini_metricsv1';
+
+const loadMetrics = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch (e) { console.warn("Error loading gemini metrics:", e); }
+  return {
+    key1: { requests: 0, success: 0, errors: 0, lastUsed: "", label: "Laura" },
+    key2: { requests: 0, success: 0, errors: 0, lastUsed: "", label: "México" },
+    key3: { requests: 0, success: 0, errors: 0, lastUsed: "", label: "Yarelis" }
+  };
+};
+
+export const apiMetrics = loadMetrics();
+
+const saveMetrics = () => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(apiMetrics));
+  } catch (e) { console.warn("Error saving gemini metrics:", e); }
 };
 
 const sanitizeInput = (text: string | undefined): string => {
   if (!text) return "";
   return text.trim().replace(/['"><]/g, "");
+};
+
+// Función de limpieza institucional
+const cleanText = (text: any): string => {
+  if (typeof text !== 'string') return String(text || "");
+  return text.replace(/\*/g, "").trim();
+};
+
+// Limpieza recursiva profunda para garantizar CERO asteriscos
+const deepClean = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(item => deepClean(item));
+  } else if (obj !== null && typeof obj === 'object') {
+    const cleaned: any = {};
+    for (const key in obj) {
+      cleaned[key] = deepClean(obj[key]);
+    }
+    return cleaned;
+  } else if (typeof obj === 'string') {
+    return cleanText(obj);
+  }
+  return obj;
 };
 
 const logApiKeyUsage = async (idx: number, status: 'success' | 'error', errorMsg?: string, modelName?: string) => {
@@ -86,9 +124,9 @@ const responseSchema: any = {
         modelacion: { type: SchemaType.STRING },
         simulacion: { type: SchemaType.STRING },
         ejercitacion: { type: SchemaType.STRING },
-        demostracion: { type: SchemaType.STRING }
+        transferencia: { type: SchemaType.STRING }
       },
-      required: ["motivacion_encuadre", "enunciacion", "modelacion", "simulacion", "ejercitacion", "demostracion"]
+      required: ["motivacion_encuadre", "enunciacion", "modelacion", "simulacion", "ejercitacion", "transferencia"]
     },
     sesiones_detalle: {
       type: SchemaType.ARRAY,
@@ -192,7 +230,7 @@ const responseSchema: any = {
   ]
 };
 
-export const generateDidacticSequence = async (input: SequenceInput, refinementInstruction?: string): Promise<DidacticSequence> => {
+export const generateDidacticSequence = async (input: SequenceInput, refinementInstruction?: string, currentContext?: DidacticSequence): Promise<DidacticSequence> => {
   const getEnv = (key: string) => import.meta.env[key] || (process as any).env[key];
   const allKeys = [getEnv('VITE_API_KEY_1'), getEnv('VITE_API_KEY_2'), getEnv('VITE_API_KEY_3')];
 
@@ -200,7 +238,7 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
   const sortedIndices = [0, 1, 2].sort((a, b) => usage[a] - usage[b]);
 
   const modelsToTry = [
-    "gemini-2.0-flash", // Use 2.0 as primary
+    "gemini-2.0-flash",
     "gemini-1.5-pro",
     "gemini-1.5-flash"
   ];
@@ -223,67 +261,62 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
     : `- **Referencia Pedagógica:** Esta área NO utiliza DBA. Debes citar explícitamente las **"Orientaciones Pedagógicas y Curriculares del MEN para ${input.area}"**.`;
 
   const prompt = `
-    ### PERSONA: MASTER RECTOR AI (V5.1 GOLDEN)
-    Eres el Agente Supremo de la INSTITUCION EDUCATIVA TECNICA FRANCISCO DE PAULA SANTANDER DE GALAPA.
-    Tu misión es la EXCELENCIA PEDAGÓGICA TOTAL siguiendo un formato de ALTO NIVEL INSTITUCIONAL.
+    ### PERSONA: COORDINADOR PEDAGÓGICO IA
+    Eres el experto en currículo de la I.E.T. FRANCISCO DE PAULA SANTANDER. 
+    Tu objetivo es generar planeaciones de clase con RIGOR ACADÉMICO y EXCELENCIA PEDAGÓGICA.
 
-    ### PARÁMETROS CLAVE
-    - **Docente:** ${input.docente_nombre || 'No especificado'}
-    - **Área:** ${input.area} | **Asignatura:** ${input.asignatura}
-    - **Grado:** ${input.grado} | **Tema:** ${safeTema} | **Sesiones:** ${input.sesiones}
-    ${pedagogicalInstruction}
+    ### REGLAS DE ORO DE CALIDAD:
+    1. **DBA PERFECTO:** Identifica y transcribe el enunciado LITERAL del Derecho Básico de Aprendizaje oficial del Ministerio de Educación Nacional (MEN) para el grado y tema. El campo "dba_detalle.enunciado" debe ser la cita exacta. Las evidencias deben ser las oficiales.
+    2. **EVALUACIÓN ICFES SUPERIOR:** Genera **EXACTAMENTE 10 PREGUNTAS** de selección múltiple con única respuesta siguiendo el modelo ICFES. Ni una más, ni una menos. Cada pregunta debe tener: Contexto claro, enunciado preciso relacionado al TEMA y DBA, 4 opciones plausibles, clave correcta y una EXPLICACIÓN PEDAGÓGICA detallada del porqué es la respuesta correcta y qué competencia evalúa.
+    3. **INTEGRACIÓN INTELIGENTE:** Si se solicitan áreas incompatibles (ej: Religión y Geometría), NO inventes conexiones forzadas. Si no existe un puente pedagógico natural, deja los campos de integración en blanco o sepáralos estrictamente. Prioriza siempre el rigor técnico de cada área por separado.
+    4. **Propósito Holístico:** Genera una síntesis que integre el saber (cognitivo), el ser (afectivo) y el hacer (expresivo).
+    5. **Simplificación Institucional:** Evita términos comerciales como "Platinum", "Golden" o "Supreme". Usa un tono formal e institucional. 
+    6. **Terminología:** Usa "transferencia" para la fase final. PROHIBIDO: "ABP".
+    7. **LIMPIEZA TOTAL:** PROHIBIDO EL USO DE ASTERISCOS (*) EN CUALQUIER PARTE DEL TEXTO (ni siquiera para viñetas o negritas). Usa puntos o guiones si es necesario.
+    8. **Limpieza:** Sin minutos en sesiones.
 
     ### INSTRUCCIONES DE DISEÑO ELITE:
 
     1. **Derechos Básicos de Aprendizaje (DBA):**
-       - Debes ser EXHAUSTIVO con el DBA.
        - "dba_utilizado": El resumen técnico (ej: "Matemáticas DBA #3").
-       - "dba_detalle": Objeto con:
-          - "numero": El identificador (ej: "DBA 3").
-          - "enunciado": El texto literal y completo del DBA del MEN.
-          - "evidencias": Lista de las evidencias de aprendizaje asociadas a ese DBA que se trabajarán.
-       - "titulo_secuencia": Un título creativo y pedagógico (ej: "Explorando el Mundo de los Fraccionarios").
-       - "objetivos_aprendizaje": Redactar objetivos claros que inicien con verbo en infinitivo.
-       - "contenidos_desarrollar": Lista detallada de subtemas conceptuales, procedimentales y actitudinales.
+       - "dba_detalle": { "numero", "enunciado", "evidencias": [] }
+       - "titulo_secuencia": Creativo y pedagógico.
+       - "objetivos_aprendizaje": Verbos en infinitivo.
+       - "contenidos_desarrollar": Lista detallada de subtemas.
 
     2. **Ejes Transversales y ADI:**
-       - "eje_transversal_crese": Cómo se integra el componente socioemocional, ciudadano y de convivencia.
-       - "corporiedad_adi": Cómo se involucra el movimiento, la expresión corporal y el bienestar físico en el aprendizaje del tema.
+       - "eje_transversal_crese": Componente socioemocional y ciudadano.
+       - "corporiedad_adi": Movimiento y expresión corporal.
 
     3. **Sesiones Detalladas (sesiones_detalle):**
-       - Debes generar exactamente ${input.sesiones} sesiones.
-       - Cada sesión debe durar un tiempo coherente (ej: "90 minutos").
-       - "momento_adi": Actividad específica de activación sensorial o corporal para esa sesión.
-       - "descripcion": Detalle paso a paso del desarrollo pedagógico.
+       - Generar exactamente ${input.sesiones} sesiones.
+       - "momento_adi": Actividad de activación específica.
+       - "descripcion": Detalle paso a paso SIN mención a minutos.
 
-    4. **Rubrica de Desempeño (rubrica):**
-       - Generar una rúbrica profesional con 3 criterios de evaluación.
-       - Para cada criterio, definir los niveles: "Básico" (apenas cumple), "Satisfactorio" (cumple lo esperado) y "Avanzado" (excelencia/supera).
+    4. **Estructura Didáctica Profunda:**
+       - "secuencia_didactica": { "motivacion_encuadre", "enunciacion", "modelacion", "simulacion", "ejercitacion", "transferencia" }
+       - Cada campo de la secuencia DEBE tener al menos 2-3 líneas de texto altamente técnico y educativo, explicando la acción pedagógica específica.
 
     5. **Taller y Evaluación:**
-       - Generar 10 preguntas tipo ICFES con 4 opciones. Cada una con su "competencia" (ej: Interpretativa).
-       - IMPORTANTE: Para cada pregunta de evaluación, proporciona una "explicacion" pedagógica de por qué la respuesta correcta es la elegida.
-       - Taller imprimible con "reto creativo" innovador.
+       - "evaluacion": **ESTRICTAMENTE 10 PREGUNTAS** ICFES con 4 opciones. Cada una con "competencia" y "explicacion" pedagógica detallada.
+       - "taller_imprimible": Con "reto creativo" de alto impacto.
 
     6. **Rúbrica de Desempeño (SIEE):**
-       - Debe tener 4 niveles: Bajo, Básico, Alto, Superior.
-       - Los criterios deben evaluar dimensiones Cognitivas, Procedimentales y Actitudinales.
-
-    6. **Inclusión y Autoevaluación:**
-       - "adecuaciones_piar": Estrategias específicas para estudiantes con diversas capacidades.
-       - "autoevaluacion": Genera una lista de 4 preguntas reflexivas para que el estudiante evalúe su propio proceso (ej: "¿Qué fue lo que más se me dificultó?").
-
-    7. **Administración Institucional:**
-       - "control_versiones": Genera una entrada inicial de control (ej: Version 1.0, Fecha actual, "Creación de secuencia didáctica").
+       - 4 niveles: Bajo, Básico, Alto, Superior.
+       - Criterios Cognitivos, Procedimentales y Actitudinales.
 
     7. **Recursos Digitales (PROHIBIDO YOUTUBE):**
-       - Proporcionar solo links de alta calidad educativa de portales oficiales.
-       - **REGLA DE ORO:** Está terminantemente PROHIBIDO incluir enlaces a YouTube o redes sociales. 
-       - Solo se permiten sitios como: Colombia Aprende, Eduteka, Biblioteca Nacional, Portales Universitarios (.edu), Khan Academy (sitio web), o repositorios institucionales.
+       - Solo links oficiales: Colombia Aprende, Eduteka, Portales .edu, Khan Academy (sitio).
 
-    ${refinementInstruction ? `- **COMANDO DE REFINAMIENTO PERSONALIZADO:** ${sanitizeInput(refinementInstruction)}` : ''}
+    ${currentContext ? `### CONTEXTO ACTUAL DE LA SECUENCIA:
+    Actualmente la secuencia tiene este contenido: ${JSON.stringify(currentContext)}
+    
+    ### INSTRUCCIÓN DE MODIFICACIÓN DIRECTA:
+    El usuario quiere cambiar lo siguiente: ${refinementInstruction}.
+    POR FAVOR, SOLO MODIFICA LOS CAMPOS AFECTADOS Y MANTÉN EL RESTO IGUAL PARA AHORRAR TOKENS Y TIEMPO.
+    ` : refinementInstruction ? `- **COMANDO DE REFINAMIENTO PERSONALIZADO:** ${sanitizeInput(refinementInstruction)}` : ''}
 
-    Responde exclusivamente en JSON siguiendo el esquema proporcionado.
+    Responde exclusivamente con el objeto JSON.
   `;
 
 
@@ -311,16 +344,111 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
         const text = result.response.text();
         const parsed = JSON.parse(text);
 
+        // Normalización Robusta Platinum
+        const ensureArray = (field: any) => Array.isArray(field) ? field : [];
+        const normalized: DidacticSequence = {
+          institucion: cleanText(parsed.institucion) || "I.E.T. Francisco de Paula Santander",
+          formato_nombre: "Planeación de Clase Institucional v5.3",
+          nombre_docente: cleanText(parsed.nombre_docente) || input.docente_nombre || "Docente",
+          area: cleanText(parsed.area) || input.area,
+          asignatura: cleanText(parsed.asignatura) || input.asignatura,
+          grado: cleanText(parsed.grado) || input.grado,
+          grupos: cleanText(parsed.grupos) || input.grupos || "",
+          fecha: cleanText(parsed.fecha) || input.fecha || new Date().toLocaleDateString(),
+          num_secuencia: Number(parsed.num_secuencia || input.num_secuencia || 1),
+          proposito: cleanText(parsed.proposito),
+          objetivos_aprendizaje: cleanText(parsed.objetivos_aprendizaje || parsed.objetivo_aprendizaje),
+          contenidos_desarrollar: ensureArray(parsed.contenidos_desarrollar).map(cleanText),
+          competencias_men: cleanText(parsed.competencias_men),
+          estandar_competencia: cleanText(parsed.estandar_competencia),
+          dba_utilizado: cleanText(parsed.dba_utilizado),
+          dba_detalle: {
+            numero: cleanText(parsed.dba_detalle?.numero),
+            enunciado: cleanText(parsed.dba_detalle?.enunciado),
+            evidencias: ensureArray(parsed.dba_detalle?.evidencias).map(cleanText)
+          },
+          eje_transversal_crese: cleanText(parsed.eje_transversal_crese),
+          corporiedad_adi: cleanText(parsed.corporiedad_adi),
+          metodologia: cleanText(parsed.metodologia),
+          indicadores: {
+            cognitivo: cleanText(parsed.indicadores?.cognitivo),
+            afectivo: cleanText(parsed.indicadores?.afectivo),
+            expresivo: cleanText(parsed.indicadores?.expresivo)
+          },
+          ensenanzas: ensureArray(parsed.ensenanzas).map(cleanText),
+          secuencia_didactica: {
+            motivacion_encuadre: cleanText(parsed.secuencia_didactica?.motivacion_encuadre),
+            enunciacion: cleanText(parsed.secuencia_didactica?.enunciacion),
+            modelacion: cleanText(parsed.secuencia_didactica?.modelacion),
+            simulacion: cleanText(parsed.secuencia_didactica?.simulacion),
+            ejercitacion: cleanText(parsed.secuencia_didactica?.ejercitacion),
+            transferencia: cleanText(parsed.secuencia_didactica?.transferencia || parsed.secuencia_didactica?.demostracion)
+          },
+          sesiones_detalle: ensureArray(parsed.sesiones_detalle).map((s: any) => ({
+            numero: Number(s.numero) || 1,
+            titulo: cleanText(s.titulo),
+            descripcion: cleanText(s.descripcion),
+            tiempo: cleanText(s.tiempo) || "Sesión Completa",
+            momento_adi: cleanText(s.momento_adi)
+          })),
+          didactica: cleanText(parsed.didactica),
+          recursos: cleanText(parsed.recursos),
+          recursos_links: ensureArray(parsed.recursos_links || parsed.recursos_digitales).map((l: any) => ({
+            tipo: cleanText(l.tipo || "Link"),
+            nombre: cleanText(l.nombre || "Recurso"),
+            url: cleanText(l.url),
+            descripcion: cleanText(l.descripcion)
+          })),
+          rubrica: ensureArray(parsed.rubrica).map((r: any) => ({
+            criterio: cleanText(r.criterio),
+            bajo: cleanText(r.bajo),
+            basico: cleanText(r.basico),
+            alto: cleanText(r.alto),
+            superior: cleanText(r.superior)
+          })),
+          autoevaluacion: ensureArray(parsed.autoevaluacion).map(cleanText),
+          evaluacion: ensureArray(parsed.evaluacion).map((ev: any) => ({
+            pregunta: cleanText(ev.pregunta),
+            tipo: cleanText(ev.tipo || "multiple_choice"),
+            opciones: ensureArray(ev.opciones).map(cleanText),
+            respuesta_correcta: cleanText(ev.respuesta_correcta),
+            competencia: cleanText(ev.competencia),
+            explicacion: cleanText(ev.explicacion)
+          })),
+          alertas_generadas: ensureArray(parsed.alertas_generadas).map(cleanText),
+          control_versiones: ensureArray(parsed.control_versiones).map((cv: any) => ({
+            version: cleanText(cv.version || "1.0"),
+            fecha: cleanText(cv.fecha || new Date().toLocaleDateString()),
+            descripcion: cleanText(cv.descripcion || "Generación")
+          })),
+          bibliografia: cleanText(parsed.bibliografia),
+          observaciones: cleanText(parsed.observaciones),
+          adecuaciones_piar: cleanText(parsed.adecuaciones_piar),
+          elaboro: cleanText(parsed.elaboro) || input.docente_nombre || "Docente",
+          reviso: cleanText(parsed.reviso) || "Coordinación Académica",
+          pie_fecha: cleanText(parsed.pie_fecha) || new Date().toLocaleDateString(),
+          tema_principal: cleanText(parsed.tema_principal) || safeTema,
+          titulo_secuencia: cleanText(parsed.titulo_secuencia) || safeTema,
+          descripcion_secuencia: cleanText(parsed.descripcion_secuencia),
+          taller_imprimible: {
+            introduccion: cleanText(parsed.taller_imprimible?.introduccion),
+            instrucciones: cleanText(parsed.taller_imprimible?.instrucciones),
+            ejercicios: ensureArray(parsed.taller_imprimible?.ejercicios).map(cleanText),
+            reto_creativo: cleanText(parsed.taller_imprimible?.reto_creativo)
+          }
+        };
+
         console.log(`%c[✨ ÉXITO] Respondió: ${modelName} | Llave: ${label}`, "color: #10b981; font-weight: bold;");
 
         const mKey = `key${i + 1}` as keyof typeof apiMetrics;
         apiMetrics[mKey].requests++;
         apiMetrics[mKey].success++;
         apiMetrics[mKey].lastUsed = new Date().toLocaleTimeString();
+        saveMetrics();
 
         modelHealthStatus[modelName] = "online";
         logApiKeyUsage(i, 'success', undefined, modelName);
-        return parsed as DidacticSequence;
+        return deepClean(normalized);
 
       } catch (err: any) {
         lastError = err;
@@ -329,6 +457,7 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
         const mKey = `key${i + 1}` as keyof typeof apiMetrics;
         apiMetrics[mKey].requests++;
         apiMetrics[mKey].errors++;
+        saveMetrics();
         logApiKeyUsage(i, 'error', err.message, modelName);
 
         if (err.message?.includes('429') || err.message?.includes('quota') || err.message?.includes('limit')) continue;
