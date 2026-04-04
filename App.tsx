@@ -33,11 +33,10 @@ const SAAS_ADMIN: User = {
 };
 
 function App() {
-  // Auth State - FORZADO PARA SAAS
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
+  // Auth State - Autenticación Real Forzada
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = authService.getCurrentUser();
-    return saved || SAAS_ADMIN;
+    return authService.getCurrentUser();
   });
 
   // App State
@@ -149,15 +148,6 @@ function App() {
           if (updated) setCurrentUser(updated);
         });
       } 
-      // C. SaaS Auto-Entry (Fallback for Development / SuperAdmin)
-      else if (!window.location.search.includes('error')) {
-        const user = await authService.login('superadmin@eduplaneacion.com', 'Mw=='); // '3'
-        if (user) {
-          setIsAuthenticated(true);
-          setCurrentUser(user);
-          setCurrentTab('saas'); 
-        }
-      }
     };
 
     checkAuth();
@@ -313,6 +303,10 @@ function App() {
   };
 
   // Eliminado el check de login para entrada directa SaaS
+
+  if (!isAuthenticated || !currentUser) {
+    return <Login onLogin={handleLogin} />;
+  }
 
   const isDark = currentTab === 'saas';
 

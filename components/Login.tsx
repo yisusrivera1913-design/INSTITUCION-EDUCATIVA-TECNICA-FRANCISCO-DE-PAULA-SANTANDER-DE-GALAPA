@@ -105,84 +105,84 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 {/* --- COLUMNA DERECHA: Formulario --- */}
                 <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center bg-white relative">
                     <div className="max-w-sm mx-auto w-full">
-                        <div className="mb-10 text-center md:text-left">
-                            <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2 uppercase">Ingreso de Personal</h1>
-                            <p className="text-slate-400 text-sm font-medium">Usa tus credenciales oficiales para entrar.</p>
-                        </div>
-
-                        <form onSubmit={handleLogin} className="space-y-6">
-                            {/* Campo de Correo */}
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] ml-1 flex items-center gap-2">
-                                    <Mail size={12} className="text-blue-500" /> Correo Institucional
-                                </label>
-                                <input
-                                    type="email"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="correo@ejemplo.com"
-                                    className="w-full pl-5 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-3xl focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium text-slate-700 text-sm"
-                                />
+                        <div className="space-y-8">
+                            <div className="text-center md:text-left">
+                                <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2 uppercase">Centro de Acceso</h1>
+                                <p className="text-slate-400 text-sm font-medium">Entra con tu cuenta de correo institucional.</p>
                             </div>
 
-                            {/* Campo de Contraseña */}
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[2px] ml-1 flex items-center gap-2">
-                                    <Lock size={12} className="text-blue-500" /> Contraseña
-                                </label>
-                                <input
-                                    type="password"
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    className="w-full pl-5 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-3xl focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium text-slate-700 text-sm"
-                                />
-                            </div>
-
-                            {error && (
-                                <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-red-100 animate-shake flex items-center gap-3">
-                                    <div className="bg-red-600 text-white p-1 rounded-full">
-                                        <Lock size={12} />
+                            {/* Google Login — ACCIÓN PRIMARIA */}
+                            <div className="space-y-4">
+                                <button
+                                    type="button"
+                                    onClick={handleGoogleLogin}
+                                    disabled={isLoading}
+                                    className="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-3xl font-black text-[11px] uppercase tracking-[0.2em] text-white hover:shadow-xl hover:shadow-blue-500/20 hover:-translate-y-1 transition-all flex items-center justify-center gap-4 shadow-sm active:scale-95 group"
+                                >
+                                    <div className="bg-white p-1.5 rounded-lg group-hover:scale-110 transition-transform">
+                                        <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
                                     </div>
-                                    {error}
-                                </div>
-                            )}
+                                    Ingresar con Google
+                                </button>
+                                <p className="text-center text-[9px] font-bold text-slate-400 uppercase tracking-widest">Recomendado para docentes y administrativos</p>
+                            </div>
 
-                            {/* Google Login Button */}
-                            <button
-                                type="button"
-                                onClick={handleGoogleLogin}
-                                disabled={isLoading}
-                                className="w-full py-4 bg-white border border-slate-200 rounded-3xl font-black text-[10px] uppercase tracking-[0.2em] text-slate-600 hover:bg-slate-50 transition-all flex items-center justify-center gap-3 shadow-md active:scale-95"
-                            >
-                                <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
-                                Continuar con Google
-                            </button>
-
-                            <div className="relative flex items-center py-2">
+                            <div className="relative flex items-center py-4">
                                 <div className="flex-grow border-t border-slate-100"></div>
-                                <span className="flex-shrink mx-4 text-[9px] font-black text-slate-300 uppercase tracking-widest">o usa tu cuenta</span>
+                                <span className="flex-shrink mx-4 text-[9px] font-black text-slate-200 uppercase tracking-widest">o acceso con contraseña</span>
                                 <div className="flex-grow border-t border-slate-100"></div>
                             </div>
 
-                            {/* Botón de Acción */}
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className={`w-full py-5 rounded-3xl font-black text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl ${isLoading
-                                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'
-                                    : 'bg-blue-600 text-white hover:bg-blue-700 hover:-translate-y-1 active:scale-95'
-                                    }`}
-                            >
-                                {isLoading ? (
-                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                ) : (
-                                    <>Acceder al Panel <ArrowRight size={16} /></>
+                            <form onSubmit={handleLogin} className="space-y-5 opacity-60 hover:opacity-100 transition-opacity">
+                                {/* Campo de Correo */}
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[2px] ml-1 flex items-center gap-2">
+                                        <Mail size={12} className="text-slate-400" /> Correo
+                                    </label>
+                                    <input
+                                        type="email"
+                                        required
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="correo@ejemplo.com"
+                                        className="w-full pl-5 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium text-slate-700 text-sm"
+                                    />
+                                </div>
+
+                                {/* Campo de Contraseña */}
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-[2px] ml-1 flex items-center gap-2">
+                                        <Lock size={12} className="text-slate-400" /> Contraseña
+                                    </label>
+                                    <input
+                                        type="password"
+                                        required
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        className="w-full pl-5 pr-4 py-3.5 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all font-medium text-slate-700 text-sm"
+                                    />
+                                </div>
+
+                                {error && (
+                                    <div className="bg-red-50 text-red-600 p-4 rounded-xl text-[9px] font-black uppercase tracking-widest border border-red-100 animate-shake flex items-center gap-3">
+                                        <Lock size={12} />
+                                        {error}
+                                    </div>
                                 )}
-                            </button>
-                        </form>
+
+                                <button
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className={`w-full py-4 rounded-2xl font-black text-[9px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${isLoading
+                                        ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                                        : 'bg-slate-800 text-white hover:bg-black active:scale-95'
+                                        }`}
+                                >
+                                    {isLoading ? 'Cargando...' : 'Acceso Manual'}
+                                </button>
+                            </form>
+                        </div>
 
                         <div className="mt-10 text-center">
                             <button

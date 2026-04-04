@@ -462,14 +462,24 @@ export const authService = {
 
     getAllSequences: async () => {
         if (!supabase) return [];
+        const user = authService.getCurrentUser();
+        if (!user) return [];
+
         try {
-            const { data, error } = await supabase
-                .from('generated_sequences')
-                .select('*')
-                .order('timestamp', { ascending: false });
+            let query = supabase.from('generated_sequences').select('*');
+
+            // --- REPORTE: Privacidad Estricta ---
+            // Solo Super Admin ve todo el SaaS.
+            if (user.role === 'docente') {
+                query = query.eq('user_email', user.email.toLowerCase());
+            } else if (user.role === 'admin' && user.institucion_id) {
+                query = query.eq('institucion_id', user.institucion_id);
+            }
+
+            const { data, error } = await query.order('timestamp', { ascending: false });
 
             if (error) {
-                console.error("Error fetching all sequences:", error);
+                console.error("Error fetching sequences:", error);
                 return [];
             }
             return data || [];
@@ -553,13 +563,21 @@ export const authService = {
     },
 
     getAllUsersWithStats: async () => {
+        const user = authService.getCurrentUser();
+        if (!user || user.role === 'docente') return []; // Docentes no ven listado completo
+
         let userList = [...AUTHORIZED_USERS];
 
         if (supabase) {
             try {
-                const { data } = await supabase
-                    .from('app_users')
-                    .select('name, email, role, assigned_grades, assigned_subjects');
+                let query = supabase.from('app_users').select('name, email, role, assigned_grades, assigned_subjects');
+
+                // Filtro de Privacidad: Admins solo ven a su gente
+                if (user.role === 'admin' && user.institucion_id) {
+                    query = query.eq('institucion_id', user.institucion_id);
+                }
+
+                const { data } = await query;
 
                 if (data && data.length > 0) {
                     // Start with cloud users

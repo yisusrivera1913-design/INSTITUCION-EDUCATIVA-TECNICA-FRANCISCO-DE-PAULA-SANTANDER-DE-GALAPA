@@ -80,14 +80,20 @@ DROP POLICY IF EXISTS "Instituciones: Lectura Global" ON instituciones;
 DROP POLICY IF EXISTS "Usuarios: Autogestión" ON app_users;
 DROP POLICY IF EXISTS "Secuencias: Aislamiento Colegios" ON generated_sequences;
 
--- Políticas de Seguridad SaaS
+-- Políticas de Seguridad SaaS (Aislamiento Estricto)
 CREATE POLICY "Instituciones: Lectura Global" ON instituciones FOR SELECT USING (true);
-CREATE POLICY "Usuarios: Autogestión" ON app_users FOR ALL USING (
+
+CREATE POLICY "Usuarios: Aislamiento por Colegio" ON app_users FOR ALL USING (
     email = auth.jwt()->>'email' OR 
-    (SELECT role FROM app_users WHERE id = auth.uid()) = 'super_admin' OR
-    true -- Permitimos acceso total temporal para configuración inicial
+    (SELECT role FROM app_users WHERE email = auth.jwt()->>'email') IN ('super_admin') OR
+    (institucion_id = (SELECT institucion_id FROM app_users WHERE email = auth.jwt()->>'email') AND (SELECT role FROM app_users WHERE email = auth.jwt()->>'email') = 'admin')
 );
-CREATE POLICY "Secuencias: Aislamiento Colegios" ON generated_sequences FOR ALL USING (true); 
+
+CREATE POLICY "Secuencias: Aislamiento por Dueño o Admin" ON generated_sequences FOR ALL USING (
+    user_email = auth.jwt()->>'email' OR 
+    (SELECT role FROM app_users WHERE email = auth.jwt()->>'email') = 'super_admin' OR
+    (institucion_id = (SELECT institucion_id FROM app_users WHERE email = auth.jwt()->>'email') AND (SELECT role FROM app_users WHERE email = auth.jwt()->>'email') = 'admin')
+);
 
 -- ============================================================
 -- PASO 5: RESTAURACIÓN DE TUS DATOS (Santander Galapa + Super Admin)
