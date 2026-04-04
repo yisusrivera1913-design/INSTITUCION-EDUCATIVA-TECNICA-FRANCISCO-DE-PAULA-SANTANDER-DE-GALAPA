@@ -10,6 +10,7 @@ import { generateDidacticSequence as generateGroq } from './services/groqService
 import { generateDidacticSequence as generateGemini } from './services/geminiService';
 import { GraduationCap, Loader2, AlertTriangle, LogOut, User as UserIcon, Shield, LayoutDashboard, Database, Activity, Users, Sparkles, PenTool, Globe } from 'lucide-react';
 import { Login } from './components/Login';
+import { LandingPage } from './components/LandingPage';
 import { authService, User } from './services/authService';
 
 const initialInput: SequenceInput = {
@@ -38,6 +39,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     return authService.getCurrentUser();
   });
+  const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
 
   // App State
   const [input, setInput] = useState<SequenceInput>(initialInput);
@@ -49,6 +51,7 @@ function App() {
   // Navigation State — default SIEMPRE 'saas' (SaaS-first)
   const [currentTab, setCurrentTab] = useState<'planner' | 'history' | 'users' | 'monitor' | 'saas'>('saas');
   const [showProfile, setShowProfile] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
 
   const [lastGenTime, setLastGenTime] = useState(0);
   const [loginSuccess, setLoginSuccess] = useState<string | null>(null);
@@ -162,6 +165,7 @@ function App() {
           if (updated) setCurrentUser(updated);
         });
       } 
+      setIsAuthChecking(false);
     };
 
     checkAuth();
@@ -318,8 +322,37 @@ function App() {
 
   // Eliminado el check de login para entrada directa SaaS
 
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-4 font-outfit">
+        <div className="relative">
+          <div className="absolute inset-0 bg-blue-600 blur-3xl opacity-20 animate-pulse"></div>
+          <div className="relative bg-[#111111] p-10 rounded-[3rem] border border-white/5 shadow-2xl flex flex-col items-center text-center max-w-xs w-full">
+            <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 p-6 rounded-[2rem] text-white shadow-2xl mb-8">
+              <Loader2 size={48} className="animate-spin" />
+            </div>
+            <h2 className="text-2xl font-black text-white tracking-tighter uppercase leading-none">Verificando<br/><span className="text-blue-500">Credenciales</span></h2>
+            <div className="mt-6 flex flex-col gap-1 items-center">
+               <div className="h-1 w-20 bg-blue-600/30 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 w-1/2 animate-[shimmer_2s_infinite]"></div>
+               </div>
+               <p className="text-slate-500 text-[9px] font-black uppercase tracking-[3px] mt-2 italic">EasyPlanning SaaS Guard</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated || !currentUser) {
-    return <Login onLogin={handleLogin} />;
+    // Ruteo Inteligente: Si hay link de colegio, mostrar Login. Sino, Landing Page.
+    const params = new URLSearchParams(window.location.search);
+    const isInstitutionalLink = params.has('colegio') || params.has('inst');
+
+    if (isInstitutionalLink || showLogin) {
+      return <Login onLogin={handleLogin} />;
+    }
+    return <LandingPage onStart={() => setShowLogin(true)} />;
   }
 
   const isDark = currentTab === 'saas';
