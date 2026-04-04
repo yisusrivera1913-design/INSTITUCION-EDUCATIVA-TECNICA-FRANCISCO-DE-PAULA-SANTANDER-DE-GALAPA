@@ -378,11 +378,13 @@ function App() {
                 {currentUser?.role === 'super_admin' && (
                   <button
                     onClick={handleBackToSaaS}
-                    className={`px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-wider ${currentTab === 'saas' 
+                    className={`px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-wider relative group ${currentTab === 'saas' 
                       ? (isDark ? 'bg-white/10 text-indigo-400 shadow-sm border border-white/5' : 'bg-white text-purple-600 shadow-sm border border-slate-200/50') 
-                      : 'bg-purple-600 text-white shadow-lg hover:bg-purple-700'}`}
+                      : 'bg-purple-600 text-white shadow-[0_10px_25px_-5px_rgba(147,51,234,0.4)] hover:bg-purple-700 animate-pulse-slow'}`}
                   >
-                    <Globe size={14} /> <span className="md:inline">{currentTab === 'saas' ? 'Panel SaaS' : 'Volver al SaaS'}</span>
+                    <div className={`w-2 h-2 rounded-full absolute -top-1 -right-1 ${currentTab === 'saas' ? 'hidden' : 'bg-red-500 shadow-[0_0_10px_red]'}`}></div>
+                    <Globe size={14} className={currentTab === 'saas' ? '' : 'animate-spin-slow'} /> 
+                    <span className="md:inline">{currentTab === 'saas' ? 'Panel SaaS Principal' : '⚠️ Salir al Dashboard SaaS'}</span>
                   </button>
                 )}
               </>

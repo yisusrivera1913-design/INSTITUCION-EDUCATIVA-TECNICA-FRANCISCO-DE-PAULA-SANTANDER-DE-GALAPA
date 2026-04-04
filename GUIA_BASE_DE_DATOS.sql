@@ -123,7 +123,7 @@ VALUES (
 INSERT INTO app_users (email, password, name, role, institucion_id)
 VALUES (
   'superadmin@eduplaneacion.com',
-  'Mw==', -- Contraseña: 3 (ofuscada)
+  'Vg==', -- Contraseña: 3 (ofuscada conforme al sistema XOR de la App)
   'Super Admin Maestro',
   'super_admin',
   null
@@ -135,7 +135,7 @@ VALUES (
 INSERT INTO app_users (email, password, name, role, institucion_id)
 VALUES (
   'admin@santander.edu.co',
-  'Mw==',
+  'Vg==', -- Contraseña: 3 (ofuscada)
   'Admin Santander Galapa',
   'admin',
   'd1b6a1b6-0b3b-4b1a-9c1a-1a2b3c4d5e6f'
