@@ -12,6 +12,27 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showPasswordHint, setShowPasswordHint] = useState(false);
+    const [branding, setBranding] = useState({ 
+        title: 'Centro de Acceso', 
+        subtitle: 'Entra con tu cuenta de correo institucional.' 
+    });
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const instParam = params.get('colegio') || params.get('inst') || '';
+        
+        if (instParam.toLowerCase().includes('santander')) {
+            setBranding({
+                title: 'Ingreso Santander Galapa',
+                subtitle: 'Acceso exclusivo para el personal de la I.E.T. Santander Galapa.'
+            });
+        } else if (instParam) {
+            setBranding({
+                title: `Acceso a ${instParam.charAt(0).toUpperCase() + instParam.slice(1)}`,
+                subtitle: 'Usa tu identidad institucional para continuar.'
+            });
+        }
+    }, []);
 
     // Initial state empty
     useEffect(() => {
@@ -107,8 +128,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     <div className="max-w-sm mx-auto w-full">
                         <div className="space-y-8">
                             <div className="text-center md:text-left">
-                                <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2 uppercase">Centro de Acceso</h1>
-                                <p className="text-slate-400 text-sm font-medium">Entra con tu cuenta de correo institucional.</p>
+                                <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2 uppercase">{branding.title}</h1>
+                                <p className="text-slate-400 text-sm font-medium">{branding.subtitle}</p>
                             </div>
 
                             {/* Google Login — ACCIÓN PRIMARIA */}

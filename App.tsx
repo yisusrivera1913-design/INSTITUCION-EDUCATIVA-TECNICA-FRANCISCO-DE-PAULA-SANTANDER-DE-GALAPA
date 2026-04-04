@@ -50,6 +50,9 @@ function App() {
   const [currentTab, setCurrentTab] = useState<'planner' | 'history' | 'users' | 'monitor' | 'saas'>('saas');
   const [showProfile, setShowProfile] = useState(false);
 
+  const [lastGenTime, setLastGenTime] = useState(0);
+  const [loginSuccess, setLoginSuccess] = useState<string | null>(null);
+
   const loadingMessages = [
     "Analizando el DBA y contexto...",
     "Diseñando estrategias pedagógicas...",
@@ -58,7 +61,18 @@ function App() {
     "Finalizando planeación..."
   ];
 
-  const [lastGenTime, setLastGenTime] = useState(0);
+  // Visual Confirmation on Login
+  useEffect(() => {
+    if (isAuthenticated && currentUser) {
+      if (currentUser.nombre_institucion) {
+          setLoginSuccess(`¡Bienvenido a ${currentUser.nombre_institucion}!`);
+      } else {
+          setLoginSuccess(`¡Bienvenido, ${currentUser.name}!`);
+      }
+      const timer = setTimeout(() => setLoginSuccess(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, currentUser?.email]);
 
   // 0. Loading cycle
   useEffect(() => {
@@ -171,7 +185,7 @@ function App() {
   const handleLogout = () => {
     if (confirm("¿Cerrar sesión de plataforma?")) {
       authService.logout();
-      window.location.reload(); 
+      window.location.href = window.location.origin; 
     }
   };
 
@@ -563,6 +577,21 @@ function App() {
                   className="bg-blue-600 h-full transition-all duration-1000"
                   style={{ width: `${((loadingStep + 1) / loadingMessages.length) * 100}%` }}
                 />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notification Toast for Login Success */}
+        {loginSuccess && (
+          <div className="fixed top-24 right-10 z-[100] animate-fade-in-up">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-8 py-5 rounded-[2rem] shadow-2xl shadow-blue-500/30 flex items-center gap-4 border border-white/20 backdrop-blur-md">
+              <div className="bg-white/20 p-2 rounded-xl">
+                <Shield size={24} className="text-white" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[3px] opacity-70">Acceso Exitoso</p>
+                <h4 className="text-sm font-black tracking-tight">{loginSuccess}</h4>
               </div>
             </div>
           </div>
