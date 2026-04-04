@@ -1,0 +1,50 @@
+===========================================
+📋 CREDENCIALES - I.E. FRANCISCO DE PAULA SANTANDER
+Sistema de Planificación Didáctica con IA v3.0
+===========================================
+
+🔐 CONTRASEÑA PREDETERMINADA PARA TODOS:
+santander2026
+
+⚠️ IMPORTANTE: Cada docente tiene la responsabilidad de cambiar su contraseña desde su perfil (ícono de usuario).
+
+-------------------------------------------
+👨‍💼 CUENTAS DE DEMOSTRACIÓN (Rápido Acceso)
+-------------------------------------------
+1.🚀 PLATAFORMA EDUPLANEACION AI - CREDENCIALES DE ACCESO SAAS
+
+Este documento contiene las credenciales maestras y el sistema de generación de usuarios para el entorno SaaS Multi-Colegio.
+
+1. ADMINISTRADOR GLOBAL (Super Admin)
+   - Email: superadmin@eduplaneacion.com
+   - Contraseña: superadmin2026
+
+2. ADMINISTRADORES DE COLEGIO (Admin)
+   - Email: admin@santander.edu.co (Ejemplo Colegio Base)
+   - Contraseña: admin2026
+   - Acceso: Gestión de docentes e informes de su propia institución.
+
+3. DOCENTES (Docente)
+   - Email Demo: docente.demo@santander.edu.co
+   - Contraseña: edu2026 (Default para todos los docentes nuevos si no se personaliza)
+   - Acceso: Generador de secuencias didácticas IA para sus grados asignados.
+
+4. SISTEMA DE GENERACIÓN AUTOMÁTICA
+   - Al crear un docente, el sistema genera: nombre.apellido@[dominio_del_colegio]
+   - Ejemplo: Juan Perez en Santander -> juan.perez@santander.edu.co
+   - Contraseña inicial: [nombre_colegio]2026 (obfuscado localmente)
+
+Nota de Seguridad: Todas las contraseñas están protegidas mediante XOR-Obfuscation y salt único de plataforma: 'eduplaneacion-2026-secure-v2'.
+
+💡 FUNCIONALIDADES v3.0:
+✅ Generación de secuencias didácticas con Gemini 2.0
+✅ Auto-generador de credenciales para nuevos docentes
+✅ Persistencia en tiempo real (Supabase Cloud + Local)
+✅ Panel administrativo con métricas de uso por docente
+✅ Exportación a PDF y JSON para planeaciones
+
+===========================================
+I.E. FRANCISCO DE PAULA SANTANDER
+"Hacia la excelencia educativa con IA"
+© 2026
+===========================================
