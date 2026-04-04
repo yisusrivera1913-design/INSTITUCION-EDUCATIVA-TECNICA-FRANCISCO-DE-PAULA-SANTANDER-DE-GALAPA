@@ -78,7 +78,9 @@ ALTER TABLE generated_sequences ENABLE ROW LEVEL SECURITY;
 -- Limpieza de políticas previas
 DROP POLICY IF EXISTS "Instituciones: Lectura Global" ON instituciones;
 DROP POLICY IF EXISTS "Usuarios: Autogestión" ON app_users;
+DROP POLICY IF EXISTS "Usuarios: Aislamiento por Colegio" ON app_users;
 DROP POLICY IF EXISTS "Secuencias: Aislamiento Colegios" ON generated_sequences;
+DROP POLICY IF EXISTS "Secuencias: Aislamiento por Dueño o Admin" ON generated_sequences;
 
 -- Políticas de Seguridad SaaS (Aislamiento Estricto)
 CREATE POLICY "Instituciones: Lectura Global" ON instituciones FOR SELECT USING (true);
