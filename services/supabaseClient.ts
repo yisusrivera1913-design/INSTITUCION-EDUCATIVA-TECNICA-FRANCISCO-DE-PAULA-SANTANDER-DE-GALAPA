@@ -11,9 +11,16 @@ if (import.meta.env.PROD) {
     }
 }
 
-// Inicialización del cliente
+// Inicialización del cliente con PKCE Flow (evita #access_token en la URL)
 export const supabase = (supabaseUrl && supabaseKey && supabaseKey.startsWith('eyJ'))
-    ? createClient(supabaseUrl, supabaseKey)
+    ? createClient(supabaseUrl, supabaseKey, {
+        auth: {
+            flowType: 'pkce',             // <-- Clave: usa código en vez de token en la URL
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: true,     // Detecta el ?code= automáticamente
+        }
+    })
     : null;
 
 if (!supabase) {

@@ -150,6 +150,38 @@ export const authService = {
         localStorage.setItem(STORAGE_KEYS.USER, obfuscate(JSON.stringify(user)));
     },
 
+    // --- GOOGLE OAUTH (PKCE Flow — sin hash en la URL) ---
+    loginWithGoogle: async (institucionId?: string): Promise<{ error: string | null }> => {
+        if (!supabase) return { error: 'Supabase no está configurado' };
+        try {
+            // Construir la URL de retorno: la raíz de la app actual
+            const redirectTo = `${window.location.origin}/`;
+            
+            // Si viene de un colegio específico, guardarlo para el trigger
+            if (institucionId) {
+                localStorage.setItem('sci_pending_inst_id', institucionId);
+            }
+
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo,
+                    scopes: 'email profile',
+                    // Metadatos para el trigger de BD
+                    queryParams: institucionId ? {
+                        access_type: 'offline',
+                        prompt: 'consent',
+                    } : undefined
+                }
+            });
+            
+            if (error) return { error: error.message };
+            return { error: null };
+        } catch (e: any) {
+            return { error: e.message || 'Error al iniciar sesión con Google' };
+        }
+    },
+
     login: async (email: string, password: string): Promise<User | null> => {
         let cloudUser: User | null = null;
         if (supabase) {
@@ -276,21 +308,7 @@ export const authService = {
         return { success: !error };
     },
 
-    loginWithGoogle: async (institucionId?: string) => {
-        if (!supabase) return { error: "No hay conexión a Supabase" };
-        
-        const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: window.location.origin,
-                // Pasamos institucionId en metadata para que el trigger SQL lo procese
-                data: institucionId ? { intended_institucion_id: institucionId } : undefined
-            } as any
-        });
 
-        if (error) return { error: error.message };
-        return { data };
-    },
 
     handleAuthCallback: async (): Promise<User | null> => {
         if (!supabase) return null;
