@@ -14,24 +14,32 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const [showPasswordHint, setShowPasswordHint] = useState(false);
     const [branding, setBranding] = useState({ 
         title: 'Centro de Acceso', 
-        subtitle: 'Entra con tu cuenta de correo institucional.' 
+        subtitle: 'Entra con tu cuenta de correo institucional.',
+        institucionId: null as string | null,
+        logo_url: null as string | null
     });
 
     useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const instParam = params.get('colegio') || params.get('inst') || '';
-        
-        if (instParam.toLowerCase().includes('santander')) {
-            setBranding({
-                title: 'Ingreso Santander Galapa',
-                subtitle: 'Acceso exclusivo para el personal de la I.E.T. Santander Galapa.'
-            });
-        } else if (instParam) {
-            setBranding({
-                title: `Acceso a ${instParam.charAt(0).toUpperCase() + instParam.slice(1)}`,
-                subtitle: 'Usa tu identidad institucional para continuar.'
-            });
-        }
+        const fetchBranding = async () => {
+            const params = new URLSearchParams(window.location.search);
+            const instParam = params.get('inst') || params.get('colegio') || '';
+            
+            if (instParam) {
+                const inst = await authService.getPublicInstitucion(instParam);
+                if (inst) {
+                    setBranding({
+                        title: inst.nombre,
+                        subtitle: 'Acceso exclusivo para el personal docente y administrativo.',
+                        institucionId: inst.id,
+                        logo_url: inst.config_visual?.logo_url || null
+                    });
+                } else {
+                    setBranding(prev => ({ ...prev, title: 'Centro de Acceso', subtitle: 'La institución solicitada no es válida o está inactiva.' }));
+                }
+            }
+        };
+
+        fetchBranding();
     }, []);
 
     // Initial state empty
@@ -63,7 +71,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     const handleGoogleLogin = async () => {
         setIsLoading(true);
-        const { error } = await authService.loginWithGoogle();
+        const { error } = await authService.loginWithGoogle(branding.institucionId || undefined);
         if (error) {
             setError(error);
             setIsLoading(false);
@@ -95,17 +103,21 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         <div className="relative mb-8 inline-block group">
                             <div className="absolute inset-0 bg-blue-400 blur-3xl opacity-20 group-hover:opacity-40 transition-all duration-700"></div>
                             <div className="relative w-32 h-32 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-[2.5rem] p-5 shadow-2xl overflow-hidden flex items-center justify-center transform hover:rotate-3 transition-transform cursor-pointer">
-                                <Sparkles className="text-white w-16 h-16" />
+                                {(branding as any).logo_url ? (
+                                    <img src={(branding as any).logo_url} alt="Logo" className="w-full h-full object-contain" />
+                                ) : (
+                                    <Sparkles className="text-white w-16 h-16" />
+                                )}
                             </div>
                         </div>
 
                         {/* Texto de Bienvenida */}
                         <div className="space-y-4">
-                            <h2 className="text-4xl font-black text-slate-800 tracking-tight leading-tight">
-                                Easy<span className="text-blue-600">Planning</span> AI
+                            <h2 className="text-4xl font-black text-slate-800 tracking-tight leading-tight uppercase">
+                                SISTEMA<span className="text-blue-600">CLASES</span> IDEAL
                             </h2>
                             <p className="text-slate-500 font-medium max-w-[280px] mx-auto text-sm leading-relaxed">
-                                La plataforma inteligente para docentes modernos.
+                                Excelencia Pedagógica Digital.
                             </p>
                         </div>
 
@@ -222,10 +234,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                             )}
                         </div>
 
-                        {/* SaaS Platform Footer */}
+                        {/* SCI Platform Footer */}
                         <div className="mt-12 text-center flex flex-col gap-4">
                             <div className="text-[10px] text-slate-200 font-black uppercase tracking-[3px]">
-                                © {new Date().getFullYear()} EasyPlanning AI — SaaS Platform
+                                © {new Date().getFullYear()} SistemaClasesIdeal — Gestión Académica
                             </div>
                             <div className="flex gap-4 justify-center text-[9px] font-black uppercase tracking-widest text-slate-300">
                                 <a href="#" className="hover:text-blue-500 transition-colors">Privacidad</a>

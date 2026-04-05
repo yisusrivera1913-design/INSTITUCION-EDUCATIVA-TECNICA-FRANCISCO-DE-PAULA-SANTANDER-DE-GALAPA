@@ -24,6 +24,7 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onEnterInstitu
     const [isLoading, setIsLoading] = useState(true);
     const [showRegForm, setShowRegForm] = useState(false);
     const [toggling, setToggling] = useState<string | null>(null);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
 
     const [form, setForm] = useState({
         nombre: '', slug: '', municipio: '', nit: '',
@@ -59,6 +60,13 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onEnterInstitu
         }
     };
 
+    const handleCopyLink = (slug: string, id: string) => {
+        const url = `${window.location.origin}?inst=${slug}`;
+        navigator.clipboard.writeText(url);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+    };
+
     const planColors: Record<string, string> = {
         bronce: 'text-orange-400 bg-orange-400/10 border-orange-400/20',
         plata: 'text-slate-300 bg-slate-300/10 border-slate-300/20',
@@ -88,26 +96,37 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onEnterInstitu
                 
                 <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-12">
                     <div className="max-w-2xl">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[10px] font-black text-indigo-400 uppercase tracking-[2px] mb-4">
-                            <Activity size={12} /> Infraestructura Global Activa
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-[10px] font-black text-blue-400 uppercase tracking-[2px] mb-4">
+                            <Activity size={12} /> Red Global SistemaClasesIdeal
                         </div>
-                        <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-4">
-                            Orquestador <span className="text-indigo-500">SaaS</span>
+                        <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter mb-4 uppercase">
+                            Centro de Mando <span className="text-blue-500 italic">SCI</span>
                         </h2>
                         <p className="text-slate-400 text-lg font-medium leading-relaxed">
-                            Gestión centralizada de nodos institucionales, despliegue de instancias y monitoreo de recursos de IA en tiempo real.
+                            Gestión centralizada de instituciones, despliegue de nodos académicos y monitoreo de recursos pedagógicos.
                         </p>
                     </div>
                     
                     <div className="flex gap-4">
+                        <button onClick={async () => {
+                            if (confirm('¿Borrar TODAS las secuencias de prueba? Esta acción es irreversible.')) {
+                                const res = await authService.clearTestData();
+                                if (res.success) alert('Datos de prueba eliminados.');
+                                else alert('Error al limpiar datos.');
+                                load();
+                            }
+                        }} className="h-12 px-6 bg-red-500/10 text-red-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-500 hover:text-white border border-red-500/20 transition-all flex items-center gap-3">
+                            <XCircle size={14} /> 
+                            <span>Limpiar Pruebas</span>
+                        </button>
                         <button onClick={load} className="h-12 px-6 bg-white/5 text-slate-300 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-white/10 hover:text-white border border-white/5 transition-all flex items-center gap-3">
                             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} /> 
                             <span>Sincronizar</span>
                         </button>
                         <button onClick={() => setShowRegForm(!showRegForm)}
-                            className={`h-12 px-6 rounded-xl transition-all flex items-center gap-3 shadow-2xl text-[10px] font-black uppercase tracking-widest ${showRegForm ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-indigo-600 text-white border border-indigo-500/50 hover:bg-indigo-500 shadow-indigo-500/20'}`}>
+                            className={`h-12 px-6 rounded-xl transition-all flex items-center gap-3 shadow-2xl text-[10px] font-black uppercase tracking-widest ${showRegForm ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-blue-600 text-white border border-blue-500/50 hover:bg-blue-500 shadow-blue-500/20'}`}>
                             {showRegForm ? <XCircle size={16} /> : <Plus size={16} />} 
-                            {showRegForm ? 'Abortar' : 'Nuevo Nodo'}
+                            {showRegForm ? 'Cancelar' : 'Registrar Colegio'}
                         </button>
                     </div>
                 </div>
@@ -238,7 +257,7 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onEnterInstitu
                             </div>
 
                             {/* Plan Pill */}
-                            <div className="flex items-center gap-3 mb-8">
+                            <div className="flex items-center gap-3 mb-6">
                                 <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${planColors[inst.plan_suscripcion] || ''}`}>
                                     {planLabels[inst.plan_suscripcion]}
                                 </span>
@@ -258,25 +277,39 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onEnterInstitu
                             </div>
 
                             {/* Core Actions */}
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-col gap-3">
+                                <div className="flex items-center gap-3">
+                                    <button 
+                                        onClick={() => onEnterInstitucion(inst)}
+                                        className="flex-1 h-12 bg-white text-black font-black text-[10px] uppercase tracking-[3px] rounded-xl hover:bg-blue-600 hover:text-white hover:-translate-y-1 transition-all shadow-xl shadow-black/20 flex items-center justify-center gap-3 ring-2 ring-transparent hover:ring-blue-500/50"
+                                    >
+                                        <Sparkles size={14} className="text-blue-500 group-hover:text-white" /> Gestionar Colegio
+                                    </button>
+
+                                    <button 
+                                        onClick={() => handleToggle(inst.id, inst.activo)}
+                                        disabled={toggling === inst.id}
+                                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all border ${
+                                            inst.activo 
+                                            ? 'bg-emerald-500/5 text-emerald-500/50 border-white/5 hover:bg-red-500 hover:text-white' 
+                                            : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-emerald-500 hover:text-white'
+                                        }`}
+                                        title={inst.activo ? "Desactivar" : "Activar"}
+                                    >
+                                        {toggling === inst.id ? <RefreshCw size={18} className="animate-spin" /> : <Power size={18} />}
+                                    </button>
+                                </div>
+
                                 <button 
-                                    onClick={() => handleToggle(inst.id, inst.activo)}
-                                    disabled={toggling === inst.id}
-                                    className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all border ${
-                                        inst.activo 
-                                        ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500 hover:text-white' 
-                                        : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500 hover:text-white'
+                                    onClick={() => handleCopyLink(inst.slug, inst.id)}
+                                    className={`w-full h-10 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
+                                        copiedId === inst.id 
+                                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
+                                        : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-white'
                                     }`}
-                                    title={inst.activo ? "Suspender Instancia" : "Activar Instancia"}
                                 >
-                                    {toggling === inst.id ? <RefreshCw size={18} className="animate-spin" /> : <Power size={18} />}
-                                </button>
-                                
-                                <button 
-                                    onClick={() => onEnterInstitucion(inst)}
-                                    className="flex-1 h-12 bg-indigo-600 text-white font-black text-[10px] uppercase tracking-[3px] rounded-xl hover:bg-indigo-500 hover:-translate-y-1 transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center gap-3 ring-2 ring-transparent hover:ring-white/20"
-                                >
-                                    <Sparkles size={14} /> Acceder Nodo
+                                    {copiedId === inst.id ? <CheckCircle2 size={12} /> : <Globe size={12} />}
+                                    {copiedId === inst.id ? '¡Enlace Copiado!' : 'Copiar Enlace Mágico'}
                                 </button>
                             </div>
                         </div>

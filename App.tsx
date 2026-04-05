@@ -92,7 +92,7 @@ function App() {
   // 1. Initial Load & Session Refresh
   useEffect(() => {
     if (isAuthenticated && currentUser) {
-      const inputKey = authService.getUserStorageKey('eduplaneacion_input_v1');
+      const inputKey = authService.getUserStorageKey('sci_input_v1');
       const savedInput = localStorage.getItem(inputKey);
 
       if (savedInput) {
@@ -132,43 +132,56 @@ function App() {
   // 2. Persistencia de entrada
   useEffect(() => {
     if (isAuthenticated && currentUser) {
-      const inputKey = authService.getUserStorageKey('eduplaneacion_input_v1');
+      const inputKey = authService.getUserStorageKey('sci_input_v1');
       localStorage.setItem(inputKey, JSON.stringify(input));
     }
   }, [input, isAuthenticated, currentUser]);
 
   // 3. Centralized Auth & Callback Handler
   useEffect(() => {
-    const checkAuth = async () => {
-      // A. Handle Google Auth Callback (Success from Redirect)
-      if (window.location.hash || window.location.search.includes('code=')) {
-        const googleUser = await authService.handleAuthCallback();
-        if (googleUser) {
-          setIsAuthenticated(true);
-          setCurrentUser(googleUser);
-          setCurrentTab(googleUser.role === 'super_admin' ? 'saas' : 'planner');
-          // Clean URL to avoid re-triggering logic
-          window.history.replaceState(null, '', window.location.origin);
-          return;
-        }
-      }
-
-      // B. Check Existing Session (Persistence)
-      if (authService.isAuthenticated()) {
-        const user = authService.getCurrentUser();
-        setIsAuthenticated(true);
-        setCurrentUser(user);
-        setCurrentTab((user?.role === 'super_admin' && !user?.institucion_id) ? 'saas' : 'planner');
+    const { data: { subscription } } = (authService.supabase ? authService.supabase.auth.onAuthStateChange((event, session) => {
+        console.log(`🔐 [Auth Event SCI] ${event}`);
         
-        // Background refresh to sync any role/assignment changes
-        authService.refreshSession().then(updated => {
-          if (updated) setCurrentUser(updated);
-        });
-      } 
-      setIsAuthChecking(false);
-    };
+        const syncSession = async () => {
+            if (event === 'SIGNED_OUT') {
+                setIsAuthenticated(false);
+                setCurrentUser(null);
+                localStorage.removeItem(authService.STORAGE_KEYS.AUTH);
+                localStorage.removeItem(authService.STORAGE_KEYS.USER);
+                setIsAuthChecking(false);
+            } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || (event as any) === 'INITIAL_SESSION') {
+                if (session) {
+                    const user = await authService.handleAuthCallback();
+                    if (user) {
+                        setIsAuthenticated(true);
+                        setCurrentUser(user);
+                        if (window.location.hash || window.location.search.includes('code=')) {
+                            setCurrentTab(user.role === 'super_admin' ? 'saas' : 'planner');
+                            window.history.replaceState(null, '', window.location.origin);
+                        }
+                    }
+                } else {
+                    // Si no hay sesión pero estamos en carga inicial, revisar persistencia local
+                    if (authService.isAuthenticated()) {
+                        const user = authService.getCurrentUser();
+                        setIsAuthenticated(true);
+                        setCurrentUser(user);
+                        setCurrentTab((user?.role === 'super_admin' && !user?.institucion_id) ? 'saas' : 'planner');
+                        authService.refreshSession().then(updated => {
+                          if (updated) setCurrentUser(updated);
+                        });
+                    }
+                }
+                setIsAuthChecking(false);
+            }
+        };
 
-    checkAuth();
+        syncSession();
+    }) : { data: { subscription: { unsubscribe: () => {} } } }) as any;
+
+    return () => {
+        subscription.unsubscribe();
+    };
   }, []);
 
   const handleLogin = () => {
@@ -336,7 +349,7 @@ function App() {
                <div className="h-1 w-20 bg-blue-600/30 rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500 w-1/2 animate-[shimmer_2s_infinite]"></div>
                </div>
-               <p className="text-slate-500 text-[9px] font-black uppercase tracking-[3px] mt-2 italic">EasyPlanning SaaS Guard</p>
+               <p className="text-slate-500 text-[9px] font-black uppercase tracking-[3px] mt-2 italic">SCI Security Shield</p>
             </div>
           </div>
         </div>
@@ -352,7 +365,17 @@ function App() {
     if (isInstitutionalLink || showLogin) {
       return <Login onLogin={handleLogin} />;
     }
-    return <LandingPage onStart={() => setShowLogin(true)} />;
+    return (
+      <LandingPage
+        onStart={(instSlug?: string) => {
+          if (instSlug) {
+            // El usuario seleccionó un colegio del buscador: set URL y mostrar Login
+            window.history.replaceState(null, '', `${window.location.pathname}?inst=${instSlug}`);
+          }
+          setShowLogin(true);
+        }}
+      />
+    );
   }
 
   const isDark = currentTab === 'saas';
@@ -369,17 +392,28 @@ function App() {
             if (currentUser?.role === 'super_admin' && !currentUser?.institucion_id) setCurrentTab('saas');
             else setCurrentTab('planner');
           }}>
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-xl shadow-sm group-hover:rotate-6 transition-transform w-10 h-10 flex items-center justify-center">
-                <Sparkles className="text-white" size={18} />
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-xl shadow-sm group-hover:rotate-6 transition-transform w-10 h-10 flex items-center justify-center overflow-hidden">
+                {currentUser?.config_visual?.logo_url ? (
+                    <img src={currentUser.config_visual.logo_url} alt="Logo" className="w-full h-full object-contain" />
+                ) : (
+                    <Sparkles className="text-white" size={18} />
+                )}
             </div>
             <div className="hidden sm:block">
               <h1 className={`text-xl font-black tracking-tighter leading-none ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                EasyPlann<span className={isDark ? "text-indigo-500" : "text-blue-600"}>ing</span> <span className={`text-[10px] px-2 py-0.5 rounded-lg ml-1 font-black ${isDark ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-purple-600 text-white'}`}>SAAS</span>
+                {/* Si hay colegio y no es super_admin viendo el dashboard, mostrar nombre del colegio */}
+                {(currentUser?.nombre_institucion && currentUser?.role !== 'super_admin') ? (
+                  <>{currentUser.nombre_institucion}</>
+                ) : (
+                  <>SISTEMA<span className={isDark ? "text-indigo-500" : "text-blue-600"}>CLASES</span> <span className={`text-[10px] px-2 py-0.5 rounded-lg ml-1 font-black ${isDark ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-purple-600 text-white'}`}>IDEAL</span></>
+                )}
               </h1>
               <p className={`text-[9px] font-black uppercase tracking-[2px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                 {currentUser?.role === 'super_admin' && !currentUser?.institucion_id 
                   ? 'Panel de Control Principal' 
-                  : (currentUser?.nombre_institucion || 'EasyPlanning — SaaS Multi-Colegio')}
+                  : (currentUser?.nombre_institucion 
+                      ? 'Gestión Académica Institucional' 
+                      : 'SistemaClasesIdeal — Gestión Académica')}
               </p>
             </div>
           </div>
@@ -392,7 +426,7 @@ function App() {
                   onClick={() => setCurrentTab('planner')}
                   className={`px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-wider ${currentTab === 'planner' ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-800'}`}
                 >
-                  <PenTool size={14} /> <span className="hidden md:inline">Planificador</span>
+                  <PenTool size={14} /> <span className="hidden md:inline">Planificador Ideal</span>
                 </button>
                 <button
                   onClick={() => setCurrentTab('history')}
@@ -431,7 +465,7 @@ function App() {
                   >
                     <div className={`w-2 h-2 rounded-full absolute -top-1 -right-1 ${currentTab === 'saas' ? 'hidden' : 'bg-red-500 shadow-[0_0_10px_red]'}`}></div>
                     <Globe size={14} className={currentTab === 'saas' ? '' : 'animate-spin-slow'} /> 
-                    <span className="md:inline">{currentTab === 'saas' ? 'Panel SaaS Principal' : '⚠️ Salir al Dashboard SaaS'}</span>
+                    <span className="md:inline">{currentTab === 'saas' ? 'Panel SCI Principal' : '⚠️ Salir al Dashboard SCI'}</span>
                   </button>
                 )}
               </>
@@ -484,13 +518,30 @@ function App() {
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full text-blue-600 text-[10px] font-black uppercase tracking-[3px] mb-6 shadow-sm border border-blue-100">
                     <Sparkles size={14} /> Motor de Inteligencia Pedagógica
                   </div>
+
+                  {/* Branding dinámico de la institución */}
+                  {currentUser?.nombre_institucion && (
+                    <div className="flex items-center justify-center gap-3 mb-4">
+                      {currentUser.config_visual?.logo_url && (
+                        <img 
+                          src={currentUser.config_visual.logo_url} 
+                          alt="Logo" 
+                          className="w-10 h-10 rounded-xl object-contain border border-slate-200 shadow"
+                        />
+                      )}
+                      <span className="text-[11px] font-black text-slate-400 uppercase tracking-[4px]">
+                        {currentUser.nombre_institucion}
+                      </span>
+                    </div>
+                  )}
+
                   <h2 className="text-5xl md:text-7xl font-black text-slate-800 mb-6 tracking-tighter">
                     Crea tu <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent italic">Planeación</span>
                   </h2>
                   <p className="text-slate-500 text-lg max-w-2xl mx-auto leading-relaxed font-medium">
                     Diseña secuencias didácticas de alta calidad alineadas con el MEN. <br />
                     <span className="text-blue-600 text-[10px] font-black uppercase tracking-widest">
-                      {currentUser?.nombre_institucion || 'EasyPlanning — SaaS Multi-Colegio'}
+                      {currentUser?.nombre_institucion || 'SistemaClasesIdeal — Gestión Académica'}
                     </span>
                   </p>
                 </div>
@@ -629,6 +680,11 @@ function App() {
             </div>
           </div>
         )}
+
+        {/* Branding Footer */}
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-0 opacity-20 pointer-events-none no-print">
+            <p className="text-[8px] font-black uppercase tracking-[5px] text-slate-400">Powered by SCI Platform</p>
+        </div>
 
         {/* Error Notification */}
         {error && (

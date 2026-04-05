@@ -41,15 +41,23 @@ export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerat
       <div className="relative z-10 mb-8 border-b border-gray-100/50 pb-6 flex flex-col md:flex-row items-center gap-6">
         <div className="bg-white p-1 rounded-2xl shadow-md border border-gray-100 transform hover:scale-105 transition-transform duration-300 w-[70px] h-[70px] flex items-center justify-center overflow-hidden">
           <div className="bg-blue-600 w-full h-full flex items-center justify-center rounded-xl">
-            <Sparkles className="text-white w-8 h-8" />
+            {user?.config_visual?.logo_url ? (
+              <img src={user.config_visual.logo_url} alt="Logo Institución" className="w-full h-full object-contain" />
+            ) : (
+              <Sparkles className="text-white w-8 h-8" />
+            )}
           </div>
         </div>
         <div className="text-center md:text-left">
           <h1 className="text-2xl font-black text-slate-800 flex items-center justify-center md:justify-start gap-2">
             <Layers className="text-blue-600 drop-shadow-sm" />
-            Planeador Inteligente <span className="text-blue-600">EduPlaneación</span>
+            Planeador Inteligente <span className="text-blue-600">{user?.nombre_institucion || 'SistemaClasesIdeal'}</span>
           </h1>
-          <p className="text-gray-500 text-sm mt-1 font-medium tracking-wide uppercase">Software Pedagógico para Docentes Colombianos</p>
+          <p className="text-gray-500 text-sm mt-1 font-medium tracking-wide uppercase">
+            {user?.nombre_institucion 
+              ? `Software Pedagógico — ${user.nombre_institucion}` 
+              : 'Software Pedagógico para Docentes Colombianos'}
+          </p>
         </div>
       </div>
 

@@ -7,12 +7,12 @@ import { supabase } from './supabaseClient';
  */
 
 export const STORAGE_KEYS = {
-    AUTH: 'eduplaneacion_auth_v2',
-    USER: 'eduplaneacion_user_v2',
-    ROLE: 'eduplaneacion_role_v2'
+    AUTH: 'sci_auth_v1',
+    USER: 'sci_user_v1',
+    ROLE: 'sci_role_v1'
 };
 
-const SALT = 'eduplaneacion-2026-secure-v2';
+const SALT = 'sci-2026-secure-v1';
 
 // Simple XOR obfuscation with UTF-8 support
 const obfuscate = (text: string): string => {
@@ -65,12 +65,14 @@ export interface User {
 
 // Usuarios locales de respaldo (Solo si falla la nube)
 export const AUTHORIZED_USERS: User[] = [
-    { name: 'SaaS Administrator', email: 'superadmin@eduplaneacion.com', role: 'super_admin' },
+    { name: 'SCI Administrator', email: 'superadmin@eduplaneacion.com', role: 'super_admin' },
     { name: 'Admin Institucional', email: 'admin@colegio.edu.co', role: 'admin', nombre_institucion: 'Colegio de Prueba' },
     { name: 'Docente Demo', email: 'docente@colegio.edu.co', role: 'docente', nombre_institucion: 'Colegio de Prueba' },
 ];
 
 export const authService = {
+    supabase, // Exponer el cliente para el listener
+    STORAGE_KEYS, // Exponer llaves para consistencia
     // --- PASSWORD MANAGEMENT ---
     changePassword: async (email: string, newPass: string): Promise<{ success: boolean; message?: string }> => {
         const lowEmail = email.toLowerCase().trim();
@@ -96,7 +98,7 @@ export const authService = {
 
         // 2. Local Update (Fallback/Sync)
         try {
-            const key = `eduplaneacion_pwd_${lowEmail}`;
+            const key = `sci_pwd_${lowEmail}`;
             localStorage.setItem(key, obfuscatedPassword);
 
             // Also update current session if the user is changing their own password
@@ -114,7 +116,7 @@ export const authService = {
 
     verifyPassword: async (email: string, inputPass: string, role?: string): Promise<boolean> => {
         // A. Check Local Overrides First
-        const customPassEnc = localStorage.getItem(`eduplaneacion_pwd_${email.toLowerCase()}`);
+        const customPassEnc = localStorage.getItem(`sci_pwd_${email.toLowerCase()}`);
         if (customPassEnc) {
             return deobfuscate(customPassEnc) === inputPass;
         }
@@ -247,6 +249,26 @@ export const authService = {
         }
     },
 
+    // SaaS: Obtener info pública de una institución por slug o ID (para el login dinámico)
+    getPublicInstitucion: async (slugOrId: string) => {
+        if (!supabase) return null;
+        try {
+            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(slugOrId);
+            const { data, error } = await supabase
+                .from('instituciones')
+                .select('id, nombre, config_visual')
+                .or(isUuid ? `id.eq.${slugOrId}` : `slug.eq.${slugOrId.toLowerCase()}`)
+                .eq('activo', true)
+                .maybeSingle();
+            
+            if (error) throw error;
+            return data;
+        } catch (e) {
+            console.error('Error fetching public inst:', e);
+            return null;
+        }
+    },
+
     // SaaS: Toggle activo/inactivo de una institución
     toggleInstitucion: async (id: string, activo: boolean) => {
         if (!supabase) return { success: false };
@@ -254,14 +276,16 @@ export const authService = {
         return { success: !error };
     },
 
-    loginWithGoogle: async () => {
+    loginWithGoogle: async (institucionId?: string) => {
         if (!supabase) return { error: "No hay conexión a Supabase" };
         
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.origin
-            }
+                redirectTo: window.location.origin,
+                // Pasamos institucionId en metadata para que el trigger SQL lo procese
+                data: institucionId ? { intended_institucion_id: institucionId } : undefined
+            } as any
         });
 
         if (error) return { error: error.message };
@@ -282,21 +306,26 @@ export const authService = {
         let profile = null;
         let retries = 0;
         
-        while (retries < 3 && !profile) {
-            const { data } = await supabase
-                .from('app_users')
-                .select(`
-                    name, email, role, assigned_grades, assigned_subjects,
-                    institucion_id,
-                    instituciones (nombre, dominio_email, config_visual)
-                `)
-                .eq('email', email)
-                .maybeSingle();
-            
-            profile = data;
+        while (retries < 5 && !profile) {
+            try {
+                const { data, error } = await supabase
+                    .from('app_users')
+                    .select(`
+                        name, email, role, assigned_grades, assigned_subjects,
+                        institucion_id,
+                        instituciones (nombre, dominio_email, config_visual)
+                    `)
+                    .eq('email', email)
+                    .maybeSingle();
+                
+                if (error) throw error;
+                profile = data;
+            } catch (err) {
+                console.warn(`⚠️ [Auth] Re-intentando consulta de perfil... (${retries + 1}/5)`);
+            }
+
             if (!profile) {
-                console.log(`⏳ [Auth] Esperando al trigger... (${retries + 1}/3)`);
-                await new Promise(resolve => setTimeout(resolve, 800)); // Esperar 800ms
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1s
                 retries++;
             }
         }
@@ -355,7 +384,7 @@ export const authService = {
         const obfuscatedPassword = obfuscate(passwordToSend);
 
         // 1. Local Persistence (for backup)
-        const key = `eduplaneacion_pwd_${teacher.email.toLowerCase()}`;
+        const key = `sci_pwd_${teacher.email.toLowerCase()}`;
         localStorage.setItem(key, obfuscatedPassword);
 
         // 2. Cloud Persistence (Supabase)
@@ -384,7 +413,7 @@ export const authService = {
 
     deleteUser: async (email: string) => {
         // 1. Local
-        localStorage.removeItem(`eduplaneacion_pwd_${email.toLowerCase()}`);
+        localStorage.removeItem(`sci_pwd_${email.toLowerCase()}`);
 
         // 2. Cloud (Supabase)
         if (supabase) {
@@ -412,8 +441,8 @@ export const authService = {
 
         // 1. Respaldo Local (Inmediato)
         try {
-            const statsKey = `eduplaneacion_stats_${email}`;
-            const seqKey = `eduplaneacion_saved_sequences_${email}`;
+            const statsKey = `sci_stats_${email}`;
+            const seqKey = `sci_saved_sequences_${email}`;
 
             const stats = JSON.parse(localStorage.getItem(statsKey) || '[]');
             stats.push({ timestamp: Date.now(), action: actionText });
@@ -449,7 +478,8 @@ export const authService = {
                     area: details.area,
                     tema: details.theme,
                     content: sequence,
-                    institucion_id: institucionId
+                    institucion_id: institucionId,
+                    is_test: true // Mark as test for now as requested
                 }]);
                 if (seqErr) console.error("Error Repositorio Nube:", seqErr.message);
 
@@ -538,7 +568,7 @@ export const authService = {
     },
 
     getLocalUsageStats: (email: string) => {
-        const key = `santander_stats_${email.toLowerCase()}`;
+        const key = `sci_stats_${email.toLowerCase()}`;
         const logs: any[] = JSON.parse(localStorage.getItem(key) || '[]');
         const now = new Date();
 
@@ -549,7 +579,7 @@ export const authService = {
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
         const yearStart = new Date(now.getFullYear(), 0, 1).getTime();
 
-        const localSavedKey = `santander_saved_sequences_${email.toLowerCase()}`;
+        const localSavedKey = `sci_saved_sequences_${email.toLowerCase()}`;
         const savedCount = JSON.parse(localStorage.getItem(localSavedKey) || '[]').length;
 
         return {
@@ -648,7 +678,7 @@ export const authService = {
 
         try {
             // A. Sincronizar Secuencias Guardadas
-            const seqKey = `santander_saved_sequences_${email}`;
+            const seqKey = `sci_saved_sequences_${email}`;
             const localSeqs = JSON.parse(localStorage.getItem(seqKey) || '[]');
 
             // Ver qué hay ya en la nube para no duplicar
@@ -807,7 +837,7 @@ export const authService = {
                 .single();
 
             if (data && !error) {
-                // SESSION INTEGRITY CHECK - Ignorado para Super Admin
+                // SESSION INTEGRITY CHECK - Ignored for Super Admin
                 if (current.role !== 'super_admin' && current.session_id && data.session_id && current.session_id !== data.session_id) {
                     console.warn("🚨 [Security] Sesión duplicada detectada. Cerrando esta sesión.");
                     authService.logout();
@@ -815,15 +845,16 @@ export const authService = {
                 }
 
                 const updatedUser: User = {
+                    ...current, // Keep institution and config
                     name: data.name,
                     email: data.email,
-                    role: data.role as 'admin' | 'docente',
+                    role: data.role as any,
                     assigned_grades: data.assigned_grades || [],
                     assigned_subjects: data.assigned_subjects || [],
                     session_id: data.session_id || current.session_id
                 };
 
-                // Update local storage
+                // Store in memory AND local storage
                 localStorage.setItem(STORAGE_KEYS.USER, obfuscate(JSON.stringify(updatedUser)));
                 return updatedUser;
             }
@@ -831,5 +862,15 @@ export const authService = {
             console.error("Session refresh error:", e);
         }
         return current;
+    },
+
+    // New: Super Admin option to clear test data
+    clearTestData: async () => {
+        if (!supabase) return { success: false };
+        const { error } = await supabase
+            .from('generated_sequences')
+            .delete()
+            .eq('is_test', true);
+        return { success: !error };
     }
 };

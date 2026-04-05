@@ -1,23 +1,52 @@
-import React, { useState } from 'react';
-import { Sparkles, ArrowRight, Shield, Zap, Globe, Users, CheckCircle2, Search, GraduationCap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, ArrowRight, Shield, Zap, Globe, Users, CheckCircle2, Search, GraduationCap, Loader2 } from 'lucide-react';
+import { authService } from '../services/authService';
 
 interface LandingPageProps {
-    onStart: () => void;
+    onStart: (instSlug?: string) => void;
+}
+
+interface InstPublica {
+    id: string;
+    nombre: string;
+    slug: string;
+    municipio?: string;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [allSchools, setAllSchools] = useState<InstPublica[]>([]);
+    const [isLoadingSchools, setIsLoadingSchools] = useState(true);
 
-    const schools = [
-        "I.E.T. Francisco de Paula Santander",
-        "Colegio Mayor de Barranquilla",
-        "SENA Regional Atlántico",
-        "Universidad del Norte"
-    ];
+    // Cargar colegios activos desde Supabase
+    useEffect(() => {
+        const loadSchools = async () => {
+            setIsLoadingSchools(true);
+            try {
+                const data = await authService.getInstituciones();
+                setAllSchools((data as any[]).filter(i => i.activo).map(i => ({
+                    id: i.id,
+                    nombre: i.nombre,
+                    slug: i.slug,
+                    municipio: i.municipio
+                })));
+            } catch (e) {
+                // Silencioso si falla
+            }
+            setIsLoadingSchools(false);
+        };
+        loadSchools();
+    }, []);
 
-    const filteredSchools = searchTerm.length > 2 
-        ? schools.filter(s => s.toLowerCase().includes(searchTerm.toLowerCase()))
+    const filteredSchools = searchTerm.length > 1
+        ? allSchools.filter(s => s.nombre.toLowerCase().includes(searchTerm.toLowerCase()))
         : [];
+
+    const handleSelectSchool = (school: InstPublica) => {
+        // Redirigir con el slug para que el login cargue la identidad del colegio
+        window.history.replaceState(null, '', `${window.location.pathname}?inst=${school.slug}`);
+        onStart(school.slug);
+    };
 
     return (
         <div className="min-h-screen bg-[#fcfcfd] font-outfit text-slate-900 selection:bg-blue-100 overflow-x-hidden">
@@ -28,10 +57,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                     <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-2 rounded-xl shadow-lg shadow-blue-500/20">
                         <Sparkles className="text-white" size={20} />
                     </div>
-                    <span className="text-xl font-black tracking-tighter text-slate-800">EasyPlanning<span className="text-blue-600">AI</span></span>
+                    <span className="text-xl font-black tracking-tighter text-slate-800 uppercase">Sistema<span className="text-blue-600">Clases</span>Ideal</span>
                 </div>
                 <button 
-                    onClick={onStart}
+                    onClick={() => onStart()}
                     className="px-6 py-2.5 bg-slate-900 text-white rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-slate-900/10"
                 >
                     Ingresar
@@ -45,10 +74,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                         <Zap size={14} fill="currentColor" /> El Futuro de la Educación
                     </div>
                     
-                    <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-slate-900 mb-8 leading-[0.95] animate-fade-in-up delay-100">
-                        Planeación <br/>
-                        <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent italic">Inteligente</span> para <br/>
-                        Docentes de Élite
+                    <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-slate-900 mb-8 leading-[0.95] animate-fade-in-up delay-100 uppercase">
+                        SISTEMA <br/>
+                        <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent italic">CLASES</span> <br/>
+                        IDEAL
                     </h1>
                     
                     <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto font-medium mb-12 leading-relaxed animate-fade-in-up delay-200">
@@ -57,15 +86,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up delay-300">
                         <button 
-                            onClick={onStart}
+                            onClick={() => onStart()}
                             className="w-full sm:w-auto px-10 py-5 bg-blue-600 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-2xl shadow-blue-600/30 flex items-center justify-center gap-3 group"
                         >
                             Comenzar Ahora <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                         </button>
                         
+                        {/* Buscador de Colegios — Dinámico desde Supabase */}
                         <div className="relative w-full sm:w-80">
                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                                <Search size={18} />
+                                {isLoadingSchools ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
                             </div>
                             <input 
                                 type="text" 
@@ -75,21 +105,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                                 className="w-full pl-12 pr-6 py-5 bg-white border border-slate-200 rounded-[2rem] text-sm font-bold shadow-sm focus:ring-4 focus:ring-blue-100 transition-all outline-none"
                             />
                             
-                            {/* Search Results Dropdown */}
+                            {/* Search Results Dropdown — Colegios reales */}
                             {filteredSchools.length > 0 && (
                                 <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-3xl border border-slate-100 shadow-2xl p-2 z-40 overflow-hidden animate-fade-in-up">
-                                    {filteredSchools.map((school, i) => (
+                                    {filteredSchools.map((school) => (
                                         <button 
-                                            key={i}
-                                            onClick={onStart}
+                                            key={school.id}
+                                            onClick={() => handleSelectSchool(school)}
                                             className="w-full text-left px-4 py-3 hover:bg-slate-50 rounded-2xl flex items-center gap-3 transition-colors group"
                                         >
                                             <div className="bg-blue-50 p-2 rounded-lg text-blue-500 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                                 <GraduationCap size={16} />
                                             </div>
-                                            <span className="text-xs font-bold text-slate-700">{school}</span>
+                                            <div>
+                                                <span className="text-xs font-bold text-slate-700 block">{school.nombre}</span>
+                                                {school.municipio && (
+                                                    <span className="text-[10px] text-slate-400 font-medium">{school.municipio}</span>
+                                                )}
+                                            </div>
                                         </button>
                                     ))}
+                                </div>
+                            )}
+
+                            {/* Sin resultados */}
+                            {searchTerm.length > 1 && filteredSchools.length === 0 && !isLoadingSchools && (
+                                <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-3xl border border-slate-100 shadow-xl p-4 z-40 text-center animate-fade-in-up">
+                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Institución no encontrada</p>
+                                    <button onClick={() => onStart()} className="mt-2 text-[11px] font-black text-blue-500 hover:underline">Ingresar de todas formas →</button>
                                 </div>
                             )}
                         </div>
@@ -112,8 +155,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                             <p className="text-sm text-slate-500 font-medium leading-relaxed px-4">Algoritmos entrenados bajo los últimos protocolos del Ministerio de Educación.</p>
                         </div>
                         <div className="space-y-4">
-                            <div className="text-4xl font-black text-blue-600">200+</div>
-                            <p className="text-[10px] font-black uppercase tracking-[3px] text-slate-400">Colegios SaaS</p>
+                            <div className="text-4xl font-black text-blue-600">{allSchools.length > 0 ? `${allSchools.length}+` : '200+'}</div>
+                            <p className="text-[10px] font-black uppercase tracking-[3px] text-slate-400">Colegios SCI</p>
                             <p className="text-sm text-slate-500 font-medium leading-relaxed px-4">Nuestra arquitectura Multi-Tenant garantiza privacidad y personalización total.</p>
                         </div>
                     </div>
@@ -138,14 +181,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                                     <div className="bg-blue-500/10 text-blue-600 p-4 rounded-2xl w-fit mb-6">
                                         <Security size={28} />
                                     </div>
-                                    <h3 className="text-lg font-black text-slate-800 mb-3 font-bold tracking-tight leading-none">Datos Seguros</h3>
+                                    <h3 className="text-lg font-black text-slate-800 mb-3 tracking-tight leading-none">Datos Seguros</h3>
                                     <p className="text-xs text-slate-400 font-medium leading-relaxed">Cumplimos con las políticas de protección de datos más estrictas.</p>
                                 </div>
                                 <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 mt-12 hover:-translate-y-2 transition-transform">
                                     <div className="bg-indigo-500/10 text-indigo-600 p-4 rounded-2xl w-fit mb-6">
                                         <Globe size={28} />
                                     </div>
-                                    <h3 className="text-lg font-black text-slate-800 mb-3 tracking-tight leading-none">SaaS Escalable</h3>
+                                    <h3 className="text-lg font-black text-slate-800 mb-3 tracking-tight leading-none">SCI Escalable</h3>
                                     <p className="text-xs text-slate-400 font-medium leading-relaxed">Arquitectura diseñada para soportar miles de usuarios concurrentes.</p>
                                 </div>
                                 <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 hover:-translate-y-2 transition-transform">
@@ -153,7 +196,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                                         <Users size={28} />
                                     </div>
                                     <h3 className="text-lg font-black text-slate-800 mb-3 tracking-tight leading-none">Multi-Colegio</h3>
-                                    <p className="text-xs text-slate-400 font-medium leading-relaxed">Gestión independiente para cada institución educativa.</p>
+                                    <p className="text-xs text-slate-400 font-medium leading-relaxed">Gestión independiente y privada para cada institución educativa.</p>
                                 </div>
                             </div>
                         </div>
@@ -181,7 +224,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                                 ))}
                             </ul>
                             <button 
-                                onClick={onStart}
+                                onClick={() => onStart()}
                                 className="px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-2xl"
                             >
                                 Registrar mi Institución
@@ -198,7 +241,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                         <div className="bg-slate-100 p-2 rounded-xl text-slate-400">
                             <Sparkles size={18} />
                         </div>
-                        <span className="text-sm font-black tracking-tighter text-slate-800 uppercase">EasyPlanning AI — 2026</span>
+                        <span className="text-sm font-black tracking-tighter text-slate-800 uppercase">SistemaClasesIdeal — 2026</span>
                     </div>
                     <div className="flex gap-8">
                         <a href="#" className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-blue-600">Términos</a>
@@ -212,5 +255,5 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
     );
 };
 
-// Shorthand for Shield as Security since I used Lucide standard
+// Shield alias
 const Security = Shield;

@@ -1,5 +1,5 @@
 -- ==============================================================================
--- ðŸš€ EASYPLANNING AI â€” SaaS MULTI-COLEGIO v3.3 (RECONSTRUCCIÃ“N TOTAL)
+-- ðŸš€ SISTEMA CLASES IDEAL â€” v3.5 (RECONSTRUCCIÃ“N TOTAL)
 -- SCRIPT DE EMERGENCIA: Limpia TODO y restaura Colegio + Super Admin
 -- ==============================================================================
 
@@ -82,19 +82,36 @@ DROP POLICY IF EXISTS "Usuarios: Aislamiento por Colegio" ON app_users;
 DROP POLICY IF EXISTS "Secuencias: Aislamiento Colegios" ON generated_sequences;
 DROP POLICY IF EXISTS "Secuencias: Aislamiento por DueÃ±o o Admin" ON generated_sequences;
 
+-- ============================================================
+-- FUNCIÃ“N DE APOYO: get_user_role (Evita recursividad RLS)
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.get_user_role(email_input text)
+RETURNS text AS $$
+BEGIN
+    RETURN (SELECT role FROM public.app_users WHERE email = email_input LIMIT 1);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.get_user_institucion(email_input text)
+RETURNS uuid AS $$
+BEGIN
+    RETURN (SELECT institucion_id FROM public.app_users WHERE email = email_input LIMIT 1);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- PolÃ­ticas de Seguridad SaaS (Aislamiento Estricto)
 CREATE POLICY "Instituciones: Lectura Global" ON instituciones FOR SELECT USING (true);
 
 CREATE POLICY "Usuarios: Aislamiento por Colegio" ON app_users FOR ALL USING (
     email = auth.jwt()->>'email' OR 
-    (SELECT role FROM app_users WHERE email = auth.jwt()->>'email') IN ('super_admin') OR
-    (institucion_id = (SELECT institucion_id FROM app_users WHERE email = auth.jwt()->>'email') AND (SELECT role FROM app_users WHERE email = auth.jwt()->>'email') = 'admin')
+    public.get_user_role(auth.jwt()->>'email') = 'super_admin' OR
+    (institucion_id = public.get_user_institucion(auth.jwt()->>'email') AND public.get_user_role(auth.jwt()->>'email') = 'admin')
 );
 
 CREATE POLICY "Secuencias: Aislamiento por DueÃ±o o Admin" ON generated_sequences FOR ALL USING (
     user_email = auth.jwt()->>'email' OR 
-    (SELECT role FROM app_users WHERE email = auth.jwt()->>'email') = 'super_admin' OR
-    (institucion_id = (SELECT institucion_id FROM app_users WHERE email = auth.jwt()->>'email') AND (SELECT role FROM app_users WHERE email = auth.jwt()->>'email') = 'admin')
+    public.get_user_role(auth.jwt()->>'email') = 'super_admin' OR
+    (institucion_id = public.get_user_institucion(auth.jwt()->>'email') AND public.get_user_role(auth.jwt()->>'email') = 'admin')
 );
 
 -- ============================================================
@@ -126,11 +143,12 @@ INSERT INTO app_users (email, password, name, role, institucion_id)
 VALUES (
   'superadmin@eduplaneacion.com',
   'Vg==', -- ContraseÃ±a: 3 (ofuscada conforme al sistema XOR de la App)
-  'Super Admin Maestro',
+  'Master SCI Maestro',
   'super_admin',
   null
 ) ON CONFLICT (email) DO UPDATE SET 
   role = 'super_admin',
+  name = EXCLUDED.name,
   password = EXCLUDED.password;
 
 -- 3. Restaurar Admin Santander
@@ -190,7 +208,14 @@ BEGIN
 
   -- 3. Insertar o actualizar en app_users
   INSERT INTO public.app_users (id, email, name, role, institucion_id, auth_link_id)
-  VALUES (NEW.id, v_email, v_name, v_role, v_inst_id, NEW.id)
+  VALUES (
+    NEW.id, 
+    v_email, 
+    v_name, 
+    v_role, 
+    COALESCE(v_inst_id, (NEW.raw_user_meta_data->>'intended_institucion_id')::uuid), 
+    NEW.id
+  )
   ON CONFLICT (email) DO UPDATE SET
     auth_link_id = EXCLUDED.id,
     name = EXCLUDED.name,
@@ -210,3 +235,76 @@ CREATE TRIGGER on_auth_user_created
 UPDATE public.app_users 
 SET auth_link_id = id 
 WHERE auth_link_id IS NULL;
+ALTER TABLE public.generated_sequences ADD COLUMN IF NOT EXISTS is_test boolean DEFAULT true;
+
+
+-- ============================================================
+--  PARCHE DE EMERGENCIA: SOLUCIÓN AL ERROR 500 (RLS RECURSION)
+-- ============================================================
+
+-- 1. Crear función SECURITY DEFINER para romper bucle de seguridad
+CREATE OR REPLACE FUNCTION public.check_is_super_admin(p_email text)
+RETURNS boolean AS c:\Users\USUARIO\Downloads\INSTITUCION-EDUCATIVA-TECNICA-FRANCISCO-DE-PAULA-SANTANDER-DE-GALAPA-main
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.app_users 
+    WHERE email = p_email AND role = 'super_admin'
+  );
+END;
+c:\Users\USUARIO\Downloads\INSTITUCION-EDUCATIVA-TECNICA-FRANCISCO-DE-PAULA-SANTANDER-DE-GALAPA-main LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 2. Actualizar políticas de app_users (Recursión Zero)
+DROP POLICY IF EXISTS " Usuarios: Aislamiento por Colegio\ ON app_users;
+CREATE POLICY \Usuarios: Aislamiento por Colegio\ ON app_users FOR ALL USING (
+ email = auth.jwt()->>'email' OR 
+ public.check_is_super_admin(auth.jwt()->>'email')
+);
+
+-- 3. Actualizar políticas de secuencias
+DROP POLICY IF EXISTS \Secuencias: Aislamiento por Dueño o Admin\ ON generated_sequences;
+CREATE POLICY \Secuencias: Aislamiento por Dueño o Admin\ ON generated_sequences FOR ALL USING (
+ user_email = auth.jwt()->>'email' OR 
+ public.check_is_super_admin(auth.jwt()->>'email')
+);
+
+-- 4. Asegurar que tu correo sea Super Admin en el trigger
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS c:\Users\USUARIO\Downloads\INSTITUCION-EDUCATIVA-TECNICA-FRANCISCO-DE-PAULA-SANTANDER-DE-GALAPA-main
+DECLARE
+ v_inst_id uuid;
+ v_role text := 'docente';
+ v_email text;
+ v_name text;
+ v_domain text;
+BEGIN
+ v_email := NEW.email;
+ v_name := COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', split_part(v_email, '@', 1));
+ v_domain := split_part(v_email, '@', 2);
+
+ -- 1. Si es el Super Admin maestro (O tu Gmail personal)
+ IF v_email = 'superadmin@eduplaneacion.com' OR v_email = 'yisusrivera1913@gmail.com' THEN
+ v_role := 'super_admin';
+ END IF;
+
+ -- 2. Buscar colegio por dominio del email
+ SELECT id INTO v_inst_id FROM public.instituciones WHERE dominio_email = v_domain LIMIT 1;
+
+ -- 3. Insertar o actualizar en app_users
+ INSERT INTO public.app_users (id, email, name, role, institucion_id, auth_link_id)
+ VALUES (
+ NEW.id, 
+ v_email, 
+ v_name, 
+ v_role, 
+ v_inst_id, -- Nota: Dejamos nulo si no hay dominio, el super admin asignará después o entrará al Hub Global
+ NEW.id
+ )
+ ON CONFLICT (email) DO UPDATE SET
+ auth_link_id = EXCLUDED.id,
+ name = EXCLUDED.name,
+ role = CASE WHEN public.app_users.role = 'super_admin' THEN 'super_admin' ELSE EXCLUDED.role END;
+
+ RETURN NEW;
+END;
+c:\Users\USUARIO\Downloads\INSTITUCION-EDUCATIVA-TECNICA-FRANCISCO-DE-PAULA-SANTANDER-DE-GALAPA-main LANGUAGE plpgsql SECURITY DEFINER;
+
