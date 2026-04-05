@@ -145,6 +145,45 @@ function App() {
     }
   }, [input, isAuthenticated, currentUser]);
 
+  // --- NAVEGACIÓN NATIVA (Boton Atrás del Navegador) ---
+  
+  // Registrar historial cuando cambiamos de pantalla
+  useEffect(() => {
+    if (isAuthenticated && !isAuthChecking) {
+      const targetHash = sequence ? '#resultado' : `#${currentTab}`;
+      const currentHash = window.location.hash;
+      
+      if (currentHash !== targetHash) {
+        // Ignorar si estamos procesando el redirect original de oauth
+        if (!currentHash.includes('access_token')) {
+          window.history.pushState({ tab: currentTab, hasSequence: !!sequence }, '', targetHash);
+        }
+      }
+    }
+  }, [currentTab, sequence, isAuthenticated, isAuthChecking]);
+
+  // Manejar click en botón "Atrás" o "Adelante" del navegador
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const hash = window.location.hash.replace('#', '');
+      
+      // Si el usuario le da "Atrás" mientras mira el resultado, lo cerramos
+      if (sequence && hash !== 'resultado') {
+        setSequence(null);
+      }
+      
+      if (['planner', 'history', 'users', 'monitor', 'saas'].includes(hash)) {
+        setCurrentTab(hash as any);
+      } else if (!hash) {
+        // En la raíz, volver al tab predeterminado
+        setCurrentTab((currentUser?.role === 'super_admin' && !currentUser?.institucion_id) ? 'saas' : 'planner');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [sequence, currentUser]);
+
   // 3. Centralized Auth & Callback Handler
   useEffect(() => {
     const { data: { subscription } } = (authService.supabase ? authService.supabase.auth.onAuthStateChange((event, session) => {
