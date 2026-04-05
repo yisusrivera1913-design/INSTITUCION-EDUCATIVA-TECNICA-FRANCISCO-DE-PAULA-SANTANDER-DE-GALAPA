@@ -56,8 +56,15 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
 
-  // Navigation State — default SIEMPRE 'saas' (SaaS-first)
-  const [currentTab, setCurrentTab] = useState<'planner' | 'history' | 'users' | 'monitor' | 'saas'>('saas');
+  // Navigation State — Initialized based on current URL hash or user role
+  const [currentTab, setCurrentTab] = useState<'planner' | 'history' | 'users' | 'monitor' | 'saas'>(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : '';
+    if (['planner', 'history', 'users', 'monitor', 'saas'].includes(hash)) return hash as any;
+    
+    // Default smart routing
+    const initialUser = authService.getCurrentUser();
+    return (initialUser?.role === 'super_admin' && !initialUser?.institucion_id) ? 'saas' : 'planner';
+  });
   const [showProfile, setShowProfile] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
 
