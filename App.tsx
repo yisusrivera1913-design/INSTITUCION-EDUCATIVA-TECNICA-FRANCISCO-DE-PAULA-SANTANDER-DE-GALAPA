@@ -39,7 +39,15 @@ function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     return authService.getCurrentUser();
   });
-  const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
+  // Si hay un hash de OAuth en la URL (#access_token=...), empezamos SÍ en carga
+  // para que nunca se muestre la URL al usuario.
+  const hasOAuthHash = typeof window !== 'undefined' && window.location.hash.includes('access_token');
+  const [isAuthChecking, setIsAuthChecking] = useState<boolean>(hasOAuthHash || true);
+
+  // Limpiar la URL inmediatamente si tiene el hash de OAuth (antes de cualquier render)
+  if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+    window.history.replaceState(null, '', window.location.origin);
+  }
 
   // App State
   const [input, setInput] = useState<SequenceInput>(initialInput);
@@ -155,10 +163,11 @@ function App() {
                     if (user) {
                         setIsAuthenticated(true);
                         setCurrentUser(user);
-                        if (window.location.hash || window.location.search.includes('code=')) {
-                            setCurrentTab(user.role === 'super_admin' ? 'saas' : 'planner');
+                        // Siempre limpiar el hash/query de OAuth después de procesarlo
+                        if (window.location.hash || window.location.search.includes('code=') || window.location.search.includes('error=')) {
                             window.history.replaceState(null, '', window.location.origin);
                         }
+                        setCurrentTab(user.role === 'super_admin' ? 'saas' : 'planner');
                     }
                 } else {
                     // Si no hay sesión pero estamos en carga inicial, revisar persistencia local
