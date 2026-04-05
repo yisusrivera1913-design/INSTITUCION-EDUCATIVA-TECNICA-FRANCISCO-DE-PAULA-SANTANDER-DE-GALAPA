@@ -529,7 +529,7 @@ export const authService = {
         }
     },
 
-    getAllSequences: async () => {
+    getAllSequences: async (page: number = 1, limit: number = 0) => {
         if (!supabase) return [];
         const user = authService.getCurrentUser();
         if (!user) return [];
@@ -545,6 +545,13 @@ export const authService = {
                 query = query.eq('institucion_id', user.institucion_id);
             }
 
+            // Paginación si se especifica limit mayor que 0
+            if (limit > 0) {
+                const from = (page - 1) * limit;
+                const to = from + limit - 1;
+                query = query.range(from, to);
+            }
+
             const { data, error } = await query.order('timestamp', { ascending: false });
 
             if (error) {
@@ -555,6 +562,34 @@ export const authService = {
         } catch (e) {
             console.error(e);
             return [];
+        }
+    },
+
+    deleteSequence: async (sequenceId: string): Promise<boolean> => {
+        if (!supabase) return false;
+        const user = authService.getCurrentUser();
+        if (!user) return false;
+
+        try {
+            // Eliminar solo si somos dueños o somos admins (esto lo valida también la política RLS en BD si existe)
+            // Se hace un pre-chequeo aquí.
+            let query = supabase.from('generated_sequences').delete().eq('id', sequenceId);
+
+            if (user.role === 'docente') {
+                query = query.eq('user_email', user.email.toLowerCase());
+            } else if (user.role === 'admin' && user.institucion_id) {
+                query = query.eq('institucion_id', user.institucion_id);
+            } // El super admin puede eliminar cualquiera.
+
+            const { error } = await query;
+            if (error) {
+                console.error("Error deleting sequence:", error.message);
+                return false;
+            }
+            return true;
+        } catch (e) {
+            console.error("Exception deleting sequence:", e);
+            return false;
         }
     },
 

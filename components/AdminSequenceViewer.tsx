@@ -9,6 +9,9 @@ export const AdminSequenceViewer: React.FC<{ userEmail?: string; onRestore?: (se
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [stats, setStats] = useState<any>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [isDeleting, setIsDeleting] = useState<string | null>(null);
+    const ITEMS_PER_PAGE = 15;
 
     const loadData = async () => {
         setIsLoading(true);
@@ -62,6 +65,28 @@ export const AdminSequenceViewer: React.FC<{ userEmail?: string; onRestore?: (se
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
     };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("¿Estás seguro de eliminar esta planeación? Esta acción no se puede deshacer.")) return;
+        setIsDeleting(id);
+        const success = await authService.deleteSequence(id);
+        if (success) {
+            setSequences(prev => prev.filter(s => s.id !== id));
+            // Actualizar estadisticas o forzar reload
+            loadData();
+        } else {
+            alert("No se pudo eliminar la secuencia. Revisa tus permisos o conexión.");
+        }
+        setIsDeleting(null);
+    };
+
+    // Paginación Local
+    const totalPages = Math.ceil(filteredSequences.length / ITEMS_PER_PAGE);
+    const paginatedSequences = filteredSequences.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
 
     return (
         <div className="w-full bg-white border border-slate-200 rounded-[2.5rem] p-10 shadow-xl mb-12 animate-fade-in-up">
@@ -124,7 +149,7 @@ export const AdminSequenceViewer: React.FC<{ userEmail?: string; onRestore?: (se
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {filteredSequences.map((seq) => (
+                            {paginatedSequences.map((seq) => (
                                 <tr key={seq.id} className="group hover:bg-slate-50/50 transition-colors">
                                     <td className="py-4">
                                         <div className="flex items-center gap-2">
@@ -164,6 +189,14 @@ export const AdminSequenceViewer: React.FC<{ userEmail?: string; onRestore?: (se
                                             >
                                                 <Download size={16} />
                                             </button>
+                                            <button
+                                                onClick={() => handleDelete(seq.id)}
+                                                disabled={isDeleting === seq.id}
+                                                className={`p-2 border rounded-xl transition-all shadow-sm ${isDeleting === seq.id ? 'bg-red-50 border-red-100 text-red-300' : 'bg-red-50 border-red-100 text-red-500 hover:bg-red-600 hover:text-white'}`}
+                                                title="Eliminar permanentemente"
+                                            >
+                                                {isDeleting === seq.id ? <Activity size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -173,12 +206,37 @@ export const AdminSequenceViewer: React.FC<{ userEmail?: string; onRestore?: (se
                 </div>
             )}
 
-            <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <span>Total Secuencias: {filteredSequences.length}</span>
-                <span className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    Sincronizado con Repositorio Central
-                </span>
+            <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-4">
+                    <span>Total Registros: {filteredSequences.length}</span>
+                    <span className="flex items-center gap-2 bg-green-50 text-green-600 px-3 py-1 rounded-full border border-green-100">
+                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                        Sincronizado
+                    </span>
+                </div>
+                
+                {/* Controles de Paginación */}
+                {totalPages > 1 && (
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1.5 text-xs font-black text-slate-500 bg-slate-50 rounded-lg border border-slate-200 hover:bg-white disabled:opacity-50 transition-colors uppercase tracking-widest"
+                        >
+                            Ant
+                        </button>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">
+                            Pág {currentPage} de {totalPages}
+                        </span>
+                        <button 
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1.5 text-xs font-black text-indigo-600 bg-indigo-50 rounded-lg border border-indigo-100 hover:bg-indigo-100 disabled:opacity-50 transition-colors uppercase tracking-widest"
+                        >
+                            Sig
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

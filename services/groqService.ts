@@ -94,6 +94,37 @@ const getPersistentApiKey = async (): Promise<string | null> => {
     return null;
 };
 
+// Reparador Inteligente de JSON (Anti-Pantallazos blancos)
+const safeJsonParse = (text: string) => {
+    if (!text) return {};
+    try {
+        let cleanText = text.replace(/```json/gi, "").replace(/```/g, "").trim();
+        return JSON.parse(cleanText);
+    } catch(e) {
+        console.warn("⚠️ [Reparador JSON] Fallo en parse inicial, activando reparación profunda...");
+        try {
+            let repairedText = text
+                .replace(/```json/gi, "")
+                .replace(/```/g, "")
+                .replace(/,\s*([\]}])/g, '$1') // Eliminar trailing commas (muy común)
+                .replace(/[\u0000-\u001F\u007F-\u009F]/g, "") // Eliminar caracteres de control ocultos
+                .trim();
+            
+            // Forzar inicio y fin válidos
+            const firstBrace = repairedText.indexOf("{");
+            const lastBrace = repairedText.lastIndexOf("}");
+            if (firstBrace !== -1 && lastBrace !== -1) {
+                repairedText = repairedText.substring(firstBrace, lastBrace + 1);
+            }
+
+            return JSON.parse(repairedText);
+        } catch(finalErr) {
+            console.error("❌ [Reparador JSON] Imposible reparar. Texto devuelto:", text.substring(0, 50) + "...");
+            throw finalErr;
+        }
+    }
+};
+
 export const generateDidacticSequence = async (input: SequenceInput, refinementInstruction?: string, currentContext?: DidacticSequence): Promise<DidacticSequence> => {
     const apiKey = await getPersistentApiKey();
 
@@ -236,7 +267,7 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
             });
 
             const text = response.choices[0]?.message?.content || "{}";
-            const parsed = JSON.parse(text);
+            const parsed = safeJsonParse(text);
 
             // Normalización Robusta Platinum
             const ensureArray = (field: any) => Array.isArray(field) ? field : [];
