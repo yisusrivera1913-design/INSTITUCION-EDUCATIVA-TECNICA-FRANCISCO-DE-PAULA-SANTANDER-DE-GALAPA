@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserCircle, Lock, ArrowRight, ShieldCheck, Mail, Info, Play, School, Sparkles } from 'lucide-react';
+import { UserCircle, Lock, ArrowRight, ArrowLeft, ShieldCheck, Mail, Info, Play, School, Sparkles } from 'lucide-react';
 import { authService } from '../services/authService';
 
 interface LoginProps {
@@ -129,6 +129,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
                 {/* --- COLUMNA DERECHA: Formulario --- */}
                 <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center bg-white relative">
+                    {/* Botón de Atrás */}
+                    <button 
+                        onClick={() => window.location.href = '/'}
+                        className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 p-2.5 rounded-full transition-all"
+                        title="Volver al buscador de colegios"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+
                     <div className="max-w-sm mx-auto w-full">
                         <div className="space-y-8">
                             <div className="text-center md:text-left">
