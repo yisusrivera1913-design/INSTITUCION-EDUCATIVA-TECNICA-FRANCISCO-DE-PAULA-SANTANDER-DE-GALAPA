@@ -63,11 +63,9 @@ export interface User {
     };
 }
 
-// Usuarios locales de respaldo (Solo si falla la nube)
+// Usuarios locales de respaldo (Solo si falla la nube o como root login)
 export const AUTHORIZED_USERS: User[] = [
     { name: 'SCI Administrator', email: 'superadmin@eduplaneacion.com', role: 'super_admin' },
-    { name: 'Admin Institucional', email: 'admin@colegio.edu.co', role: 'admin', nombre_institucion: 'Colegio de Prueba' },
-    { name: 'Docente Demo', email: 'docente@colegio.edu.co', role: 'docente', nombre_institucion: 'Colegio de Prueba' },
 ];
 
 export const authService = {

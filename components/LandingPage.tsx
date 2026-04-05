@@ -59,12 +59,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                     </div>
                     <span className="text-xl font-black tracking-tighter text-slate-800 uppercase">Sistema<span className="text-blue-600">Clases</span>Ideal</span>
                 </div>
-                <button 
-                    onClick={() => onStart()}
-                    className="px-6 py-2.5 bg-slate-900 text-white rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-slate-900/10"
-                >
-                    Ingresar
-                </button>
             </nav>
 
             {/* Hero Section */}
