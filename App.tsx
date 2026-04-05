@@ -427,6 +427,15 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const isInstitutionalLink = params.has('colegio') || params.has('inst');
 
+    // MODO MEMORIA: Si el docente vuelve a la raíz pero se guardó su colegio previamente, auto-redireccionarlo.
+    if (!isInstitutionalLink && !showLogin) {
+        const lastSchool = localStorage.getItem('sci_last_school_slug');
+        if (lastSchool) {
+            window.history.replaceState(null, '', `${window.location.pathname}?inst=${lastSchool}`);
+            return <Login onLogin={handleLogin} />;
+        }
+    }
+
     if (isInstitutionalLink || showLogin) {
       return <Login onLogin={handleLogin} />;
     }

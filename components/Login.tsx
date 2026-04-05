@@ -25,6 +25,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             const instParam = params.get('inst') || params.get('colegio') || '';
             
             if (instParam) {
+                // Guardar en memoria el colegio para futuros regresos a la raíz
+                localStorage.setItem('sci_last_school_slug', instParam);
+                
                 const inst = await authService.getPublicInstitucion(instParam);
                 if (inst) {
                     setBranding({
@@ -79,6 +82,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         // Redirection happens automatically via Supabase
     };
 
+    const handleGoBack = () => {
+        // Borrar explícitamente el colegio guardado si el usuario quiere volver al buscador manualmente
+        localStorage.removeItem('sci_last_school_slug');
+        window.location.href = '/';
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center font-outfit p-0 sm:p-6 md:p-12 overflow-hidden selection:bg-blue-100">
             {/* Contenedor Principal con Sombra Premium */}
@@ -131,7 +140,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <div className="w-full md:w-1/2 p-8 md:p-16 flex flex-col justify-center bg-white relative">
                     {/* Botón de Atrás */}
                     <button 
-                        onClick={() => window.location.href = '/'}
+                        onClick={handleGoBack}
                         className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 p-2.5 rounded-full transition-all"
                         title="Volver al buscador de colegios"
                     >
