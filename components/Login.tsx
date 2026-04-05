@@ -79,14 +79,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         // Redirection happens automatically via Supabase
     };
 
-    const handleDemoAdmin = () => {
-        performLogin('admin@santander.edu.co', 'admin2026');
-    };
-
-    const handleDemoDocente = () => {
-        performLogin('docente.demo@santander.edu.co', 'santander2026');
-    };
-
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center font-outfit p-0 sm:p-6 md:p-12 overflow-hidden selection:bg-blue-100">
             {/* Contenedor Principal con Sombra Premium */}
