@@ -348,9 +348,17 @@ export const authService = {
             }
         }
 
+        // VALIDACIÓN ESTRICTA: Bloquear si intenta entrar a otro colegio y ya tiene uno
+        const pendingInstId = localStorage.getItem('sci_pending_inst_id');
+        if (profile && profile.institucion_id && pendingInstId && profile.institucion_id !== pendingInstId) {
+            console.error("🚨 [Security] Intento de acceso a múltiples colegios bloqueado.");
+            localStorage.removeItem('sci_pending_inst_id');
+            await supabase.auth.signOut();
+            throw new Error("Tu correo ya está registrado en otro colegio. Por seguridad, no puedes pertenecer a múltiples instituciones simultáneamente.");
+        }
+
         // 2. Si el perfil existe pero no tiene institucion_id, intentar asignar por Magic Link o Dominio
         if (profile && !profile.institucion_id) {
-            const pendingInstId = localStorage.getItem('sci_pending_inst_id');
             let matchedInstId = pendingInstId;
 
             // Si no hay magic link, intentar por dominio de correo

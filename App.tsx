@@ -205,15 +205,25 @@ function App() {
                 setIsAuthChecking(false);
             } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || (event as any) === 'INITIAL_SESSION') {
                 if (session) {
-                    const user = await authService.handleAuthCallback();
-                    if (user) {
-                        setIsAuthenticated(true);
-                        setCurrentUser(user);
-                        // Siempre limpiar el hash/query de OAuth después de procesarlo
-                        if (window.location.hash || window.location.search.includes('code=') || window.location.search.includes('error=')) {
-                            window.history.replaceState(null, '', window.location.origin);
+                    try {
+                        const user = await authService.handleAuthCallback();
+                        if (user) {
+                            setIsAuthenticated(true);
+                            setCurrentUser(user);
+                            // Siempre limpiar el hash/query de OAuth después de procesarlo
+                            if (window.location.hash || window.location.search.includes('code=') || window.location.search.includes('error=')) {
+                                window.history.replaceState(null, '', window.location.origin);
+                            }
+                            setCurrentTab(user.role === 'super_admin' ? 'saas' : 'planner');
                         }
-                        setCurrentTab(user.role === 'super_admin' ? 'saas' : 'planner');
+                    } catch (e: any) {
+                        console.error("Auth Exception:", e);
+                        // Mostrar el error de seguridad al usuario (Ej: intento de multi-colegio)
+                        alert(e.message || "Error de seguridad durante la autenticación.");
+                        authService.logout();
+                        setIsAuthenticated(false);
+                        setCurrentUser(null);
+                        window.history.replaceState(null, '', window.location.origin);
                     }
                 } else {
                     // Si no hay sesión pero estamos en carga inicial, revisar persistencia local
