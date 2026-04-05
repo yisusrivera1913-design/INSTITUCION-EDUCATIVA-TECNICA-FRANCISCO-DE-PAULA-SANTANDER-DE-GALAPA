@@ -348,21 +348,34 @@ export const authService = {
             }
         }
 
-        // 2. Si el perfil existe pero no tiene institucion_id, intentar mapear por dominio
+        // 2. Si el perfil existe pero no tiene institucion_id, intentar asignar por Magic Link o Dominio
         if (profile && !profile.institucion_id) {
-            const { data: instByDomain } = await supabase
-                .from('instituciones')
-                .select('*')
-                .eq('dominio_email', domain)
-                .maybeSingle();
+            const pendingInstId = localStorage.getItem('sci_pending_inst_id');
+            let matchedInstId = pendingInstId;
 
-            if (instByDomain) {
-                // Actualizar perfil con la institución detectada
+            // Si no hay magic link, intentar por dominio de correo
+            if (!matchedInstId) {
+                const { data: instByDomain } = await supabase
+                    .from('instituciones')
+                    .select('id')
+                    .eq('dominio_email', domain)
+                    .maybeSingle();
+                
+                if (instByDomain) {
+                    matchedInstId = instByDomain.id;
+                }
+            }
+
+            if (matchedInstId) {
+                // Actualizar perfil con la institución detectada de forma permanente
                 await supabase.from('app_users')
-                    .update({ institucion_id: instByDomain.id })
+                    .update({ institucion_id: matchedInstId })
                     .eq('email', email);
                 
-                // Recargar perfil con los datos de la institución
+                // Limpiar el localStorage ya que se guardó en BD
+                localStorage.removeItem('sci_pending_inst_id');
+                
+                // Recargar perfil con los datos completos de la institución
                 const { data: refreshed } = await supabase
                     .from('app_users')
                     .select('*, instituciones(*)')
