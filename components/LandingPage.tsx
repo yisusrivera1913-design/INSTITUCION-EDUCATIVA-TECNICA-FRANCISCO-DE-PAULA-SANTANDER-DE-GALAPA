@@ -62,16 +62,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             </nav>
 
             {/* Hero Section */}
-            <section className="pt-48 md:pt-56 pb-20 px-6">
+            <section className="pt-32 md:pt-40 pb-20 px-6">
                 <div className="max-w-5xl mx-auto text-center">
                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full text-blue-600 text-[10px] font-black uppercase tracking-[3px] mb-8 border border-blue-100 animate-fade-in-up">
                         <Zap size={14} fill="currentColor" /> El Futuro de la Educación
                     </div>
                     
-                    <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-slate-900 mb-8 leading-[0.95] animate-fade-in-up delay-100 uppercase">
-                        SISTEMA <br/>
-                        <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent italic">CLASES</span> <br/>
-                        IDEAL
+                    <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-slate-900 mb-8 leading-[0.85] md:leading-[0.85] animate-fade-in-up delay-100 uppercase flex flex-col items-center">
+                        <span>SISTEMA</span>
+                        <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent italic -mt-2 md:-mt-4">CLASES</span>
+                        <span className="-mt-2 md:-mt-4">IDEAL</span>
                     </h1>
                     
                     <p className="text-slate-500 text-lg md:text-xl max-w-2xl mx-auto font-medium mb-12 leading-relaxed animate-fade-in-up delay-200">
