@@ -391,7 +391,72 @@ export const authService = {
             }
         }
 
-        if (!profile) return null;
+        // 3. Si el perfil NO existe, auto-crearlo si viene con el código de colegio verificado
+        if (!profile) {
+            const autoInstId = pendingInstId || (() => {
+                // También intentar si el dominio coincide con una institución
+                return null;
+            })();
+
+            if (autoInstId) {
+                console.log('✨ [Auth] Usuario nuevo detectado. Creando perfil automático como docente...');
+                const obfuscatedDefaultPassword = btoa('sci-new-user-' + email); // Solo almacenamiento, No es contraseña real
+
+                const { error: insertError } = await supabase
+                    .from('app_users')
+                    .insert([{
+                        name: user.user_metadata?.full_name || user.user_metadata?.name || email.split('@')[0],
+                        email: email,
+                        role: 'docente',
+                        password: obfuscatedDefaultPassword,
+                        institucion_id: autoInstId,
+                        assigned_grades: [],
+                        assigned_subjects: []
+                    }]);
+
+                if (insertError) {
+                    console.error('❌ [Auth] Error creando perfil automático:', insertError);
+                    localStorage.removeItem('sci_pending_inst_id');
+                    return null;
+                }
+
+                // Recargar el perfil recién creado
+                const { data: newProfile } = await supabase
+                    .from('app_users')
+                    .select('*, instituciones(*)')
+                    .eq('email', email)
+                    .single();
+
+                localStorage.removeItem('sci_pending_inst_id');
+
+                if (!newProfile) return null;
+
+                const newInst = (newProfile as any).instituciones;
+                const autoCreatedUser: User = {
+                    name: newProfile.name,
+                    email: newProfile.email,
+                    role: 'docente',
+                    assigned_grades: [],
+                    assigned_subjects: [],
+                    institucion_id: newProfile.institucion_id,
+                    nombre_institucion: newInst?.nombre || null,
+                    dominio_email: newInst?.dominio_email || null,
+                    config_visual: newInst?.config_visual || null,
+                    session_id: session.access_token
+                };
+
+                localStorage.setItem(STORAGE_KEYS.AUTH, obfuscate('true'));
+                localStorage.setItem(STORAGE_KEYS.USER, obfuscate(JSON.stringify(autoCreatedUser)));
+                await supabase.from('app_users').update({ session_id: session.access_token }).eq('email', email);
+                console.log('✅ [Auth] Perfil docente creado automáticamente:', email);
+                return autoCreatedUser;
+            }
+
+            // Si no hay institución pendiente, bloquear
+            console.error('🚨 [Auth] Usuario no registrado y sin código de colegio pendiente.');
+            await supabase.auth.signOut();
+            throw new Error('Tu cuenta no está registrada en ninguna institución. Usa el enlace de tu colegio e ingresa el código de acceso.');
+        }
 
         const inst = (profile as any).instituciones;
         const finalUser: User = {
@@ -944,5 +1009,61 @@ export const authService = {
             .delete()
             .eq('is_test', true);
         return { success: !error };
-    }
+    },
+
+    // --- CÓDIGO DE ACCESO DE COLEGIO ---
+    // Verifica que el código ingresado por el docente corresponde al colegio
+    verifyCodigoAcceso: async (institucionId: string, codigo: string): Promise<{ valid: boolean; message?: string }> => {
+        if (!supabase) return { valid: false, message: 'Sin conexión a la base de datos' };
+        try {
+            const { data, error } = await supabase
+                .from('instituciones')
+                .select('codigo_acceso, activo')
+                .eq('id', institucionId)
+                .maybeSingle();
+
+            if (error) throw error;
+            if (!data) return { valid: false, message: 'Institución no encontrada' };
+            if (!data.activo) return { valid: false, message: 'Esta institución está inactiva' };
+            if (!data.codigo_acceso) return { valid: false, message: 'Esta institución no tiene código configurado. Contacta al administrador.' };
+
+            const isValid = data.codigo_acceso.trim().toLowerCase() === codigo.trim().toLowerCase();
+            return isValid
+                ? { valid: true }
+                : { valid: false, message: 'Código incorrecto. Verifica con tu administrador.' };
+        } catch (e: any) {
+            return { valid: false, message: 'Error al verificar el código' };
+        }
+    },
+
+    // Actualiza el código de acceso de una institución (solo admin del colegio o super_admin)
+    updateCodigoAcceso: async (institucionId: string, nuevoCodigo: string): Promise<{ success: boolean; message?: string }> => {
+        if (!supabase) return { success: false, message: 'Sin conexión a la base de datos' };
+        try {
+            const { error } = await supabase
+                .from('instituciones')
+                .update({ codigo_acceso: nuevoCodigo.trim() })
+                .eq('id', institucionId);
+
+            if (error) throw error;
+            return { success: true };
+        } catch (e: any) {
+            return { success: false, message: e.message };
+        }
+    },
+
+    // Obtiene el código de acceso de una institución (para mostrar al admin)
+    getCodigoAcceso: async (institucionId: string): Promise<string | null> => {
+        if (!supabase) return null;
+        try {
+            const { data } = await supabase
+                .from('instituciones')
+                .select('codigo_acceso')
+                .eq('id', institucionId)
+                .maybeSingle();
+            return data?.codigo_acceso || null;
+        } catch {
+            return null;
+        }
+    },
 };

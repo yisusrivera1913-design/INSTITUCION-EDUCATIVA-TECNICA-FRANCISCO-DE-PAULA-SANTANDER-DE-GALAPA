@@ -281,11 +281,14 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
        - REQUERIDO: Evaluar competencias (Uso del conocimiento, Explicación de fenómenos, Indagación).
        - CADA PREGUNTA debe tener: Contexto (Situación), Enunciado preciso, 4 opciones plausibles, clave correcta y una EXPLICACIÓN PEDAGÓGICA profunda del porqué es la respuesta correcta.
     3. **INTEGRACIÓN INTELIGENTE:** Si se solicitan áreas incompatibles (ej: Religión y Geometría), NO inventes conexiones forzadas. Si no existe un puente pedagógico natural, deja los campos de integración en blanco o sepáralos estrictamente. Prioriza siempre el rigor técnico de cada área por separado.
-    4. **Propósito Holístico:** Genera una síntesis que integre el saber (cognitivo), el ser (afectivo) y el hacer (expresivo).
-    5. **Simplificación Institucional:** Evita términos comerciales como "Platinum", "Golden" o "Supreme". Usa un tono formal e institucional. 
-    6. **Terminología:** Usa "transferencia" para la fase final. PROHIBIDO: "ABP".
-    7. **LIMPIEZA TOTAL:** PROHIBIDO EL USO DE ASTERISCOS (*) EN CUALQUIER PARTE DEL TEXTO (ni siquiera para viñetas o negritas). Usa puntos o guiones si es necesario.
-    8. **Limpieza:** Sin minutos en sesiones.
+    4. **Propósito e Indicador Cognitivo (BLOOM):** El propósito y el indicador cognitivo deben usar ÚNICAMENTE el verbo **Clasificar**. Razón: Si un estudiante clasifica, ya ha identificado procesalmente.
+    5. **Impacto Social (Matemáticas):** En el taller imprimible, si el área es Matemáticas, incluir OBLIGATORIAMENTE una actividad de aplicación real que conecte el tema con la **toma de decisiones y la equidad**.
+    6. **Activación de Saberes:** La **Pregunta Activadora** en el transcurso de la sesión debe tener un formato destacado (ej: "¡DESAFÍO COGNITIVO! [Pregunta]") y ser lo suficientemente retadora para movilizar el pensamiento.
+    7. **Estructuras Mentales:** Es OBLIGATORIO el uso de **esquemas mentales**, mapas conceptuales o cuadros sinópticos en las fases de Enunciación o Modelación para organizar el conocimiento.
+    8. **Terminología Institucional:** Fase final: "transferencia". PROHIBIDO: "ABP".
+    9. **LIMPIEZA TOTAL:** PROHIBIDO EL USO DE ASTERISCOS (*) EN CUALQUIER PARTE DEL TEXTO (ni siquiera para viñetas o negritas). Usa puntos o guiones si es necesario.
+    10. **Sin Tiempos Rígidos:** No incluyas minutos en las sesiones.
+    11. **Formato Sobrio:** Evita el marketing ("Platinum", "Supreme"). Usa lenguaje institucional formal.
 
     ### INSTRUCCIONES DE DISEÑO ELITE:
 

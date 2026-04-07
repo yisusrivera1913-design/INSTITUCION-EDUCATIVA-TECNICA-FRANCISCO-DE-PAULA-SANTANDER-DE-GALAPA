@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../services/authService';
-import { Building2, Users, FileText, Activity, Power, RefreshCw, Plus, Zap, CheckCircle2, XCircle, Globe, Sparkles } from 'lucide-react';
+import { Building2, Users, FileText, Activity, Power, RefreshCw, Plus, Zap, CheckCircle2, XCircle, Globe, Sparkles, KeyRound, Eye, EyeOff, Copy, Pencil, ShieldCheck } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 
 interface Institucion {
@@ -11,6 +11,7 @@ interface Institucion {
     plan_suscripcion: string;
     activo: boolean;
     created_at: string;
+    codigo_acceso?: string | null;
     app_users?: [{ count: number }];
     generated_sequences?: [{ count: number }];
 }
@@ -25,6 +26,12 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onEnterInstitu
     const [showRegForm, setShowRegForm] = useState(false);
     const [toggling, setToggling] = useState<string | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    // Estado para gestión de códigos de acceso
+    const [editingCodeId, setEditingCodeId] = useState<string | null>(null);
+    const [newCodeInput, setNewCodeInput] = useState('');
+    const [savingCode, setSavingCode] = useState(false);
+    const [showCodeId, setShowCodeId] = useState<string | null>(null);
+    const [codeSavedId, setCodeSavedId] = useState<string | null>(null);
 
     const [form, setForm] = useState({
         nombre: '', slug: '', municipio: '', nit: '',
@@ -65,6 +72,25 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onEnterInstitu
         navigator.clipboard.writeText(url);
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    const handleSaveCode = async (instId: string) => {
+        if (!newCodeInput.trim()) return;
+        setSavingCode(true);
+        const result = await authService.updateCodigoAcceso(instId, newCodeInput.trim());
+        if (result.success) {
+            // Actualizar localmente
+            setInstituciones(prev => prev.map(i =>
+                i.id === instId ? { ...i, codigo_acceso: newCodeInput.trim() } : i
+            ));
+            setEditingCodeId(null);
+            setNewCodeInput('');
+            setCodeSavedId(instId);
+            setTimeout(() => setCodeSavedId(null), 3000);
+        } else {
+            alert('Error guardando código: ' + result.message);
+        }
+        setSavingCode(false);
     };
 
     const planColors: Record<string, string> = {
@@ -276,6 +302,79 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onEnterInstitu
                                 </div>
                             </div>
 
+                            {/* === CÓDIGO DE ACCESO (KEY FEATURE) === */}
+                            <div className="mb-6 p-4 bg-indigo-500/5 border border-indigo-500/15 rounded-xl">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <KeyRound size={13} className="text-indigo-400" />
+                                        <span className="text-[9px] font-black text-indigo-300 uppercase tracking-widest">Código de Acceso Docentes</span>
+                                    </div>
+                                    {codeSavedId === inst.id && (
+                                        <span className="text-[9px] text-emerald-400 font-black uppercase tracking-wider flex items-center gap-1">
+                                            <ShieldCheck size={11} /> Guardado
+                                        </span>
+                                    )}
+                                </div>
+
+                                {editingCodeId === inst.id ? (
+                                    // Modo edición
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={newCodeInput}
+                                            onChange={e => setNewCodeInput(e.target.value)}
+                                            placeholder="ej: galapa2026"
+                                            className="flex-1 h-9 bg-white/5 border border-indigo-400/30 rounded-lg px-3 text-sm text-white font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-700 tracking-wider"
+                                            autoFocus
+                                            onKeyDown={e => e.key === 'Enter' && handleSaveCode(inst.id)}
+                                        />
+                                        <button
+                                            onClick={() => handleSaveCode(inst.id)}
+                                            disabled={savingCode || !newCodeInput.trim()}
+                                            className="h-9 px-4 bg-indigo-600 text-white text-[10px] font-black rounded-lg hover:bg-indigo-500 transition-all disabled:opacity-50 flex items-center gap-1"
+                                        >
+                                            {savingCode ? <RefreshCw size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                                            {savingCode ? '' : 'OK'}
+                                        </button>
+                                        <button
+                                            onClick={() => { setEditingCodeId(null); setNewCodeInput(''); }}
+                                            className="h-9 w-9 bg-white/5 text-slate-400 text-[10px] font-black rounded-lg hover:bg-red-500/20 hover:text-red-400 transition-all flex items-center justify-center"
+                                        >
+                                            <XCircle size={13} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    // Vista del código
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 h-9 bg-black/20 border border-white/5 rounded-lg px-3 flex items-center">
+                                            {inst.codigo_acceso ? (
+                                                <span className="text-sm font-black tracking-[4px] text-white">
+                                                    {showCodeId === inst.id ? inst.codigo_acceso : '••••••••'}
+                                                </span>
+                                            ) : (
+                                                <span className="text-[10px] text-slate-600 font-bold italic">Sin código configurado</span>
+                                            )}
+                                        </div>
+                                        {inst.codigo_acceso && (
+                                            <button
+                                                onClick={() => setShowCodeId(showCodeId === inst.id ? null : inst.id)}
+                                                className="h-9 w-9 bg-white/5 text-slate-400 rounded-lg hover:bg-white/10 hover:text-white transition-all flex items-center justify-center border border-white/5"
+                                                title={showCodeId === inst.id ? 'Ocultar' : 'Ver código'}
+                                            >
+                                                {showCodeId === inst.id ? <EyeOff size={13} /> : <Eye size={13} />}
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => { setEditingCodeId(inst.id); setNewCodeInput(inst.codigo_acceso || ''); }}
+                                            className="h-9 w-9 bg-indigo-500/10 text-indigo-400 rounded-lg hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center border border-indigo-500/20"
+                                            title="Editar código"
+                                        >
+                                            <Pencil size={13} />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Core Actions */}
                             <div className="flex flex-col gap-3">
                                 <div className="flex items-center gap-3">
@@ -309,7 +408,7 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onEnterInstitu
                                     }`}
                                 >
                                     {copiedId === inst.id ? <CheckCircle2 size={12} /> : <Globe size={12} />}
-                                    {copiedId === inst.id ? '¡Enlace Copiado!' : 'Copiar Enlace Mágico'}
+                                    {copiedId === inst.id ? '¡Enlace Copiado!' : 'Copiar Enlace Docentes'}
                                 </button>
                             </div>
                         </div>
