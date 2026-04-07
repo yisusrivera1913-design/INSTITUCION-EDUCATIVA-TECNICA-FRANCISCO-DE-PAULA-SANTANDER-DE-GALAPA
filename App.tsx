@@ -539,8 +539,7 @@ function App() {
                   >
                     <div className={`w-2 h-2 rounded-full absolute -top-1 -right-1 ${currentTab === 'saas' ? 'hidden' : 'bg-red-500 shadow-[0_0_10px_red]'}`}></div>
                     <Globe size={14} className={currentTab === 'saas' ? '' : 'animate-spin-slow'} /> 
-                    <span className="md:inline">{currentTab === 'saas' ? 'Panel SCI Principal' : '⚠️ Salir al Dashboard SCI'}</span>
-                  </button>
+                    <span className="md:inline">{currentTab === 'saas' ? 'Panel SCI Principal' : 'Regresar al SaaS'}</span>                  </button>
                 )}
               </>
             )}

@@ -196,8 +196,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                         </div>
 
                         <div className="space-y-8">
-                            <h2 className="text-5xl font-black tracking-tighter text-slate-800 leading-[0.95]">
-                                La Herramienta <br/> que todo <span className="text-blue-600">Rector</span> y <span className="text-blue-600">Docente</span> necesita.
+                            <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-800 leading-snug">
+                                La Herramienta que todo <br/><span className="text-blue-600 bg-blue-50 px-3 py-1 rounded-xl shadow-sm border border-blue-100/50 inline-block mt-2">Rector y Docente</span> necesita.
                             </h2>
                             <p className="text-slate-500 text-lg leading-relaxed">
                                 Hemos unificado la pedagogía clásica con los últimos avances en Modelos de Lenguaje (LLMs) para crear un orquestador capaz de entender los DBA y contextos de cada región.
@@ -217,12 +217,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                                     </li>
                                 ))}
                             </ul>
-                            <button 
-                                onClick={() => onStart()}
-                                className="px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-2xl"
-                            >
-                                Registrar mi Institución
-                            </button>
                         </div>
                     </div>
                 </div>
