@@ -153,7 +153,7 @@ export const UserManagement: React.FC = () => {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const instName = authService.getCurrentUser()?.nombre_institucion?.toLowerCase().replace(/\s+/g, '_') || 'eduplaneacion';
+        const instName = authService.getCurrentUser()?.nombre_institucion?.toLowerCase().replace(/\s+/g, '_') || 'sistemaclasesideal';
         a.download = `${instName}_backup_${new Date().toISOString().slice(0, 10)}.json`;
         document.body.appendChild(a);
         a.click();
@@ -190,7 +190,7 @@ export const UserManagement: React.FC = () => {
                         alert("Función de restauración validada. Los datos se han verificado correctamente.");
                         backup.users.forEach((u: any) => {
                             if (u.stats) {
-                                localStorage.setItem(`eduplaneacion_stats_${u.email.toLowerCase()}`, JSON.stringify([]));
+                                localStorage.setItem(`sci_stats_${u.email.toLowerCase()}`, JSON.stringify([]));
                             }
                         });
                     }
@@ -212,7 +212,7 @@ export const UserManagement: React.FC = () => {
                     <div>
                         <h3 className="text-2xl font-black text-white tracking-tight">Gestión Académica Pro</h3>
                         <div className="flex items-center gap-2 mt-1">
-                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{authService.getCurrentUser()?.nombre_institucion || 'SaaS Infrastructure'}</p>
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">{authService.getCurrentUser()?.nombre_institucion || 'SistemaClasesIdeal Infrastructure'}</p>
                             <div className="h-1 w-1 bg-slate-700 rounded-full"></div>
                             <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
                                 <span className="relative flex h-1.5 w-1.5">
@@ -594,9 +594,9 @@ export const UserGenerator: React.FC<{ onUserCreated: () => void }> = ({ onUserC
             .replace(/\s+/g, '.'); // spaces to dots
 
         const currentUser = authService.getCurrentUser();
-        const domain = currentUser?.dominio_email || 'correo.edu.co';
+        const domain = currentUser?.dominio_email || 'clasesideal.com';
         const generatedEmail = `${cleanName}@${domain}`;
-        const defaultPassword = (currentUser?.nombre_institucion?.toLowerCase().split(' ')[0] || 'edu') + '2026';
+        const defaultPassword = (currentUser?.nombre_institucion?.toLowerCase().split(' ')[0] || 'sci') + '2026';
 
         try {
             const result = await authService.registerTeacher({

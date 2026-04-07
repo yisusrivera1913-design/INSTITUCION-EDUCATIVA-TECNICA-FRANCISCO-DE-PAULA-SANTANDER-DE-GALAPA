@@ -1,4 +1,4 @@
-# Documentación del Proyecto - Docente AI Pro (I.E. Santander)
+# Documentación del Proyecto - SistemaClasesIdeal Pro (I.E. Santander)
 
 Bienvenido a la guía técnica y de usuario de tu plataforma de gestión académica inteligente. Este documento describe cómo funciona el sistema y cómo mantenerlo.
 
@@ -22,10 +22,10 @@ El sistema incluye mecanismos de autoreparación:
 
 ## 🔑 Gestión de Usuarios
 Los usuarios autorizados están definidos en `services/authService.ts`. Por seguridad:
-# Documentación del Proyecto - EduPlaneación AI SaaS Platform
+# Documentación del Proyecto - SistemaClasesIdeal SaaS Platform
 
 ## Visión General
-EduPlaneación AI es una plataforma SaaS (Software as a Service) multinivel diseñada para la gestión académica y la planeación docente impulsada por Inteligencia Artificial. Permite que múltiples instituciones educativas utilicen el sistema de forma independiente, con su propio branding, modelos pedagógicos y formatos institucionales.
+SistemaClasesIdeal es una plataforma SaaS (Software as a Service) multinivel diseñada para la gestión académica y la planeación docente impulsada por Inteligencia Artificial. Permite que múltiples instituciones educativas utilicen el sistema de forma independiente, con su propio branding, modelos pedagógicos y formatos institucionales.
 
 ## Arquitectura Multi-Tenant
 La plataforma utiliza un modelo de **Base de Datos Compartida con Aislamiento Lógico**:
@@ -45,4 +45,4 @@ La plataforma utiliza un modelo de **Base de Datos Compartida con Aislamiento L�
 - **Exportación:** Docx.js para generación de documentos Word Platinum.
 
 ---
-*© 2026 EduPlaneación AI — Soberanía Pedagógica Escalable — Ingeniería de Prompts Avanzada.*
+*© 2026 SistemaClasesIdeal — Soberanía Pedagógica Escalable — Ingeniería de Prompts Avanzada.*

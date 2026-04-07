@@ -65,7 +65,7 @@ export interface User {
 
 // Usuarios locales de respaldo (Solo si falla la nube o como root login)
 export const AUTHORIZED_USERS: User[] = [
-    { name: 'SCI Administrator', email: 'superadmin@eduplaneacion.com', role: 'super_admin' },
+    { name: 'SCI Administrator', email: 'superadmin@sistemaclasesideal.com', role: 'super_admin' },
 ];
 
 export const authService = {
@@ -140,7 +140,7 @@ export const authService = {
 
         // C. Default Hardcoded Passwords
         if (role === 'admin') return inputPass === 'admin2026';
-        return inputPass === 'edu2026';
+        return inputPass === 'sci2026';
     },
 
 

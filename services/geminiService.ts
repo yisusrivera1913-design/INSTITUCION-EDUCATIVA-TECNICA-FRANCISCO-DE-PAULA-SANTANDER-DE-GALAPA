@@ -10,7 +10,7 @@ export const modelHealthStatus: Record<string, 'online' | 'offline' | 'checking'
   "gemini-1.5-pro": "checking",
 };
 
-const STORAGE_KEY = 'eduplaneacion_gemini_metricsv1';
+const STORAGE_KEY = 'sci_gemini_metrics_v1';
 
 const loadMetrics = () => {
   try {

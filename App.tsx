@@ -29,7 +29,7 @@ const initialInput: SequenceInput = {
 // Definir el usuario inicial (SaaS Direct Entry)
 const SAAS_ADMIN: User = { 
   name: 'Super Admin', 
-  email: 'superadmin@eduplaneacion.com', 
+  email: 'superadmin@sistemaclasesideal.com', 
   role: 'super_admin' 
 };
 

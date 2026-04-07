@@ -10,7 +10,7 @@ export const modelHealthStatus: Record<string, 'online' | 'offline' | 'checking'
     "llama-3.1-70b-versatile": "checking",
 };
 
-const STORAGE_KEY = 'eduplaneacion_groq_metricsv1';
+const STORAGE_KEY = 'sci_groq_metrics_v1';
 
 const loadMetrics = () => {
     try {

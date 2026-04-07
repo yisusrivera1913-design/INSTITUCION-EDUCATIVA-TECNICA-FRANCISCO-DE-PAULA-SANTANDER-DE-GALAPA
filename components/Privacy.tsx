@@ -7,7 +7,7 @@ export const Privacy: React.FC = () => {
                 <h1 className="text-4xl font-black mb-8 tracking-tight text-blue-600">Política de Privacidad</h1>
                 <div className="bg-slate-50 border border-slate-100 p-8 rounded-[2.5rem] shadow-sm">
                     <p className="text-xl leading-relaxed font-medium">
-                        Recopilamos su nombre y correo de Google para identificar sus planeaciones en la plataforma <strong>EasyPlanning AI</strong>. 
+                        Recopilamos su nombre y correo de Google para identificar sus planeaciones en la plataforma <strong>SistemaClasesIdeal</strong>. 
                     </p>
                     <div className="h-px bg-slate-200 my-8"></div>
                     <ul className="space-y-4 text-slate-600 italic">
