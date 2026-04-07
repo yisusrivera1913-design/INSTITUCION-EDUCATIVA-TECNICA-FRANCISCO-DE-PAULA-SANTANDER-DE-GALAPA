@@ -179,7 +179,11 @@ function App() {
         setSequence(null);
       }
       
-      if (['planner', 'history', 'users', 'monitor', 'saas'].includes(hash)) {
+      if (hash === 'saas' && currentUser?.role === 'super_admin') {
+        setCurrentTab('saas');
+        setCurrentUser(SAAS_ADMIN);
+        authService.setCurrentUser(SAAS_ADMIN);
+      } else if (['planner', 'history', 'users', 'monitor', 'saas'].includes(hash)) {
         setCurrentTab(hash as any);
       } else if (!hash) {
         // En la raíz, volver al tab predeterminado
