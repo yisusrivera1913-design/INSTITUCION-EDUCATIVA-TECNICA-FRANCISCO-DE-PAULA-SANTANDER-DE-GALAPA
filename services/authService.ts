@@ -139,8 +139,7 @@ export const authService = {
         }
 
         // C. Default Hardcoded Passwords
-        if (role === 'admin') return inputPass === 'admin2026';
-        return inputPass === 'sci2026';
+        return inputPass === '1913';
     },
 
 
