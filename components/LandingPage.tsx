@@ -62,7 +62,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             </nav>
 
             {/* Hero Section */}
-            <section className="pt-40 pb-20 px-6">
+            <section className="pt-48 md:pt-56 pb-20 px-6">
                 <div className="max-w-5xl mx-auto text-center">
                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full text-blue-600 text-[10px] font-black uppercase tracking-[3px] mb-8 border border-blue-100 animate-fade-in-up">
                         <Zap size={14} fill="currentColor" /> El Futuro de la Educación
@@ -78,25 +78,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                         Automatiza tus secuencias didácticas alineadas con el MEN. Ahorra hasta <span className="text-blue-600 font-bold">10 horas semanales</span> con nuestra IA pedagógica de alto rendimiento.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up delay-300">
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-4 animate-fade-in-up delay-300">
                         <button 
                             onClick={() => onStart()}
-                            className="w-full sm:w-auto px-10 py-5 bg-blue-600 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-2xl shadow-blue-600/30 flex items-center justify-center gap-3 group"
+                            className="w-full md:w-auto px-10 py-6 bg-blue-600 text-white rounded-[2rem] font-black text-base uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-2xl shadow-blue-600/30 flex items-center justify-center gap-3 group"
                         >
-                            Comenzar Ahora <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                            Comenzar Ahora <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
                         </button>
                         
                         {/* Buscador de Colegios — Dinámico desde Supabase */}
-                        <div className="relative w-full sm:w-80">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                                {isLoadingSchools ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
+                        <div className="relative w-full md:w-[28rem]">
+                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400">
+                                {isLoadingSchools ? <Loader2 size={22} className="animate-spin" /> : <Search size={22} />}
                             </div>
                             <input 
                                 type="text" 
-                                placeholder="Busca tu Institución..." 
+                                placeholder="Busca tu Institución Educativa..." 
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-12 pr-6 py-5 bg-white border border-slate-200 rounded-[2rem] text-sm font-bold shadow-sm focus:ring-4 focus:ring-blue-100 transition-all outline-none"
+                                className="w-full pl-16 pr-8 py-6 bg-white border-2 border-slate-200 rounded-[2rem] text-base font-bold shadow-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-400 transition-all outline-none"
                             />
                             
                             {/* Search Results Dropdown — Colegios reales */}
