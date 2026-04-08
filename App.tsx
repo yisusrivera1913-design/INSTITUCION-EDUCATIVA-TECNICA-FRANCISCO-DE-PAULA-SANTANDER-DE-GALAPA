@@ -622,8 +622,6 @@ function App() {
                     >
                       <Activity size={14} /> <span className="hidden md:inline">Métricas</span>
                     </button>
-                  </>
-                )}
                 {currentUser?.role === 'super_admin' && (
                   <button 
                     onClick={handleBackToSaaS}
@@ -634,23 +632,23 @@ function App() {
                     <span className="md:inline">{currentTab === 'saas' ? 'Panel SCI Principal' : 'Regresar al SaaS'}</span>
                   </button>
                 )}
-                
-                {/* CREDIT BADGE - SIEMPRE VISIBLE PARA DOCENTES */}
-                {currentUser?.role === 'docente' && (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg border border-blue-400/30 h-10 group overflow-hidden relative">
-                     <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
-                     <Zap size={14} className="text-white relative z-10" fill="white" />
-                     <div className="flex flex-col relative z-10">
-                       <span className="text-[7px] font-black text-blue-200 uppercase tracking-widest leading-none mb-0.5">Créditos Disponibles</span>
-                       <span className="text-xs font-black text-white leading-none">
-                          {currentUser.plan_type === 'annual' ? '∞ ILIMITADO' : (currentUser.credits ?? 0)}
-                       </span>
-                     </div>
-                  </div>
-                )}
               </>
             )}
           </nav>
+
+          {/* CREDIT BADGE - SIEMPRE VISIBLE PARA DOCENTES (Fuera del bloque admin) */}
+          {currentUser?.role === 'docente' && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg border border-blue-400/30 h-10 group overflow-hidden relative ml-2">
+                <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
+                <Zap size={14} className="text-white relative z-10" fill="white" />
+                <div className="flex flex-col relative z-10">
+                  <span className="text-[7px] font-black text-blue-200 uppercase tracking-widest leading-none mb-0.5">Créditos Disponibles</span>
+                  <span className="text-xs font-black text-white leading-none">
+                    {currentUser.plan_type === 'annual' ? '∞ ILIMITADO' : (currentUser.credits ?? 0)}
+                  </span>
+                </div>
+            </div>
+          )}
           
           {/* Menú de Usuario */}
           <div className="flex items-center gap-3 pl-2">
@@ -881,22 +879,6 @@ function App() {
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-0 opacity-20 pointer-events-none no-print">
             <p className="text-[8px] font-black uppercase tracking-[5px] text-slate-400">Powered by SCI Platform</p>
         </div>
-
-
-
-      {/* TOAST DE ERRORES NORMALES (MENOR PRIORIDAD) */}
-      {error && error !== 'CRÉDITOS_AGOTADOS' && (
-        <div className="fixed bottom-10 right-10 max-w-md bg-white border-l-4 border-red-500 p-6 rounded-[2rem] shadow-2xl flex items-start gap-5 animate-fade-in-up z-50 no-print text-left">
-          <div className="bg-red-50 text-red-500 p-2 rounded-xl">
-            <AlertTriangle size={24} />
-          </div>
-          <div className="flex-1 text-left">
-            <h4 className="text-slate-800 font-black text-sm uppercase">Error detectado</h4>
-            <p className="text-slate-500 text-xs font-medium">{error}</p>
-          </div>
-          <button onClick={() => setError(null)} className="text-slate-400 hover:text-slate-600 transition-colors px-2">✕</button>
-        </div>
-      )}
       </main>
 
       {/* MODAL DE PAGOS PREMIUM (MINIMALISTA EJECUTIVO) */}
@@ -990,6 +972,7 @@ function App() {
           </div>
         </div>
       )}
+
       {/* TOAST DE ERRORES NORMALES (MENOR PRIORIDAD) */}
       {error && error !== 'CRÉDITOS_AGOTADOS' && (
         <div className="fixed bottom-10 right-10 max-w-md bg-white border-l-4 border-red-500 p-6 rounded-[2rem] shadow-2xl flex items-start gap-5 animate-fade-in-up z-50 no-print text-left">
@@ -1003,7 +986,6 @@ function App() {
           <button onClick={() => setError(null)} className="text-slate-400 hover:text-slate-600 transition-colors px-2">✕</button>
         </div>
       )}
-      </main>
     </div>
   );
 }
