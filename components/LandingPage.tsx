@@ -222,6 +222,131 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                 </div>
             </section>
 
+            {/* Pricing Section - Executive Tech Design */}
+            <section id="pricing" className="py-32 bg-[#fcfcfd] relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-[50rem] h-[50rem] bg-blue-50/50 blur-[10rem] -z-10 rounded-full translate-x-1/2 -translate-y-1/2"></div>
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="text-center mb-20">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full text-blue-600 text-[10px] font-black uppercase tracking-[3px] mb-6 border border-blue-100">
+                            <Sparkles size={14} fill="currentColor" /> Planes Flexibles
+                        </div>
+                        <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-900 mb-6 uppercase">
+                            INVIERTE EN TU <span className="text-blue-600">TIEMPO</span>
+                        </h2>
+                        <p className="text-slate-500 text-lg max-w-2xl mx-auto font-medium">
+                            Cada docente inicia con <span className="text-blue-600 font-bold">1 Crédito GRATIS</span> para validar la potencia de nuestra IA. 
+                            Sin suscripciones forzadas, paga solo por lo que usas.
+                        </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-8 items-center">
+                        
+                        {/* Plan Semanal */}
+                        <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 hover:scale-[1.02] transition-all group relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-[5rem] -mr-16 -mt-16 group-hover:bg-blue-50 transition-colors"></div>
+                            <div className="relative z-10">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Ideal para Emergencias</div>
+                                <h3 className="text-2xl font-black text-slate-800 mb-6 uppercase">Semanal</h3>
+                                <div className="flex items-end gap-1 mb-8">
+                                    <span className="text-5xl font-black text-slate-900">$15k</span>
+                                    <span className="text-slate-400 font-bold mb-1">/ Semanales</span>
+                                </div>
+                                <ul className="space-y-4 mb-10">
+                                    <li className="flex items-center gap-3 text-slate-600 font-bold text-sm">
+                                        <div className="bg-blue-100 text-blue-600 p-1 rounded-full"><CheckCircle2 size={14} /></div>
+                                        10 Planeaciones IA
+                                    </li>
+                                    <li className="flex items-center gap-3 text-slate-600 font-bold text-sm">
+                                        <div className="bg-blue-100 text-blue-600 p-1 rounded-full"><CheckCircle2 size={14} /></div>
+                                        Alineación MEN Total
+                                    </li>
+                                    <li className="flex items-center gap-3 text-slate-600 font-bold text-sm">
+                                        <div className="bg-blue-100 text-blue-600 p-1 rounded-full"><CheckCircle2 size={14} /></div>
+                                        Soporte Prioritario
+                                    </li>
+                                </ul>
+                                <button onClick={() => onStart()} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/10">
+                                    Adquirir Ahora
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Plan Mensual - Destacado */}
+                        <div className="bg-slate-900 p-12 rounded-[3.5rem] shadow-2xl scale-105 border-4 border-blue-600 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 bg-blue-600 text-white px-6 py-2 rounded-bl-3xl text-[10px] font-black uppercase tracking-widest">Recomendado</div>
+                            <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-blue-600 blur-[8rem] opacity-20 -z-0"></div>
+                            
+                            <div className="relative z-10">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-2">Consistencia Pedagógica</div>
+                                <h3 className="text-3xl font-black text-white mb-6 uppercase">Mensual</h3>
+                                <div className="flex items-end gap-1 mb-8 text-white">
+                                    <span className="text-6xl font-black">$40k</span>
+                                    <span className="text-slate-400 font-bold mb-2">/ Mensual</span>
+                                </div>
+                                <ul className="space-y-4 mb-10">
+                                    <li className="flex items-center gap-3 text-slate-200 font-bold text-sm">
+                                        <div className="bg-blue-600 text-white p-1 rounded-full"><CheckCircle2 size={14} /></div>
+                                        30 Planeaciones IA
+                                    </li>
+                                    <li className="flex items-center gap-3 text-slate-200 font-bold text-sm">
+                                        <div className="bg-blue-600 text-white p-1 rounded-full"><CheckCircle2 size={14} /></div>
+                                        Historial Ilimitado
+                                    </li>
+                                    <li className="flex items-center gap-3 text-slate-200 font-bold text-sm">
+                                        <div className="bg-blue-600 text-white p-1 rounded-full"><CheckCircle2 size={14} /></div>
+                                        Exportación Premium PDF
+                                    </li>
+                                    <li className="flex items-center gap-3 text-slate-200 font-bold text-sm">
+                                        <div className="bg-blue-600 text-white p-1 rounded-full"><CheckCircle2 size={14} /></div>
+                                        Ahorro del 15%
+                                    </li>
+                                </ul>
+                                <button onClick={() => onStart()} className="w-full py-6 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-blue-500 transition-all shadow-2xl shadow-blue-600/40 group-hover:scale-105 transition-transform">
+                                    Plan Business →
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Plan Anual - Executive */}
+                        <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 hover:scale-[1.02] transition-all group relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-[5rem] -mr-16 -mt-16 group-hover:bg-indigo-100 transition-colors"></div>
+                            <div className="relative z-10">
+                                <div className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">Nivel Institucional</div>
+                                <h3 className="text-2xl font-black text-slate-800 mb-6 uppercase">Plus Anual</h3>
+                                <div className="flex items-end gap-1 mb-8">
+                                    <span className="text-5xl font-black text-slate-900">$65k</span>
+                                    <span className="text-slate-400 font-bold mb-1">/ Anual</span>
+                                </div>
+                                <ul className="space-y-4 mb-10">
+                                    <li className="flex items-center gap-3 text-slate-600 font-bold text-sm">
+                                        <div className="bg-indigo-100 text-indigo-600 p-1 rounded-full"><CheckCircle2 size={14} /></div>
+                                        <span className="text-indigo-600 font-black">Planeaciones Ilimitadas</span>
+                                    </li>
+                                    <li className="flex items-center gap-3 text-slate-600 font-bold text-sm">
+                                        <div className="bg-indigo-100 text-indigo-600 p-1 rounded-full"><CheckCircle2 size={14} /></div>
+                                        Acceso a Nuevas Funciones
+                                    </li>
+                                    <li className="flex items-center gap-3 text-slate-600 font-bold text-sm">
+                                        <div className="bg-indigo-100 text-indigo-600 p-1 rounded-full"><CheckCircle2 size={14} /></div>
+                                        Soporte 24/7 VIP
+                                    </li>
+                                </ul>
+                                <button onClick={() => onStart()} className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/20">
+                                    Desbloquear Todo
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div className="mt-20 text-center">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[4px]">
+                            Pagos Seguros a través de Mercado Pago & Stripe
+                        </p>
+                    </div>
+                </div>
+            </section>
+
             {/* Footer */}
             <footer className="py-20 border-t border-slate-100 px-6">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">

@@ -53,6 +53,10 @@ export interface User {
     assigned_grades?: string[];
     assigned_subjects?: string[];
     session_id?: string;
+    // Suscripción y Créditos
+    plan_type?: 'free' | 'weekly' | 'monthly' | 'annual';
+    credits?: number;
+    subscription_expiry?: string;
     stats?: {
         today: number;
         week: number;
@@ -188,7 +192,7 @@ export const authService = {
                     .from('app_users')
                     .select(`
                         name, email, role, assigned_grades, assigned_subjects,
-                        institucion_id,
+                        institucion_id, plan_type, credits, subscription_expiry,
                         instituciones (nombre, dominio_email, config_visual)
                     `)
                     .eq('email', email.toLowerCase())
@@ -206,7 +210,10 @@ export const authService = {
                         institucion_id: data.institucion_id,
                         nombre_institucion: inst?.nombre || null,
                         dominio_email: inst?.dominio_email || null,
-                        config_visual: inst?.config_visual || null
+                        config_visual: inst?.config_visual || null,
+                        plan_type: (data as any).plan_type || 'free',
+                        credits: (data as any).credits ?? 1,
+                        subscription_expiry: (data as any).subscription_expiry || null
                     };
                 }
             } catch (e) {
@@ -327,7 +334,7 @@ export const authService = {
                     .from('app_users')
                     .select(`
                         name, email, role, assigned_grades, assigned_subjects,
-                        institucion_id,
+                        institucion_id, plan_type, credits, subscription_expiry,
                         instituciones (nombre, dominio_email, config_visual)
                     `)
                     .eq('email', email)
@@ -410,7 +417,9 @@ export const authService = {
                         password: obfuscatedDefaultPassword,
                         institucion_id: autoInstId,
                         assigned_grades: [],
-                        assigned_subjects: []
+                        assigned_subjects: [],
+                        credits: 1,
+                        plan_type: 'free'
                     }]);
 
                 if (insertError) {
@@ -441,7 +450,10 @@ export const authService = {
                     nombre_institucion: newInst?.nombre || null,
                     dominio_email: newInst?.dominio_email || null,
                     config_visual: newInst?.config_visual || null,
-                    session_id: session.access_token
+                    session_id: session.access_token,
+                    credits: newProfile.credits ?? 1,
+                    plan_type: newProfile.plan_type || 'free',
+                    subscription_expiry: newProfile.subscription_expiry || null
                 };
 
                 localStorage.setItem(STORAGE_KEYS.AUTH, obfuscate('true'));
@@ -468,7 +480,10 @@ export const authService = {
             nombre_institucion: inst?.nombre || null,
             dominio_email: inst?.dominio_email || null,
             config_visual: inst?.config_visual || null,
-            session_id: session.access_token
+            session_id: session.access_token,
+            credits: (profile as any).credits ?? 1,
+            plan_type: (profile as any).plan_type || 'free',
+            subscription_expiry: (profile as any).subscription_expiry || null
         };
 
         localStorage.setItem(STORAGE_KEYS.AUTH, obfuscate('true'));
@@ -580,11 +595,25 @@ export const authService = {
                     tema: details.theme,
                     content: sequence,
                     institucion_id: institucionId,
-                    is_test: true // Mark as test for now as requested
+                    is_test: true 
                 }]);
                 if (seqErr) console.error("Error Repositorio Nube:", seqErr.message);
 
                 if (!logErr && !seqErr) console.log("[Sync] Éxito Total en la Nube con institucion_id:", institucionId);
+
+                // 3. Decrementar créditos si aplica (No aplica para Super Admin o Plan Anual Ilimitado)
+                if (user.role !== 'super_admin' && user.plan_type !== 'annual') {
+                    const currentCredits = user.credits ?? 1;
+                    if (currentCredits > 0) {
+                        const newCredits = currentCredits - 1;
+                        await supabase.from('app_users').update({ credits: newCredits }).eq('email', email);
+                        
+                        // Actualizar sesión local (Sincronización inmediata)
+                        const updatedUser = { ...user, credits: newCredits };
+                        localStorage.setItem(STORAGE_KEYS.USER, obfuscate(JSON.stringify(updatedUser)));
+                        console.log(`📉 Crédito descontado. Restantes: ${newCredits}`);
+                    }
+                }
             } catch (e) {
                 console.error("Fallo crítico de sincronización:", e);
             }
