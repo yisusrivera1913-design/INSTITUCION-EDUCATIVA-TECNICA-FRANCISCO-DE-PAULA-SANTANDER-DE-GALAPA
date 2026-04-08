@@ -899,101 +899,111 @@ function App() {
       )}
       </main>
 
-      {/* MODAL DE PAGOS PREMIUM (FUERA DE TOAST Y DE MAIN) */}
+      {/* MODAL DE PAGOS PREMIUM (MINIMALISTA EJECUTIVO) */}
       {error === 'CRÉDITOS_AGOTADOS' && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 md:p-6 no-print">
-          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-2xl animate-fade-in" onClick={() => setError(null)}></div>
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xl animate-fade-in" onClick={() => setError(null)}></div>
           
-          <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl p-8 md:p-12 text-center animate-scale-in border border-white/20 relative overflow-hidden z-10">
-            {/* Elementos Decorativos */}
-            <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
-            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl"></div>
-            
+          <div className="bg-white w-full max-w-2xl rounded-2xl shadow-executive-xl p-10 md:p-16 text-center animate-scale-in border border-slate-100 relative overflow-hidden z-10">
             <div className="relative z-10">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-blue-500/40 transform -rotate-6 hover:rotate-0 transition-transform duration-500">
-                <Zap size={48} fill="currentColor" className="animate-pulse" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-50 border border-indigo-100 rounded-full text-[9px] font-black text-indigo-600 uppercase tracking-[2px] mb-8">
+                <Sparkles size={12} /> Acceso Premium
               </div>
 
-              <h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-4 uppercase">
-                ¡Créditos Agotados!
+              <h2 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight mb-4">
+                Balance de Créditos Finalizado
               </h2>
-              <p className="text-slate-500 font-medium mb-10 text-lg leading-relaxed max-w-md mx-auto">
-                Has utilizado tu crédito de prueba con éxito. Para seguir creando planeaciones de alto impacto, elige tu plan ideal:
+              <p className="text-slate-500 font-medium mb-12 text-sm leading-relaxed max-w-sm mx-auto">
+                Has utilizado tus créditos de cortesía con éxito. Para continuar con la generación de planeaciones de alto impacto, selecciona un plan:
               </p>
 
-              <div className="grid grid-cols-1 gap-4 mb-10">
+              <div className="flex flex-col gap-3 mb-10">
                 {/* Plan Semanal */}
                 <button 
                   onClick={() => handlePayForCredits('semanal')}
-                  className="group flex items-center justify-between p-6 bg-slate-50 border-2 border-slate-100 rounded-3xl hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 text-left"
+                  className="group flex items-center justify-between p-6 bg-slate-50/50 border border-slate-100 rounded-xl hover:bg-white hover:border-indigo-600/30 hover:shadow-executive transition-all duration-300 text-left"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="bg-white p-3 rounded-2xl shadow-sm text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                      <Target size={24} />
+                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-slate-400 group-hover:text-indigo-600 transition-colors border border-slate-100">
+                      <ZapIcon size={20} />
                     </div>
                     <div>
-                      <span className="text-[10px] font-black text-blue-600 uppercase tracking-[3px] block mb-1">Carga Rápida</span>
-                      <span className="text-lg font-black text-slate-800 tracking-tight">10 Planeaciones (Semanal)</span>
+                      <span className="text-sm font-black text-slate-800 block">Plan Rápido</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">10 Secuencias • Semanal</span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-black text-slate-900">$15k</div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase">COP</div>
+                    <div className="text-xl font-black text-slate-900">$15k</div>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">COP</div>
                   </div>
                 </button>
 
-                {/* Plan Mensual (Mejor Valor) */}
+                {/* Plan Mensual (Destacado) */}
                 <button 
                   onClick={() => handlePayForCredits('mensual')}
-                  className="group flex items-center justify-between p-6 bg-slate-900 border-4 border-slate-800 rounded-3xl hover:bg-black transition-all duration-300 text-left relative overflow-hidden shadow-2xl shadow-slate-900/40"
+                  className="group flex items-center justify-between p-6 bg-white border-2 border-indigo-600 rounded-xl hover:shadow-executive transition-all duration-300 text-left relative overflow-hidden"
                 >
-                  <div className="absolute top-0 right-0 bg-blue-600 text-white px-5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-bl-2xl">Más Popular</div>
+                  <div className="absolute top-0 right-0 bg-indigo-600 text-white px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-bl-lg">Popular</div>
                   <div className="flex items-center gap-4">
-                    <div className="bg-slate-800 p-3 rounded-2xl shadow-sm text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
-                      <Sparkles size={24} />
+                    <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 border border-indigo-100">
+                      <SparklesIcon size={20} />
                     </div>
                     <div>
-                      <span className="text-[10px] font-black text-blue-400 uppercase tracking-[3px] block mb-1">Alto Consumo</span>
-                      <span className="text-lg font-black text-white tracking-tight">30 Planeaciones (Mensual)</span>
-                    </div>
-                  </div>
-                  <div className="text-right relative z-10">
-                    <div className="text-2xl font-black text-white">$40k</div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase">COP</div>
-                  </div>
-                </button>
-
-                {/* Plan Anual (PRO) */}
-                <button 
-                  onClick={() => handlePayForCredits('anual')}
-                  className="group flex items-center justify-between p-6 bg-indigo-50 border-2 border-indigo-200 rounded-3xl hover:border-indigo-600 hover:bg-indigo-100 transition-all duration-300 text-left"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="bg-white p-3 rounded-2xl shadow-sm text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                      <BrainCircuit size={24} />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[3px] block mb-1">Acceso Total</span>
-                      <span className="text-lg font-black text-indigo-950 tracking-tight">ILIMITADO (Anual)</span>
+                      <span className="text-sm font-black text-slate-800 block">Plan Profesional</span>
+                      <span className="text-[10px] font-bold text-indigo-600/60 uppercase tracking-widest">30 Secuencias • Mensual</span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-black text-indigo-700">$65k</div>
-                    <div className="text-[10px] font-bold text-slate-400 uppercase">COP</div>
+                    <div className="text-xl font-black text-slate-900">$40k</div>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">COP</div>
+                  </div>
+                </button>
+
+                {/* Plan Anual (Plus) */}
+                <button 
+                  onClick={() => handlePayForCredits('anual')}
+                  className="group flex items-center justify-between p-6 bg-slate-50/50 border border-slate-100 rounded-xl hover:bg-white hover:border-emerald-600/30 hover:shadow-executive transition-all duration-300 text-left"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-slate-400 group-hover:text-emerald-600 transition-colors border border-slate-100">
+                      <Shield size={20} />
+                    </div>
+                    <div>
+                      <span className="text-sm font-black text-slate-800 block">Plus Anual</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ilimitado • 1 Año</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xl font-black text-slate-900">$65k</div>
+                    <div className="text-[9px] font-bold text-slate-400 uppercase">COP</div>
                   </div>
                 </button>
               </div>
 
               <button 
                 onClick={() => setError(null)}
-                className="py-2 px-8 text-[11px] font-black text-slate-400 uppercase tracking-[4px] hover:text-slate-900 transition-colors mx-auto block"
+                className="py-2 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-[3px] hover:text-slate-800 transition-colors mx-auto block"
               >
-                Volver después
+                Cerrar ahora
               </button>
             </div>
           </div>
         </div>
       )}
+      {/* TOAST DE ERRORES NORMALES (MENOR PRIORIDAD) */}
+      {error && error !== 'CRÉDITOS_AGOTADOS' && (
+        <div className="fixed bottom-10 right-10 max-w-md bg-white border-l-4 border-red-500 p-6 rounded-[2rem] shadow-2xl flex items-start gap-5 animate-fade-in-up z-50 no-print text-left">
+          <div className="bg-red-50 text-red-500 p-2 rounded-xl">
+            <AlertTriangle size={24} />
+          </div>
+          <div className="flex-1 text-left">
+            <h4 className="text-slate-800 font-black text-sm uppercase">Error detectado</h4>
+            <p className="text-slate-500 text-xs font-medium">{error}</p>
+          </div>
+          <button onClick={() => setError(null)} className="text-slate-400 hover:text-slate-600 transition-colors px-2">✕</button>
+        </div>
+      )}
+      </main>
     </div>
   );
 }
