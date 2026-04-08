@@ -8,7 +8,14 @@ import { SuperAdminPanel } from './components/SuperAdminPanel';
 import { DidacticSequence, SequenceInput } from './types';
 import { generateDidacticSequence as generateGroq } from './services/groqService';
 import { generateDidacticSequence as generateGemini } from './services/geminiService';
-import { GraduationCap, Loader2, AlertTriangle, LogOut, User as UserIcon, Shield, LayoutDashboard, Database, Activity, Users, Sparkles, PenTool, Globe, Zap } from 'lucide-react';
+import { 
+  Plus, Search, PenTool, Database, Users, Activity, LogOut, 
+  Settings, User as UserIcon, Sparkles, AlertTriangle, Key, Loader2, Zap,
+  Target, BrainCircuit, Globe, RefreshCw, BarChart3, Clock,
+  ChevronRight, ArrowRight, BookOpen, GraduationCap, Sparkle,
+  Shield, Sparkles as SparklesIcon, Zap as ZapIcon, Sparkles as SparklesFull
+} from 'lucide-react';
+import { supabase } from './services/supabaseClient';
 import { Login } from './components/Login';
 import { LandingPage } from './components/LandingPage';
 import { authService, User } from './services/authService';
@@ -133,6 +140,21 @@ function App() {
 
       // Track presence
       const sub = authService.trackPresence(currentUser);
+
+      // REAL-TIME: Perfil en tiempo real (Sincroniza asignaciones de docentes al instante)
+      const channel = supabase
+        ?.channel(`profile-sync-${currentUser.email}`)
+        .on('postgres_changes', { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'app_users',
+          filter: `email=eq.${currentUser.email.toLowerCase()}`
+        }, async (payload) => {
+          console.log("🔔 [Realtime] Cambio detectado en perfil docencia:", payload.new);
+          const fresh = await authService.refreshSession();
+          if (fresh) setCurrentUser(fresh);
+        })
+        .subscribe();
 
       // PERIODIC REFRESH: Ensures teacher assignments stay in sync & enforces single session
       const refreshInterval = setInterval(async () => {
@@ -860,93 +882,118 @@ function App() {
             <p className="text-[8px] font-black uppercase tracking-[5px] text-slate-400">Powered by SCI Platform</p>
         </div>
 
-        {error && (
-          <div className={`fixed bottom-10 right-10 max-w-md ${error === 'CRÉDITOS_AGOTADOS' ? 'bg-[#0a0a0b] border-indigo-500 shadow-indigo-500/20' : 'bg-white border-red-500'} border-l-4 p-6 rounded-[2rem] shadow-2xl flex items-start gap-5 animate-fade-in-up z-50`}>
-            {error === 'CRÉDITOS_AGOTADOS' ? (
-              <>
-                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[200] flex items-center justify-center p-6 animate-fade-in">
-                    <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-8 text-center animate-scale-in border border-slate-100 relative overflow-hidden">
-                      <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-100 rounded-full blur-3xl opacity-50"></div>
-                      
-                      <div className="w-20 h-20 bg-blue-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-500/20 rotate-12">
-                        <Zap size={40} fill="currentColor" />
-                      </div>
 
-                      <h2 className="text-3xl font-black text-slate-800 tracking-tighter mb-4 uppercase">
-                        ¡Créditos Agotados!
-                      </h2>
-                      <p className="text-slate-500 font-medium mb-8 leading-relaxed">
-                        Has utilizado tu crédito de prueba con éxito. Para continuar generando secuencias didácticas de alto nivel, elige uno de nuestros planes recomendados:
-                      </p>
 
-                      <div className="grid grid-cols-1 gap-3 mb-8">
-                         <button 
-                          onClick={() => handlePayForCredits('semanal')}
-                          className="group flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
-                         >
-                           <div>
-                             <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest block mb-1">Carga Rápida</span>
-                             <span className="text-sm font-black text-slate-800">10 Planeaciones (Semanal)</span>
-                           </div>
-                           <div className="text-right">
-                             <div className="text-lg font-black text-slate-900">$15.000 COP</div>
-                           </div>
-                         </button>
+      {/* TOAST DE ERRORES NORMALES (MENOR PRIORIDAD) */}
+      {error && error !== 'CRÉDITOS_AGOTADOS' && (
+        <div className="fixed bottom-10 right-10 max-w-md bg-white border-l-4 border-red-500 p-6 rounded-[2rem] shadow-2xl flex items-start gap-5 animate-fade-in-up z-50 no-print text-left">
+          <div className="bg-red-50 text-red-500 p-2 rounded-xl">
+            <AlertTriangle size={24} />
+          </div>
+          <div className="flex-1 text-left">
+            <h4 className="text-slate-800 font-black text-sm uppercase">Error detectado</h4>
+            <p className="text-slate-500 text-xs font-medium">{error}</p>
+          </div>
+          <button onClick={() => setError(null)} className="text-slate-400 hover:text-slate-600 transition-colors px-2">✕</button>
+        </div>
+      )}
+      </main>
 
-                         <button 
-                          onClick={() => handlePayForCredits('mensual')}
-                          className="group flex items-center justify-between p-4 bg-slate-800 border border-slate-900 rounded-2xl hover:bg-slate-900 transition-all text-left relative overflow-hidden"
-                         >
-                           <div className="absolute top-0 right-0 bg-blue-600 text-white px-3 py-1 text-[8px] font-black uppercase rounded-bl-xl">Popular</div>
-                           <div>
-                             <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block mb-1">Más Vendido</span>
-                             <span className="text-sm font-black text-white">30 Planeaciones (Mensual)</span>
-                           </div>
-                           <div className="text-right">
-                             <div className="text-lg font-black text-white">$40.000 COP</div>
-                           </div>
-                         </button>
+      {/* MODAL DE PAGOS PREMIUM (FUERA DE TOAST Y DE MAIN) */}
+      {error === 'CRÉDITOS_AGOTADOS' && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 md:p-6 no-print">
+          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-2xl animate-fade-in" onClick={() => setError(null)}></div>
+          
+          <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl p-8 md:p-12 text-center animate-scale-in border border-white/20 relative overflow-hidden z-10">
+            {/* Elementos Decorativos */}
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl"></div>
+            <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl"></div>
+            
+            <div className="relative z-10">
+              <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-[2rem] flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-blue-500/40 transform -rotate-6 hover:rotate-0 transition-transform duration-500">
+                <Zap size={48} fill="currentColor" className="animate-pulse" />
+              </div>
 
-                         <button 
-                          onClick={() => handlePayForCredits('anual')}
-                          className="group flex items-center justify-between p-4 bg-white border-2 border-indigo-100 rounded-2xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left"
-                         >
-                           <div>
-                             <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block mb-1">Acceso Total</span>
-                             <span className="text-sm font-black text-indigo-900">ILIMITADO (Anual)</span>
-                           </div>
-                           <div className="text-right">
-                             <div className="text-lg font-black text-indigo-600">$65.000 COP</div>
-                           </div>
-                         </button>
-                      </div>
+              <h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-4 uppercase">
+                ¡Créditos Agotados!
+              </h2>
+              <p className="text-slate-500 font-medium mb-10 text-lg leading-relaxed max-w-md mx-auto">
+                Has utilizado tu crédito de prueba con éxito. Para seguir creando planeaciones de alto impacto, elige tu plan ideal:
+              </p>
 
-                      <div className="flex flex-col gap-3">
-                        <button 
-                          onClick={() => setError(null)}
-                          className="w-full py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors"
-                        >
-                          Tal vez más tarde
-                        </button>
-                      </div>
+              <div className="grid grid-cols-1 gap-4 mb-10">
+                {/* Plan Semanal */}
+                <button 
+                  onClick={() => handlePayForCredits('semanal')}
+                  className="group flex items-center justify-between p-6 bg-slate-50 border-2 border-slate-100 rounded-3xl hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 text-left"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white p-3 rounded-2xl shadow-sm text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                      <Target size={24} />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black text-blue-600 uppercase tracking-[3px] block mb-1">Carga Rápida</span>
+                      <span className="text-lg font-black text-slate-800 tracking-tight">10 Planeaciones (Semanal)</span>
                     </div>
                   </div>
-              </>
-            ) : (
-              <>
-                <div className="bg-red-50 text-red-500 p-2 rounded-xl">
-                  <AlertTriangle size={24} />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-slate-800 font-black text-sm uppercase">Error detectado</h4>
-                  <p className="text-slate-500 text-xs font-medium">{error}</p>
-                </div>
-              </>
-            )}
-            <button onClick={() => setError(null)} className="text-slate-500 hover:text-white transition-colors">✕</button>
+                  <div className="text-right">
+                    <div className="text-2xl font-black text-slate-900">$15k</div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase">COP</div>
+                  </div>
+                </button>
+
+                {/* Plan Mensual (Mejor Valor) */}
+                <button 
+                  onClick={() => handlePayForCredits('mensual')}
+                  className="group flex items-center justify-between p-6 bg-slate-900 border-4 border-slate-800 rounded-3xl hover:bg-black transition-all duration-300 text-left relative overflow-hidden shadow-2xl shadow-slate-900/40"
+                >
+                  <div className="absolute top-0 right-0 bg-blue-600 text-white px-5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-bl-2xl">Más Popular</div>
+                  <div className="flex items-center gap-4">
+                    <div className="bg-slate-800 p-3 rounded-2xl shadow-sm text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                      <Sparkles size={24} />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black text-blue-400 uppercase tracking-[3px] block mb-1">Alto Consumo</span>
+                      <span className="text-lg font-black text-white tracking-tight">30 Planeaciones (Mensual)</span>
+                    </div>
+                  </div>
+                  <div className="text-right relative z-10">
+                    <div className="text-2xl font-black text-white">$40k</div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase">COP</div>
+                  </div>
+                </button>
+
+                {/* Plan Anual (PRO) */}
+                <button 
+                  onClick={() => handlePayForCredits('anual')}
+                  className="group flex items-center justify-between p-6 bg-indigo-50 border-2 border-indigo-200 rounded-3xl hover:border-indigo-600 hover:bg-indigo-100 transition-all duration-300 text-left"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white p-3 rounded-2xl shadow-sm text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                      <BrainCircuit size={24} />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[3px] block mb-1">Acceso Total</span>
+                      <span className="text-lg font-black text-indigo-950 tracking-tight">ILIMITADO (Anual)</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-black text-indigo-700">$65k</div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase">COP</div>
+                  </div>
+                </button>
+              </div>
+
+              <button 
+                onClick={() => setError(null)}
+                className="py-2 px-8 text-[11px] font-black text-slate-400 uppercase tracking-[4px] hover:text-slate-900 transition-colors mx-auto block"
+              >
+                Volver después
+              </button>
+            </div>
           </div>
-        )}
-      </main>
+        </div>
+      )}
     </div>
   );
 }
