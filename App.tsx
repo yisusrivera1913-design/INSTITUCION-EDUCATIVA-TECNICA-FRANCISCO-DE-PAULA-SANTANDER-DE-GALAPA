@@ -622,6 +622,8 @@ function App() {
                     >
                       <Activity size={14} /> <span className="hidden md:inline">Métricas</span>
                     </button>
+                  </>
+                )}
                 {currentUser?.role === 'super_admin' && (
                   <button 
                     onClick={handleBackToSaaS}
@@ -636,15 +638,15 @@ function App() {
             )}
           </nav>
 
-          {/* CREDIT BADGE - SIEMPRE VISIBLE PARA DOCENTES (Fuera del bloque admin) */}
-          {currentUser?.role === 'docente' && (
+          {/* CREDIT BADGE - SIEMPRE VISIBLE PARA DOCENTES */}
+          {String(currentUser?.role) === 'docente' && (
             <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg border border-blue-400/30 h-10 group overflow-hidden relative ml-2">
                 <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
                 <Zap size={14} className="text-white relative z-10" fill="white" />
                 <div className="flex flex-col relative z-10">
                   <span className="text-[7px] font-black text-blue-200 uppercase tracking-widest leading-none mb-0.5">Créditos Disponibles</span>
                   <span className="text-xs font-black text-white leading-none">
-                    {currentUser.plan_type === 'annual' ? '∞ ILIMITADO' : (currentUser.credits ?? 0)}
+                    {currentUser?.plan_type === 'annual' ? '∞ ILIMITADO' : (currentUser?.credits ?? 0)}
                   </span>
                 </div>
             </div>
