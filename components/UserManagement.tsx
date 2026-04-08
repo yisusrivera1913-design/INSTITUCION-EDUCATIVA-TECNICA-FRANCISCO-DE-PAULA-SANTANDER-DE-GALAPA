@@ -369,30 +369,50 @@ export const UserManagement: React.FC = () => {
                                 Copiar Enlace para Profesores
                             </button>
 
-                            {/* TOGGLE MODO ESTRICTO */}
-                            <div className="mt-2 p-4 bg-white/5 rounded-2xl border border-white/5 flex items-center justify-between group/strict">
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-lg transition-colors ${isAutoRegEnabled ? 'bg-blue-500/10 text-blue-400' : 'bg-orange-500/10 text-orange-400'}`}>
-                                        {isAutoRegEnabled ? <Unlock size={14} /> : <Lock size={14} />}
-                                    </div>
-                                    <div>
-                                        <div className="text-[10px] font-black text-white uppercase tracking-wider flex items-center gap-2">
-                                            {isAutoRegEnabled ? 'Registro Libre' : 'Modo Estricto'} 
-                                            {!isAutoRegEnabled && <span className="text-[8px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full">Activo</span>}
+                            {/* LLAVE MAESTRA / MODO ESTRICTO */}
+                             <div className="mt-4 p-5 bg-indigo-500/10 border border-indigo-400/20 rounded-2xl">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-xl transition-colors ${isAutoRegEnabled ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                                            {isAutoRegEnabled ? <Unlock size={18} /> : <Lock size={18} />}
                                         </div>
-                                        <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
-                                            {isAutoRegEnabled ? 'Cualquier docente con el código puede entrar.' : 'Solo correos registrados por el Rector.'}
+                                        <div>
+                                            <div className="text-[11px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                                {isAutoRegEnabled ? 'Registro Libre Activo' : 'Modo Estricto Activo'}
+                                            </div>
+                                            <p className="text-[10px] text-indigo-300 font-bold uppercase tracking-widest mt-0.5 opacity-70">
+                                                Control de Acceso Institucional
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={handleToggleAutoReg}
+                                        disabled={isUpdatingAutoReg}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isAutoRegEnabled ? 'bg-blue-600' : 'bg-slate-700'}`}
+                                    >
+                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isAutoRegEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                                    </button>
+                                </div>
+                                
+                                <div className="space-y-3">
+                                    <div className="flex items-start gap-3">
+                                        <CheckCircle2 size={14} className={isAutoRegEnabled ? 'text-emerald-400 mt-0.5' : 'text-slate-600 mt-0.5'} />
+                                        <p className={`text-[10px] font-medium leading-relaxed ${isAutoRegEnabled ? 'text-slate-300' : 'text-slate-500'}`}>
+                                            {isAutoRegEnabled 
+                                                ? "¡Felicidades! Los profesores pueden registrarse solos usando el código del colegio. No tienes que agregarlos uno por uno."
+                                                : "El auto-registro está desactivado. Debes registrar manualmente el correo de cada profesor arriba antes de que puedan entrar."
+                                            }
                                         </p>
                                     </div>
+                                    {isAutoRegEnabled && (
+                                        <div className="pt-2 border-t border-indigo-400/10">
+                                            <p className="text-[9px] text-indigo-400 font-black uppercase tracking-widest">
+                                                Tip: Comparte el enlace y la clave "{instCode}" con tu equipo.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
-                                <button 
-                                    onClick={handleToggleAutoReg}
-                                    disabled={isUpdatingAutoReg}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isAutoRegEnabled ? 'bg-slate-700' : 'bg-orange-600'}`}
-                                >
-                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isAutoRegEnabled ? 'translate-x-1' : 'translate-x-6'}`} />
-                                </button>
-                            </div>
+                             </div>
                         </div>
                     </div>
                 </div>

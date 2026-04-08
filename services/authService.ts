@@ -397,26 +397,26 @@ export const authService = {
             }
         }
 
-        // 3. GESTIÓN DE ACCESO (MODO ESTRICTO VS AUTO-REGISTRO)
+        // 3. GESTIÓN DE ACCESO (AUTO-REGISTRO POR CÓDIGO)
         if (!profile) {
             const autoInstId = pendingInstId || (() => {
-                // Si no hay id pendiente, intentar deducir por dominio de correo si la inst lo permite
+                // Si no hay id pendiente, no podemos auto-registrar
                 return null; 
             })();
 
             if (autoInstId) {
-                // Verificar si la institución permite el autoregistro
+                // Verificar si la institución permite el autoregistro (Default: TRUE)
                 const { data: instCheck } = await supabase.from('instituciones').select('permite_autoregistro, nombre').eq('id', autoInstId).maybeSingle();
-                const allowsAutoReg = instCheck?.permite_autoregistro === true; // Estricto por defecto: Solo TRUE permite autoregistro
+                const allowsAutoReg = instCheck?.permite_autoregistro !== false; // Solo FALSE bloquea el acceso
 
                 if (!allowsAutoReg) {
-                    console.error(`🚨 [Auth] Registro denegado para ${email}: Modo Estricto en ${instCheck?.nombre || 'la institución'}.`);
+                    console.error(`🚨 [Auth] Registro bloqueado: Modo Estricto en ${instCheck?.nombre}.`);
                     localStorage.removeItem('sci_pending_inst_id');
                     if (supabase) await supabase.auth.signOut();
-                    throw new Error('Tu correo electrónico no está registrado en este colegio. Contacta al Rector para que te agregue manualmente.');
+                    throw new Error('Este colegio requiere que el Rector registre tu cuenta manualmente antes de ingresar.');
                 }
 
-                console.log('✨ [Auth] Auto-registro permitido. Creando perfil para:', email);
+                console.log('✨ [Auth] Creando nuevo perfil docente para:', email);
                 const obfuscatedDefaultPassword = btoa('sci-auto-' + Date.now());
 
                 const { data: newProfile, error: createError } = await supabase
@@ -428,23 +428,30 @@ export const authService = {
                         role: 'docente',
                         institucion_id: autoInstId,
                         assigned_grades: [],
-                        assigned_subjects: []
+                        assigned_subjects: [],
+                        credits: 1,
+                        plan_type: 'free'
                     }])
                     .select()
                     .single();
 
-                if (createError) throw createError;
+                if (createError) {
+                    console.error("❌ [Auth] Error en auto-creación:", createError);
+                    throw createError;
+                }
+                
                 profile = newProfile;
                 
-                // Cargar también la info de la institución para el objeto User
+                // Cargar también la info de la institución para el objeto User final
                 const { data: instFull } = await supabase.from('instituciones').select('*').eq('id', autoInstId).single();
                 (profile as any).instituciones = instFull;
                 
                 localStorage.removeItem('sci_pending_inst_id');
+                console.log('✅ [Auth] Perfil creado y vinculado con éxito.');
             } else {
                 console.error('🚨 [Auth] Bloqueo: Usuario no registrado y sin contexto institucional.');
                 if (supabase) await supabase.auth.signOut();
-                throw new Error('No se pudo verificar tu acceso. Por favor, usa el enlace oficial de tu institución.');
+                throw new Error('No estás registrado en la base de datos. Para entrar por primera vez, usa el enlace oficial y el código de tu colegio.');
             }
         }
 
