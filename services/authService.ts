@@ -285,6 +285,25 @@ export const authService = {
         }
     },
 
+    // SaaS: Buscar instituciones por nombre (Búsqueda pública)
+    searchInstituciones: async (queryText: string) => {
+        if (!supabase) return [];
+        try {
+            const { data, error } = await supabase
+                .from('instituciones')
+                .select('id, nombre, slug, config_visual')
+                .eq('activo', true)
+                .ilike('nombre', `%${queryText}%`)
+                .limit(5);
+            
+            if (error) throw error;
+            return data || [];
+        } catch (e) {
+            console.error('Error searching instituciones:', e);
+            return [];
+        }
+    },
+
     // SaaS: Obtener info pública de una institución por slug o ID (para el login dinámico)
     getPublicInstitucion: async (slugOrId: string) => {
         if (!supabase) return null;
@@ -1113,13 +1132,14 @@ export const authService = {
     },
 
     // Crea una preferencia de pago invocando a una Edge Function de Supabase
-    createPreference: async (institucionId: string, planName: string, amount: number) => {
+    createPreference: async (institucionId: string, userEmail: string, planName: string, amount: number) => {
         if (!supabase) return { error: 'Sin conexión a Supabase' };
         
         try {
             const { data, error } = await supabase.functions.invoke('mercadopago-checkout', {
                 body: { 
                     institucionId, 
+                    userEmail,
                     planName, 
                     amount,
                     domain: window.location.origin

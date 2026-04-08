@@ -92,6 +92,21 @@ function App() {
     }
   }, [isAuthenticated, currentUser?.email]);
 
+  useEffect(() => {
+    const checkPayment = async () => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('payment') === 'success' && currentUser) {
+        setLoginSuccess("¡Pago exitoso! Tus créditos se han actualizado.");
+        // Limpiar URL
+        window.history.replaceState(null, '', window.location.origin);
+        // Forzar refresco de usuario desde la DB
+        const freshUser = await authService.handleAuthCallback();
+        if (freshUser) setCurrentUser(freshUser);
+      }
+    };
+    checkPayment();
+  }, [currentUser?.email]);
+
   // 0. Loading cycle
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -307,7 +322,7 @@ function App() {
     console.log("🔙 [SaaS] Regresando al Panel Principal");
   };
 
-  const handlePayForCredits = async () => {
+  const handlePayForCredits = async (plan: 'semanal' | 'mensual' | 'anual') => {
     if (!currentUser) return;
     const mp = authService.initMercadoPago();
     if (!mp) {
@@ -315,12 +330,21 @@ function App() {
       return;
     }
 
+    const planConfig = {
+      semanal: { name: "Plan Semanal (10 Cr)", amount: 15000 },
+      mensual: { name: "Plan Mensual (30 Cr)", amount: 40000 },
+      anual: { name: "Acceso Plus Anual (Ilimitado)", amount: 65000 }
+    };
+
+    const config = planConfig[plan];
+
     setIsLoading(true);
     try {
       const res = await authService.createPreference(
         currentUser.institucion_id || 'personal', 
-        "Carga de 10 Créditos - SCI", 
-        20000
+        currentUser.email,
+        config.name, 
+        config.amount
       );
       if (res.preferenceId) {
         mp.checkout({
@@ -571,20 +595,33 @@ function App() {
                   </>
                 )}
                 {currentUser?.role === 'super_admin' && (
-                  <button
+                  <button 
                     onClick={handleBackToSaaS}
-                    className={`px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-wider relative group ${currentTab === 'saas' 
-                      ? (isDark ? 'bg-white/10 text-indigo-400 shadow-sm border border-white/5' : 'bg-white text-purple-600 shadow-sm border border-slate-200/50') 
-                      : 'bg-purple-600 text-white shadow-[0_10px_25px_-5px_rgba(147,51,234,0.4)] hover:bg-purple-700 animate-pulse-slow'}`}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative group h-10 ${currentTab === 'saas' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white border border-white/5'}`}
                   >
                     <div className={`w-2 h-2 rounded-full absolute -top-1 -right-1 ${currentTab === 'saas' ? 'hidden' : 'bg-red-500 shadow-[0_0_10px_red]'}`}></div>
                     <Globe size={14} className={currentTab === 'saas' ? '' : 'animate-spin-slow'} /> 
-                    <span className="md:inline">{currentTab === 'saas' ? 'Panel SCI Principal' : 'Regresar al SaaS'}</span>                  </button>
+                    <span className="md:inline">{currentTab === 'saas' ? 'Panel SCI Principal' : 'Regresar al SaaS'}</span>
+                  </button>
+                )}
+                
+                {/* CREDIT BADGE - SIEMPRE VISIBLE PARA DOCENTES */}
+                {currentUser?.role === 'docente' && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg border border-blue-400/30 h-10 group overflow-hidden relative">
+                     <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
+                     <Zap size={14} className="text-white relative z-10" fill="white" />
+                     <div className="flex flex-col relative z-10">
+                       <span className="text-[7px] font-black text-blue-200 uppercase tracking-widest leading-none mb-0.5">Créditos Disponibles</span>
+                       <span className="text-xs font-black text-white leading-none">
+                          {currentUser.plan_type === 'annual' ? '∞ ILIMITADO' : (currentUser.credits ?? 0)}
+                       </span>
+                     </div>
+                  </div>
                 )}
               </>
             )}
           </nav>
-
+          
           {/* Menú de Usuario */}
           <div className="flex items-center gap-3 pl-2">
             <button
@@ -819,21 +856,73 @@ function App() {
           <div className={`fixed bottom-10 right-10 max-w-md ${error === 'CRÉDITOS_AGOTADOS' ? 'bg-[#0a0a0b] border-indigo-500 shadow-indigo-500/20' : 'bg-white border-red-500'} border-l-4 p-6 rounded-[2rem] shadow-2xl flex items-start gap-5 animate-fade-in-up z-50`}>
             {error === 'CRÉDITOS_AGOTADOS' ? (
               <>
-                <div className="bg-indigo-500 p-3 rounded-2xl text-white shadow-lg shadow-indigo-500/30">
-                  <Zap size={24} />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-white font-black text-sm uppercase tracking-tighter">Créditos Agotados</h4>
-                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1 mb-4 leading-relaxed">
-                    Has gastado tu crédito de prueba. Subscríbete para seguir creando planeaciones ilimitadas.
-                  </p>
-                  <button 
-                    onClick={handlePayForCredits}
-                    className="w-full h-10 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-[2px] rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition-all flex items-center justify-center gap-2"
-                  >
-                    Pagar con Mercado Pago
-                  </button>
-                </div>
+                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[200] flex items-center justify-center p-6 animate-fade-in">
+                    <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl p-8 text-center animate-scale-in border border-slate-100 relative overflow-hidden">
+                      <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-100 rounded-full blur-3xl opacity-50"></div>
+                      
+                      <div className="w-20 h-20 bg-blue-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-blue-500/20 rotate-12">
+                        <Zap size={40} fill="currentColor" />
+                      </div>
+
+                      <h2 className="text-3xl font-black text-slate-800 tracking-tighter mb-4 uppercase">
+                        ¡Créditos Agotados!
+                      </h2>
+                      <p className="text-slate-500 font-medium mb-8 leading-relaxed">
+                        Has utilizado tu crédito de prueba con éxito. Para continuar generando secuencias didácticas de alto nivel, elige uno de nuestros planes recomendados:
+                      </p>
+
+                      <div className="grid grid-cols-1 gap-3 mb-8">
+                         <button 
+                          onClick={() => handlePayForCredits('semanal')}
+                          className="group flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+                         >
+                           <div>
+                             <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest block mb-1">Carga Rápida</span>
+                             <span className="text-sm font-black text-slate-800">10 Planeaciones (Semanal)</span>
+                           </div>
+                           <div className="text-right">
+                             <div className="text-lg font-black text-slate-900">$15.000 COP</div>
+                           </div>
+                         </button>
+
+                         <button 
+                          onClick={() => handlePayForCredits('mensual')}
+                          className="group flex items-center justify-between p-4 bg-slate-800 border border-slate-900 rounded-2xl hover:bg-slate-900 transition-all text-left relative overflow-hidden"
+                         >
+                           <div className="absolute top-0 right-0 bg-blue-600 text-white px-3 py-1 text-[8px] font-black uppercase rounded-bl-xl">Popular</div>
+                           <div>
+                             <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest block mb-1">Más Vendido</span>
+                             <span className="text-sm font-black text-white">30 Planeaciones (Mensual)</span>
+                           </div>
+                           <div className="text-right">
+                             <div className="text-lg font-black text-white">$40.000 COP</div>
+                           </div>
+                         </button>
+
+                         <button 
+                          onClick={() => handlePayForCredits('anual')}
+                          className="group flex items-center justify-between p-4 bg-white border-2 border-indigo-100 rounded-2xl hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left"
+                         >
+                           <div>
+                             <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest block mb-1">Acceso Total</span>
+                             <span className="text-sm font-black text-indigo-900">ILIMITADO (Anual)</span>
+                           </div>
+                           <div className="text-right">
+                             <div className="text-lg font-black text-indigo-600">$65.000 COP</div>
+                           </div>
+                         </button>
+                      </div>
+
+                      <div className="flex flex-col gap-3">
+                        <button 
+                          onClick={() => setError(null)}
+                          className="w-full py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors"
+                        >
+                          Tal vez más tarde
+                        </button>
+                      </div>
+                    </div>
+                  </div>
               </>
             ) : (
               <>

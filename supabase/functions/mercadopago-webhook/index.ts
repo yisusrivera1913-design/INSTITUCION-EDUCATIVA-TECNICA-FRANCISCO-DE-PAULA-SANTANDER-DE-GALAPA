@@ -34,16 +34,48 @@ serve(async (req) => {
       const payment = await mpResponse.json()
       
       if (payment.status === 'approved') {
-        const institucionId = payment.external_reference
+        const externalRef = payment.external_reference || '' // email|instId|plan
+        const [userEmail, institucionId, planId] = externalRef.split('|')
         
-        // Actualizar el plan de la institución
-        const { error } = await supabase
-          .from('instituciones')
-          .update({ plan_suscripcion: 'oro' }) // Asumimos Oro como el plan PRO
-          .eq('id', institucionId)
+        console.log(`💰 Procesando pago para: ${userEmail} en inst: ${institucionId} (Plan: ${planId})`)
+
+        if (planId.includes('anual')) {
+          // 1. ACTUALIZAR PLAN INSTITUCIONAL (ANUAL)
+          const { error: instError } = await supabase
+            .from('instituciones')
+            .update({ plan_suscripcion: 'oro' })
+            .eq('id', institucionId)
+          if (instError) throw instError
+
+          // 2. MARCAR USUARIO COMO ANUAL
+          const { error: userError } = await supabase
+            .from('app_users')
+            .update({ plan_type: 'annual' })
+            .eq('email', userEmail)
+          if (userError) throw userError
+
+          console.log(`✅ Plan ANUAL activado para ${userEmail}`)
+        } else {
+          // 3. RECARGA DE CRÉDITOS INDIVIDUALES (SEMANAL/MENSUAL)
+          const creditsToAdd = planId.includes('semanal') ? 10 : (planId.includes('mensual') ? 30 : 1)
           
-        if (error) throw error
-        console.log(`✅ Plan actualizado para institución: ${institucionId}`)
+          // Obtener créditos actuales
+          const { data: user } = await supabase
+            .from('app_users')
+            .select('credits')
+            .eq('email', userEmail)
+            .single()
+
+          const newCredits = (user?.credits || 0) + creditsToAdd
+
+          const { error: credError } = await supabase
+            .from('app_users')
+            .update({ credits: newCredits, plan_type: 'free' })
+            .eq('email', userEmail)
+          if (credError) throw credError
+
+          console.log(`✅ ${creditsToAdd} créditos agregados a ${userEmail}. Total: ${newCredits}`)
+        }
       }
     }
 
