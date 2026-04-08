@@ -1,7 +1,7 @@
 name: Supabase Guard
 on:
   schedule:
-    - cron: '0 0 */6 * *' # Every 6 days
+    - cron: '0 0 */5 * *' # Every 5 days (Supabase pauses after 7 days)
   workflow_dispatch:
 
 jobs:
@@ -14,10 +14,21 @@ jobs:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         run: |
           if [ -z "$SUPABASE_URL" ]; then
-            echo "No Supabase URL provided. Skipping."
-            exit 0
+            echo "Error: SUPABASE_URL no configurado en los secretos de GitHub."
+            exit 1
           fi
-          # Simple query to usage_logs to wake up the DB
-          curl -H "apikey: $SUPABASE_KEY" \
-               -H "Authorization: Bearer $SUPABASE_KEY" \
-               "$SUPABASE_URL/rest/v1/usage_logs?select=count"
+          
+          echo "Despertando base de datos en: $SUPABASE_URL"
+          
+          # Consulta a la tabla 'instituciones' para generar actividad real
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            "$SUPABASE_URL/rest/v1/instituciones?select=id&limit=1")
+          
+          if [ "$RESPONSE" == "200" ]; then
+            echo "Éxito: La base de datos está despierta (Código $RESPONSE)."
+          else
+            echo "Aviso: La respuesta fue código $RESPONSE. Verifica tus secretos."
+            # No fallamos el build para evitar ruidos, pero dejamos el log.
+          fi

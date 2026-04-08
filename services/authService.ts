@@ -1065,4 +1065,44 @@ export const authService = {
             return null;
         }
     },
+
+    // --- MERCADO PAGO INTEGRATION ---
+    // Inicia el objeto Mercado Pago con la llave pública de Sandbox
+    initMercadoPago: () => {
+        const publicKey = import.meta.env.VITE_MERCADOPAGO_PUBLIC_KEY;
+        if (!publicKey) {
+            console.error('❌ [MercadoPago] Llave pública No configurada en .env');
+            return null;
+        }
+        // @ts-ignore
+        if (typeof window.MercadoPago === 'undefined') {
+            console.error('❌ [MercadoPago] SDK no cargado. Revisa index.html');
+            return null;
+        }
+        // @ts-ignore
+        return new window.MercadoPago(publicKey, { locale: 'es-CO' });
+    },
+
+    // Crea una preferencia de pago invocando a una Edge Function de Supabase
+    createPreference: async (institucionId: string, planName: string, amount: number) => {
+        if (!supabase) return { error: 'Sin conexión a Supabase' };
+        
+        try {
+            const { data, error } = await supabase.functions.invoke('mercadopago-checkout', {
+                body: { 
+                    institucionId, 
+                    planName, 
+                    amount,
+                    domain: window.location.origin
+                }
+            });
+
+            if (error) throw error;
+            return { preferenceId: data.id };
+        } catch (e: any) {
+            console.error('❌ Error creando preferencia:', e);
+            // Fallback manual para pruebas si la función no está desplegada aún
+            return { error: e.message || 'Error al conectar con el servidor de pagos' };
+        }
+    }
 };

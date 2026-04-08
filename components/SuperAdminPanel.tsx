@@ -93,6 +93,31 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onEnterInstitu
         setSavingCode(false);
     };
 
+    const handlePay = async (inst: Institucion) => {
+        const mp = authService.initMercadoPago();
+        if (!mp) {
+            alert("Error al iniciar Mercado Pago. Verifica la llave pública en el .env");
+            return;
+        }
+
+        try {
+            const res = await authService.createPreference(inst.id, "Plan PRO - SCI", 20000);
+            if (res.preferenceId) {
+                mp.checkout({
+                    preference: {
+                        id: res.preferenceId
+                    },
+                    autoOpen: true
+                });
+            } else {
+                alert("Error: " + (res.error || "No se pudo obtener el ID de preferencia"));
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Fallo en la conexión con el servidor de pagos.");
+        }
+    };
+
     const planColors: Record<string, string> = {
         bronce: 'text-orange-400 bg-orange-400/10 border-orange-400/20',
         plata: 'text-slate-300 bg-slate-300/10 border-slate-300/20',
@@ -399,17 +424,27 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onEnterInstitu
                                     </button>
                                 </div>
 
-                                <button 
-                                    onClick={() => handleCopyLink(inst.slug, inst.id)}
-                                    className={`w-full h-10 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
-                                        copiedId === inst.id 
-                                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
-                                        : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-white'
-                                    }`}
-                                >
-                                    {copiedId === inst.id ? <CheckCircle2 size={12} /> : <Globe size={12} />}
-                                    {copiedId === inst.id ? '¡Enlace Copiado!' : 'Copiar Enlace Docentes'}
-                                </button>
+                                <div className="flex flex-col gap-2">
+                                    <button 
+                                        onClick={() => handleCopyLink(inst.slug, inst.id)}
+                                        className={`w-full h-10 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all flex items-center justify-center gap-2 ${
+                                            copiedId === inst.id 
+                                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' 
+                                            : 'bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                    >
+                                        {copiedId === inst.id ? <CheckCircle2 size={12} /> : <Globe size={12} />}
+                                        {copiedId === inst.id ? '¡Enlace Copiado!' : 'Copiar Enlace Docentes'}
+                                    </button>
+
+                                    {/* BOTÓN DE PAGO (SANDBOX) */}
+                                    <button 
+                                        onClick={() => handlePay(inst)}
+                                        className="w-full h-10 bg-indigo-600/20 text-indigo-400 text-[9px] font-black uppercase tracking-widest rounded-lg border border-indigo-500/30 hover:bg-indigo-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Zap size={12} /> Pagar Plan PRO (Sandbox)
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))}
