@@ -66,7 +66,7 @@ function App() {
     return (initialUser?.role === 'super_admin' && !initialUser?.institucion_id) ? 'saas' : 'planner';
   });
   const [showProfile, setShowProfile] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
+  const [showLogin, setShowLogin] = useState<string | boolean>(false);
 
   const [lastGenTime, setLastGenTime] = useState(0);
   const [loginSuccess, setLoginSuccess] = useState<string | null>(null);
@@ -496,21 +496,29 @@ function App() {
         const lastSchool = localStorage.getItem('sci_last_school_slug');
         if (lastSchool) {
             window.history.replaceState(null, '', `${window.location.pathname}?inst=${lastSchool}`);
-            return <Login onLogin={handleLogin} />;
+            return <Login onLogin={handleLogin} preSelectedInst={lastSchool} />;
         }
     }
 
-    if (isInstitutionalLink || showLogin) {
+    if (isInstitutionalLink) {
       return <Login onLogin={handleLogin} />;
+    }
+    if (showLogin) {
+      // Si showLogin tiene un slug (string), pasarlo directo al Login para acceso inmediato
+      const preInst = typeof showLogin === 'string' ? showLogin : null;
+      return <Login onLogin={handleLogin} preSelectedInst={preInst} />;
     }
     return (
       <LandingPage
         onStart={(instSlug?: string) => {
           if (instSlug) {
-            // El usuario seleccionó un colegio del buscador: set URL y mostrar Login
+            // El usuario seleccionó un colegio del buscador: guardar slug y pasar al login con él
+            localStorage.setItem('sci_last_school_slug', instSlug);
             window.history.replaceState(null, '', `${window.location.pathname}?inst=${instSlug}`);
+            setShowLogin(instSlug); // Pasar el slug directamente
+          } else {
+            setShowLogin(true);
           }
-          setShowLogin(true);
         }}
       />
     );

@@ -4,11 +4,12 @@ import { authService } from '../services/authService';
 
 interface LoginProps {
     onLogin: () => void;
+    preSelectedInst?: string | null;
 }
 
 type Step = 'codigo' | 'google' | 'manual';
 
-export const Login: React.FC<LoginProps> = ({ onLogin }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, preSelectedInst }) => {
     const [step, setStep] = useState<Step>('codigo');
     const [codigoInput, setCodigoInput] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
@@ -20,10 +21,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const [password, setPassword] = useState('');
     const [showPasswordHint, setShowPasswordHint] = useState(false);
 
-    // Buscador de Colegios (Si no hay inst en URL)
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<any[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
     const [isInitialLoading, setIsInitialLoading] = useState(true);
 
     const [branding, setBranding] = useState<{
@@ -42,9 +39,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         const fetchBranding = async () => {
             setIsInitialLoading(true);
             const params = new URLSearchParams(window.location.search);
-            let instParam = params.get('inst') || params.get('colegio') || '';
+            let instParam = params.get('inst') || params.get('colegio') || preSelectedInst || '';
 
-            // Si no hay en URL, buscar en memoria local
+            // Si no hay en URL ni prop, buscar en memoria local
             if (!instParam) {
                 instParam = localStorage.getItem('sci_last_school_slug') || '';
             }
@@ -76,35 +73,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         fetchBranding();
     }, []);
 
-    // Lógica de búsqueda dinámica
-    useEffect(() => {
-        const timer = setTimeout(async () => {
-            if (searchQuery.length >= 2) {
-                setIsSearching(true);
-                const results = await authService.searchInstituciones(searchQuery);
-                setSearchResults(results);
-                setIsSearching(false);
-            } else {
-                setSearchResults([]);
-            }
-        }, 400);
-        return () => clearTimeout(timer);
-    }, [searchQuery]);
-
-    const selectInstitution = (inst: any) => {
-        setBranding({
-            title: inst.nombre,
-            subtitle: 'Ingresa el código de acceso para continuar.',
-            institucionId: inst.id,
-            logo_url: inst.config_visual?.logo_url || null
-        });
-        localStorage.setItem('sci_last_school_slug', inst.slug);
-        window.history.replaceState(null, '', `?inst=${inst.slug}`);
-        setSearchQuery('');
-        setSearchResults([]);
-        setError(null);
-    };
-
     const resetSelection = () => {
         setBranding({
             title: 'Centro de Acceso',
@@ -114,16 +82,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         });
         localStorage.removeItem('sci_last_school_slug');
         window.history.replaceState(null, '', window.location.pathname);
-        setSearchQuery('');
-        setSearchResults([]);
     };
 
     const handleVerificarCodigo = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!branding.institucionId) {
-            setError('No se detectó institución. Usa el enlace de tu colegio.');
-            return;
-        }
         if (!codigoInput.trim()) {
             setError('Ingresa el código de acceso.');
             return;
@@ -132,14 +94,33 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         setIsVerifying(true);
         setError(null);
 
-        const result = await authService.verifyCodigoAcceso(branding.institucionId, codigoInput);
-
-        if (result.valid) {
-            // Guardar el institucion_id para que el callback de Google lo use
-            localStorage.setItem('sci_pending_inst_id', branding.institucionId);
-            setStep('google');
+        // Si ya tenemos institucionId, verificar contra esa institución específica
+        if (branding.institucionId) {
+            const result = await authService.verifyCodigoAcceso(branding.institucionId, codigoInput);
+            if (result.valid) {
+                localStorage.setItem('sci_pending_inst_id', branding.institucionId);
+                setStep('google');
+            } else {
+                setError(result.message || 'Código incorrecto.');
+            }
         } else {
-            setError(result.message || 'Código incorrecto.');
+            // Si NO hay institucionId (slug roto o sin slug), buscar globalmente por código
+            const result = await authService.verifyCodigoAccesoGlobal(codigoInput);
+            if (result.valid && result.institucion) {
+                // Auto-fill branding con la institución encontrada
+                setBranding({
+                    title: result.institucion.nombre,
+                    subtitle: '¡Institución verificada!',
+                    institucionId: result.institucion.id,
+                    logo_url: result.institucion.config_visual?.logo_url || null
+                });
+                localStorage.setItem('sci_last_school_slug', result.institucion.slug);
+                localStorage.setItem('sci_pending_inst_id', result.institucion.id);
+                window.history.replaceState(null, '', `?inst=${result.institucion.slug}`);
+                setStep('google');
+            } else {
+                setError(result.message || 'Código incorrecto.');
+            }
         }
 
         setIsVerifying(false);
@@ -274,112 +255,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                                         </div>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Verificando institución...</p>
                                     </div>
-                                ) : !branding.institucionId ? (
-                                    // NO HAY INSTITUCIÓN (O ERROR DE CARGA)
-                                    <div className="space-y-6">
-                                        {branding.subtitle.includes('no válida') ? (
-                                            // PANTALLA DE ERROR: ENLACE INVÁLIDO
-                                            <div className="bg-red-50 border border-red-100 rounded-3xl p-8 text-center space-y-5 animate-fade-in">
-                                                <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
-                                                    <XCircle size={32} />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <h3 className="text-lg font-black text-red-900 uppercase">Enlace Inválido</h3>
-                                                    <p className="text-xs text-red-700 font-medium leading-relaxed">
-                                                        No pudimos encontrar el colegio asociado a este enlace. Verifica con tu administrador o busca manualmente.
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    onClick={resetSelection}
-                                                    className="w-full py-4 bg-white border border-red-200 text-red-600 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-50 transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <Search size={14} /> Usar Buscador General
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            // BUSCADOR DE COLEGIOS (ESTADO LIMPIO)
-                                            <div className="space-y-6 animate-fade-in-up">
-                                                <div className="bg-blue-600/5 border border-blue-600/10 rounded-2xl p-6 text-center space-y-4">
-                                                    <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-blue-600/20">
-                                                        <School size={28} />
-                                                    </div>
-                                                    <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest leading-relaxed">
-                                                        Busca tu Institución
-                                                    </h3>
-                                                    <p className="text-[10px] text-slate-500 font-medium">
-                                                        Escribe el nombre de tu colegio para empezar.
-                                                    </p>
-                                                </div>
-
-                                                <div className="relative group/search">
-                                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/search:text-blue-600 transition-colors">
-                                                        <Search size={18} />
-                                                    </div>
-                                                    <input
-                                                        type="text"
-                                                        value={searchQuery}
-                                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                                        placeholder="Ej: Francisco de Paula..."
-                                                        className="w-full pl-14 pr-6 py-4.5 bg-slate-50 border border-slate-100 rounded-[22px] focus:bg-white focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 outline-none transition-all font-bold text-slate-700 placeholder:text-slate-300 placeholder:font-medium"
-                                                    />
-                                                    {isSearching && (
-                                                        <div className="absolute right-5 top-1/2 -translate-y-1/2">
-                                                            <Loader2 size={16} className="animate-spin text-blue-600" />
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Resultados de Búsqueda */}
-                                                <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
-                                                    {searchResults.length > 0 ? (
-                                                        searchResults.map((inst) => (
-                                                            <button
-                                                                key={inst.id}
-                                                                onClick={() => selectInstitution(inst)}
-                                                                className="w-full flex items-center gap-4 p-3 bg-white border border-slate-100 rounded-2xl hover:border-blue-500 hover:shadow-md transition-all text-left animate-fade-in group"
-                                                            >
-                                                                <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0 group-hover:bg-blue-50 group-hover:border-blue-100">
-                                                                    {inst.config_visual?.logo_url ? (
-                                                                        <img src={inst.config_visual.logo_url} alt="" className="w-full h-full object-contain" />
-                                                                    ) : (
-                                                                        <Sparkles size={14} className="text-slate-300 group-hover:text-blue-400" />
-                                                                    )}
-                                                                </div>
-                                                                <div className="min-w-0">
-                                                                    <p className="text-[11px] font-black text-slate-700 uppercase leading-none mb-1 group-hover:text-blue-600 truncate">
-                                                                        {inst.nombre}
-                                                                    </p>
-                                                                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider truncate">
-                                                                        Acceso con Clave / Google
-                                                                    </p>
-                                                                </div>
-                                                            </button>
-                                                        ))
-                                                    ) : searchQuery.length >= 2 && !isSearching && (
-                                                        <div className="text-center py-8">
-                                                            <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">No se encontraron resultados</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
                                 ) : (
-                                    // Formulario de código (Cuando ya hay institución)
+                                    // SIEMPRE mostrar el formulario de código tras cargar
                                     <form onSubmit={handleVerificarCodigo} className="space-y-6">
                                         <div className="space-y-2">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <label className="text-[9px] font-black text-slate-400 uppercase tracking-[2px] ml-1 flex items-center gap-2">
-                                                    <KeyRound size={12} className="text-blue-500" /> Código de Acceso
-                                                </label>
-                                                <button
-                                                    type="button"
-                                                    onClick={resetSelection}
-                                                    className="text-[9px] font-bold text-blue-500 hover:underline uppercase tracking-widest"
-                                                >
-                                                    Cambiar Colegio
-                                                </button>
-                                            </div>
+                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-[2px] ml-1 flex items-center gap-2">
+                                                <KeyRound size={12} className="text-blue-500" /> Código de Acceso Institucional
+                                            </label>
                                             <input
                                                 type="text"
                                                 required

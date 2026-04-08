@@ -1059,7 +1059,33 @@ export const authService = {
     },
 
     // --- CÓDIGO DE ACCESO DE COLEGIO ---
-    // Verifica que el código ingresado por el docente corresponde al colegio
+    // Busca el código de acceso en TODAS las instituciones activas (no depende del slug/URL)
+    verifyCodigoAccesoGlobal: async (codigo: string): Promise<{ valid: boolean; message?: string; institucion?: any }> => {
+        if (!supabase) return { valid: false, message: 'Sin conexión a la base de datos' };
+        try {
+            const { data, error } = await supabase
+                .from('instituciones')
+                .select('id, nombre, slug, config_visual, codigo_acceso, activo')
+                .eq('activo', true)
+                .not('codigo_acceso', 'is', null);
+
+            if (error) throw error;
+            if (!data || data.length === 0) return { valid: false, message: 'No hay instituciones configuradas.' };
+
+            const match = data.find(
+                (inst: any) => inst.codigo_acceso && inst.codigo_acceso.trim().toLowerCase() === codigo.trim().toLowerCase()
+            );
+
+            if (match) {
+                return { valid: true, institucion: { id: match.id, nombre: match.nombre, slug: match.slug, config_visual: match.config_visual } };
+            }
+            return { valid: false, message: 'Código incorrecto. Verifica con tu administrador.' };
+        } catch (e: any) {
+            return { valid: false, message: 'Error al verificar el código' };
+        }
+    },
+
+    // Verifica que el código ingresado por el docente corresponde al colegio (por ID específico)
     verifyCodigoAcceso: async (institucionId: string, codigo: string): Promise<{ valid: boolean; message?: string }> => {
         if (!supabase) return { valid: false, message: 'Sin conexión a la base de datos' };
         try {
