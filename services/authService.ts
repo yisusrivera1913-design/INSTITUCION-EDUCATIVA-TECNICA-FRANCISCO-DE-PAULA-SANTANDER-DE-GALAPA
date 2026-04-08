@@ -549,6 +549,19 @@ export const authService = {
         return { success: true };
     },
 
+    canGenerate: (user: User): boolean => {
+        if (user.role === 'super_admin') return true;
+        if (user.plan_type === 'annual') return true;
+        
+        // Verificar expiración si aplica (ej: mensual/semanal)
+        if (user.subscription_expiry) {
+            const expiry = new Date(user.subscription_expiry);
+            if (expiry < new Date()) return false;
+        }
+
+        return (user.credits || 0) > 0;
+    },
+
     // --- GENERATED SEQUENCES PERSISTENCE & LOGGING ---
     saveAndLogSequence: async (user: User, sequence: any, details: { grade: string, area: string, theme: string }) => {
         const email = user.email.toLowerCase().trim();

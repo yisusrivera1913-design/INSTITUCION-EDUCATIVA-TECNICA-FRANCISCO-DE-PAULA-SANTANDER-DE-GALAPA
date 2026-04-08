@@ -8,7 +8,7 @@ import { SuperAdminPanel } from './components/SuperAdminPanel';
 import { DidacticSequence, SequenceInput } from './types';
 import { generateDidacticSequence as generateGroq } from './services/groqService';
 import { generateDidacticSequence as generateGemini } from './services/geminiService';
-import { GraduationCap, Loader2, AlertTriangle, LogOut, User as UserIcon, Shield, LayoutDashboard, Database, Activity, Users, Sparkles, PenTool, Globe } from 'lucide-react';
+import { GraduationCap, Loader2, AlertTriangle, LogOut, User as UserIcon, Shield, LayoutDashboard, Database, Activity, Users, Sparkles, PenTool, Globe, Zap } from 'lucide-react';
 import { Login } from './components/Login';
 import { LandingPage } from './components/LandingPage';
 import { authService, User } from './services/authService';
@@ -307,6 +307,36 @@ function App() {
     console.log("🔙 [SaaS] Regresando al Panel Principal");
   };
 
+  const handlePayForCredits = async () => {
+    if (!currentUser) return;
+    const mp = authService.initMercadoPago();
+    if (!mp) {
+      alert("Error al iniciar Mercado Pago. Verifica la llave pública en el .env");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await authService.createPreference(
+        currentUser.institucion_id || 'personal', 
+        "Carga de 10 Créditos - SCI", 
+        20000
+      );
+      if (res.preferenceId) {
+        mp.checkout({
+          preference: { id: res.preferenceId },
+          autoOpen: true
+        });
+      } else {
+        alert("Error: " + (res.error || "No se pudo obtener el ID de preferencia"));
+      }
+    } catch (e) {
+      alert("Fallo en la conexión con el servidor de pagos.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleGenerate = async (refinementConfig?: { instruction: string }) => {
     const now = Date.now();
     if (now - lastGenTime < 8000 && !refinementConfig) {
@@ -314,6 +344,12 @@ function App() {
       return;
     }
     setLastGenTime(now);
+
+    // Verificación de Créditos / Suscripción
+    if (currentUser && !authService.canGenerate(currentUser)) {
+      setError("CRÉDITOS_AGOTADOS");
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -574,7 +610,23 @@ function App() {
                 <UserIcon size={32} className="text-slate-400" />
               </div>
               <h3 className="font-black text-slate-800">{currentUser.name}</h3>
-              <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest">{currentUser.role}</p>
+              <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest leading-none mb-2">{currentUser.role}</p>
+              
+              {/* Información de Suscripción */}
+              <div className="mt-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Plan Actual</span>
+                  <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                    {currentUser.plan_type === 'annual' ? 'Plus Anual' : (currentUser.plan_type === 'monthly' ? 'Mensual' : (currentUser.plan_type === 'weekly' ? 'Semanal' : 'Prueba'))}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Créditos</span>
+                  <span className="text-sm font-black text-slate-800">
+                    {currentUser.plan_type === 'annual' ? '∞' : (currentUser.credits ?? 0)}
+                  </span>
+                </div>
+              </div>
             </div>
             <PasswordChange email={currentUser.email} />
             <button onClick={() => setShowProfile(false)} className="w-full mt-4 text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase tracking-widest">
@@ -763,17 +815,38 @@ function App() {
             <p className="text-[8px] font-black uppercase tracking-[5px] text-slate-400">Powered by SCI Platform</p>
         </div>
 
-        {/* Error Notification */}
         {error && (
-          <div className="fixed bottom-10 right-10 max-w-md bg-white border-l-4 border-red-500 p-5 rounded-2xl shadow-2xl flex items-center gap-4 animate-fade-in-up z-50">
-            <div className="bg-red-50 text-red-500 p-2 rounded-xl">
-              <AlertTriangle size={24} />
-            </div>
-            <div className="flex-1">
-              <h4 className="text-slate-800 font-black text-sm uppercase">Error detectado</h4>
-              <p className="text-slate-500 text-xs font-medium">{error}</p>
-            </div>
-            <button onClick={() => setError(null)} className="text-slate-300 hover:text-slate-500 transition-colors">✕</button>
+          <div className={`fixed bottom-10 right-10 max-w-md ${error === 'CRÉDITOS_AGOTADOS' ? 'bg-[#0a0a0b] border-indigo-500 shadow-indigo-500/20' : 'bg-white border-red-500'} border-l-4 p-6 rounded-[2rem] shadow-2xl flex items-start gap-5 animate-fade-in-up z-50`}>
+            {error === 'CRÉDITOS_AGOTADOS' ? (
+              <>
+                <div className="bg-indigo-500 p-3 rounded-2xl text-white shadow-lg shadow-indigo-500/30">
+                  <Zap size={24} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-white font-black text-sm uppercase tracking-tighter">Créditos Agotados</h4>
+                  <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-1 mb-4 leading-relaxed">
+                    Has gastado tu crédito de prueba. Subscríbete para seguir creando planeaciones ilimitadas.
+                  </p>
+                  <button 
+                    onClick={handlePayForCredits}
+                    className="w-full h-10 bg-indigo-600 text-white text-[10px] font-black uppercase tracking-[2px] rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition-all flex items-center justify-center gap-2"
+                  >
+                    Pagar con Mercado Pago
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="bg-red-50 text-red-500 p-2 rounded-xl">
+                  <AlertTriangle size={24} />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-slate-800 font-black text-sm uppercase">Error detectado</h4>
+                  <p className="text-slate-500 text-xs font-medium">{error}</p>
+                </div>
+              </>
+            )}
+            <button onClick={() => setError(null)} className="text-slate-500 hover:text-white transition-colors">✕</button>
           </div>
         )}
       </main>
