@@ -18,6 +18,7 @@ export interface Institucion {
   plan_suscripcion: 'bronce' | 'plata' | 'oro';
   creditos_usados: number;
   activo: boolean;
+  permite_autoregistro?: boolean;
   created_at?: string;
 }
 

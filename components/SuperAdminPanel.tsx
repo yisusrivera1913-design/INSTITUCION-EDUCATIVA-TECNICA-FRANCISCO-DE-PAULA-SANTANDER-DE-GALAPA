@@ -14,6 +14,7 @@ interface Institucion {
     codigo_acceso?: string | null;
     app_users?: [{ count: number }];
     generated_sequences?: [{ count: number }];
+    permite_autoregistro?: boolean;
 }
 
 interface SuperAdminPanelProps {
@@ -295,6 +296,9 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onEnterInstitu
                                     <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[9px] font-black uppercase tracking-widest ${inst.activo ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                                         <div className={`w-1 h-1 rounded-full ${inst.activo ? 'bg-emerald-400' : 'bg-red-400'} ${inst.activo ? 'animate-pulse' : ''}`} />
                                         {inst.activo ? 'Activo' : 'Offline'}
+                                    </div>
+                                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[9px] font-black uppercase tracking-widest ${inst.permite_autoregistro !== false ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-orange-500/10 text-orange-400 border-orange-500/20'}`}>
+                                        {inst.permite_autoregistro !== false ? 'Registro Abierto' : 'Modo Estricto'}
                                     </div>
                                     <div className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter">ID: {inst.id.substring(0, 8)}</div>
                                 </div>

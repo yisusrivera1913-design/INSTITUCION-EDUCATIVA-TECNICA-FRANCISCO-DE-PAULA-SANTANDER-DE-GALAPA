@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { authService, User } from '../services/authService';
 import { supabase } from '../services/supabaseClient';
 import { GRADOS, AREAS } from '../constants';
-import { Users, Activity, Calendar, Clock, BarChart3, Shield, Key, RefreshCw, Download, Upload, FileText, Database, UserPlus, Wand2, CheckCircle2, UserMinus, Trash2, BookOpen, GraduationCap, Save, Copy, KeyRound, Eye, EyeOff, Pencil, Globe, Sparkles } from 'lucide-react';
+import { Users, Activity, Calendar, Clock, BarChart3, Shield, Key, RefreshCw, Download, Upload, FileText, Database, UserPlus, Wand2, CheckCircle2, UserMinus, Trash2, BookOpen, GraduationCap, Save, Copy, KeyRound, Eye, EyeOff, Pencil, Globe, Sparkles, Lock, Unlock } from 'lucide-react';
 
 export const UserManagement: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
@@ -21,6 +21,8 @@ export const UserManagement: React.FC = () => {
     const [isSavingCode, setIsSavingCode] = useState(false);
     const [showCode, setShowCode] = useState(false);
     const [codeSuccess, setCodeSuccess] = useState(false);
+    const [isAutoRegEnabled, setIsAutoRegEnabled] = useState(true);
+    const [isUpdatingAutoReg, setIsUpdatingAutoReg] = useState(false);
 
     const currentUser = authService.getCurrentUser();
 
@@ -31,13 +33,40 @@ export const UserManagement: React.FC = () => {
         const sorted = data.sort((a, b) => (b.stats?.total || 0) - (a.stats?.total || 0));
         setUsers(sorted);
         
-        // Fetch institution code
+        // Fetch institution code & settings
         if (currentUser?.institucion_id) {
             const code = await authService.getCodigoAcceso(currentUser.institucion_id);
             setInstCode(code);
+            
+            // Fetch strict mode setting
+            const { data: inst } = await supabase.from('instituciones')
+                .select('permite_autoregistro')
+                .eq('id', currentUser.institucion_id)
+                .maybeSingle();
+            if (inst) setIsAutoRegEnabled(inst.permite_autoregistro !== false);
         }
         
         setIsRefreshing(false);
+    };
+
+    const handleToggleAutoReg = async () => {
+        if (!currentUser?.institucion_id || isUpdatingAutoReg) return;
+        
+        setIsUpdatingAutoReg(true);
+        const newValue = !isAutoRegEnabled;
+        
+        try {
+            const { error } = await supabase.from('instituciones')
+                .update({ permite_autoregistro: newValue })
+                .eq('id', currentUser.institucion_id);
+            
+            if (error) throw error;
+            setIsAutoRegEnabled(newValue);
+        } catch (e: any) {
+            alert('Error al actualizar configuración: ' + e.message);
+        } finally {
+            setIsUpdatingAutoReg(false);
+        }
     };
 
     const handleSaveInstCode = async () => {
@@ -339,6 +368,31 @@ export const UserManagement: React.FC = () => {
                                 <Globe size={16} className="text-emerald-600 group-hover:text-white" />
                                 Copiar Enlace para Profesores
                             </button>
+
+                            {/* TOGGLE MODO ESTRICTO */}
+                            <div className="mt-2 p-4 bg-white/5 rounded-2xl border border-white/5 flex items-center justify-between group/strict">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2 rounded-lg transition-colors ${isAutoRegEnabled ? 'bg-blue-500/10 text-blue-400' : 'bg-orange-500/10 text-orange-400'}`}>
+                                        {isAutoRegEnabled ? <Unlock size={14} /> : <Lock size={14} />}
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-black text-white uppercase tracking-wider flex items-center gap-2">
+                                            {isAutoRegEnabled ? 'Registro Libre' : 'Modo Estricto'} 
+                                            {!isAutoRegEnabled && <span className="text-[8px] bg-orange-500 text-white px-1.5 py-0.5 rounded-full">Activo</span>}
+                                        </div>
+                                        <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
+                                            {isAutoRegEnabled ? 'Cualquier docente con el código puede entrar.' : 'Solo correos registrados por el Rector.'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={handleToggleAutoReg}
+                                    disabled={isUpdatingAutoReg}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isAutoRegEnabled ? 'bg-slate-700' : 'bg-orange-600'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isAutoRegEnabled ? 'translate-x-1' : 'translate-x-6'}`} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
