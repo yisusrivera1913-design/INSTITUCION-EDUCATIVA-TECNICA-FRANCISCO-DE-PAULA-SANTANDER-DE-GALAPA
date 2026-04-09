@@ -114,7 +114,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin, preSelectedInst }) => {
                     title: result.institucion.nombre,
                     subtitle: '¡Institución verificada!',
                     institucionId: result.institucion.id,
-                    logo_url: result.institucion.config_visual?.logo_url || null
+                    logo_url: result.institucion.nombre?.toLowerCase().includes('santander') 
+                        ? '/logo_santander.png' 
+                        : result.institucion.config_visual?.logo_url || null
                 });
                 localStorage.setItem('sci_last_school_slug', result.institucion.slug);
                 localStorage.setItem('sci_pending_inst_id', result.institucion.id);
