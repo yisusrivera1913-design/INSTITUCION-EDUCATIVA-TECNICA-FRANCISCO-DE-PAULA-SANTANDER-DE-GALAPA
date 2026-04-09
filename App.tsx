@@ -513,13 +513,13 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const isInstitutionalLink = params.has('colegio') || params.has('inst');
 
-    // MODO MEMORIA: Si el docente vuelve a la raíz pero se guardó su colegio previamente, auto-redireccionarlo.
+    // MODO MEMORIA / PREDETERMINADO: Si el docente vuelve a la raíz, auto-redireccionarlo al Santander por defecto.
     if (!isInstitutionalLink && !showLogin) {
-        const lastSchool = localStorage.getItem('sci_last_school_slug');
-        if (lastSchool) {
-            window.history.replaceState(null, '', `${window.location.pathname}?inst=${lastSchool}`);
-            return <Login onLogin={handleLogin} preSelectedInst={lastSchool} />;
-        }
+        const lastSchool = localStorage.getItem('sci_last_school_slug') || 'santander-galapa';
+        
+        // Sincronizar URL y mostrar Login del Santander inmediatamente
+        window.history.replaceState(null, '', `${window.location.pathname}?inst=${lastSchool}`);
+        return <Login onLogin={handleLogin} preSelectedInst={lastSchool} />;
     }
 
     if (isInstitutionalLink) {
