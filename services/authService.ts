@@ -211,7 +211,11 @@ export const authService = {
                         institucion_id: data.institucion_id,
                         nombre_institucion: inst?.nombre || null,
                         dominio_email: inst?.dominio_email || null,
-                        config_visual: inst?.config_visual || null,
+                        config_visual: {
+                            ...(inst?.config_visual || {}),
+                            logo_url: inst?.config_visual?.logo_url ||
+                                (inst?.nombre?.toLowerCase().includes('santander') ? '/logo_santander.png' : null)
+                        },
                         plan_type: (data as any).plan_type || 'free',
                         credits: (data as any).credits ?? 1,
                         subscription_expiry: (data as any).subscription_expiry || null
@@ -501,7 +505,12 @@ export const authService = {
             institucion_id: profile.institucion_id,
             nombre_institucion: inst?.nombre || null,
             dominio_email: inst?.dominio_email || null,
-            config_visual: inst?.config_visual || null,
+            config_visual: {
+                ...(inst?.config_visual || {}),
+                // Fallback: si la BD no tiene logo, usar el logo local de Santander
+                logo_url: inst?.config_visual?.logo_url ||
+                    (inst?.nombre?.toLowerCase().includes('santander') ? '/logo_santander.png' : null)
+            },
             session_id: session.access_token,
             credits: (profile as any).credits ?? 1,
             plan_type: (profile as any).plan_type || 'free',
