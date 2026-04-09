@@ -59,8 +59,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin, preSelectedInst }) => {
                         title: inst.nombre,
                         subtitle: 'Ingresa el código de acceso para continuar.',
                         institucionId: inst.id,
-                        logo_url: inst.config_visual?.logo_url ||
-                            (inst.nombre?.toLowerCase().includes('santander') ? '/logo_santander.png' : null)
+                        logo_url: inst.nombre?.toLowerCase().includes('santander') 
+                            ? '/logo_santander.png' 
+                            : inst.config_visual?.logo_url
                     });
                 } else {
                     setBranding(prev => ({
