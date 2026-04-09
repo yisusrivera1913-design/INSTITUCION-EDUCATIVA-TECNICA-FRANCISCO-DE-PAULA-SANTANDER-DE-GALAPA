@@ -12,7 +12,7 @@ Este documento contiene las directrices obligatorias para que la IA genere conte
 7. **Nivel de Lenguaje:** Vocabulario específico para la edad: Transition (pictográfico/oral), 11° (técnico/analítico).
 8. **Alcance de Sesiones:** Lo planeado debe ser ejecutable en 60 min reales por sesión.
 9. **Bibliografía MEN:** Referenciar libros oficiales de "Colombia Aprende".
-10. **Ajuste de Grado:** No usar conceptos de secundaria en primaria (ej. no álgebra en 3°).
+10. **Ajuste de Grado & Transición:** No usar conceptos de secundaria en primaria. En **Transición**, usar OBLIGATORIAMENTE las **Dimensiones del Desarrollo** y Actividades Rectoras (Juego, Arte, Literatura, Exploración).
 
 ## II. Metodologías Activas y DUA (11-20)
 11. **Múltiples Medios de Representación:** Texto, gráficos, sugerencias de video y experimentos.
@@ -21,14 +21,14 @@ Este documento contiene las directrices obligatorias para que la IA genere conte
 14. **Aprendizaje Basado en Problemas (ABP):** Iniciar siempre con un problema real para resolver.
 15. **Aula Invertida:** Sugerir una actividad de consulta previa a la clase.
 16. **Pensamiento Crítico:** Preguntas que obliguen a cuestionar el "por qué" de las cosas.
-17. **Inclusión PIAR:** Adecuaciones específicas para dislexia, TDAH o discapacidad visual en el texto.
+17. **Inclusión PIAR Proactiva:** Las adecuaciones NUNCA deben faltar. Proponer siempre ajustes visuales, auditivos o procesales según el tema y grado.
 18. **Trabajo Colaborativo:** Definir roles claros en actividades grupales.
 19. **Interdisciplinariedad:** Conectar Matemáticas con Arte, o Lenguaje con Ciencias.
 20. **Momentos ADI:** Ejercicios de corporiedad que duren de 3 a 5 minutos, ni más ni menos.
 
 ## III. Evaluación por Competencias e ICFES (21-30)
 21. **Enfoque de Evidencias:** Cada pregunta debe evaluar una evidencia de aprendizaje del DBA.
-22. **Situación Problema:** No preguntar "¿Qué es X?", sino "Dado el caso Z, ¿qué pasaría con X?".
+22. **Situación Problema Localizada:** Usar contextos de Galapa, Atlántico (economía artesanal, clima, geografía local) para las situaciones problema.
 23. **Distractores Lógicos:** Las opciones incorrectas deben basarse en errores conceptuales comunes.
 24. **Justificación de Clave:** La IA interna debe validar por qué la A es correcta y las otras no.
 25. **Niveles Saber:** Asegurar preguntas de nivel Mínimo, Satisfactorio y Avanzado.

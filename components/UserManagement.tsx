@@ -14,15 +14,7 @@ export const UserManagement: React.FC = () => {
     const [showAddUser, setShowAddUser] = useState(false);
     const [assignmentUser, setAssignmentUser] = useState<User | null>(null);
 
-    // Estado para código de acceso institucional
-    const [instCode, setInstCode] = useState<string | null>(null);
-    const [isEditingCode, setIsEditingCode] = useState(false);
-    const [newCode, setNewCode] = useState('');
-    const [isSavingCode, setIsSavingCode] = useState(false);
-    const [showCode, setShowCode] = useState(false);
-    const [codeSuccess, setCodeSuccess] = useState(false);
-    const [isAutoRegEnabled, setIsAutoRegEnabled] = useState(true);
-    const [isUpdatingAutoReg, setIsUpdatingAutoReg] = useState(false);
+
 
     const currentUser = authService.getCurrentUser();
 
@@ -33,63 +25,12 @@ export const UserManagement: React.FC = () => {
         const sorted = data.sort((a, b) => (b.stats?.total || 0) - (a.stats?.total || 0));
         setUsers(sorted);
         
-        // Fetch institution code & settings
-        if (currentUser?.institucion_id) {
-            const code = await authService.getCodigoAcceso(currentUser.institucion_id);
-            setInstCode(code);
-            
-            // Fetch strict mode setting
-            const { data: inst } = await supabase.from('instituciones')
-                .select('permite_autoregistro')
-                .eq('id', currentUser.institucion_id)
-                .maybeSingle();
-            if (inst) setIsAutoRegEnabled(inst.permite_autoregistro !== false);
-        }
+
         
         setIsRefreshing(false);
     };
 
-    const handleToggleAutoReg = async () => {
-        if (!currentUser?.institucion_id || isUpdatingAutoReg) return;
-        
-        setIsUpdatingAutoReg(true);
-        const newValue = !isAutoRegEnabled;
-        
-        try {
-            const { error } = await supabase.from('instituciones')
-                .update({ permite_autoregistro: newValue })
-                .eq('id', currentUser.institucion_id);
-            
-            if (error) throw error;
-            setIsAutoRegEnabled(newValue);
-        } catch (e: any) {
-            alert('Error al actualizar configuración: ' + e.message);
-        } finally {
-            setIsUpdatingAutoReg(false);
-        }
-    };
 
-    const handleSaveInstCode = async () => {
-        if (!newCode.trim() || !currentUser?.institucion_id) return;
-        setIsSavingCode(true);
-        const res = await authService.updateCodigoAcceso(currentUser.institucion_id, newCode.trim());
-        if (res.success) {
-            setInstCode(newCode.trim());
-            setIsEditingCode(false);
-            setCodeSuccess(true);
-            setTimeout(() => setCodeSuccess(null as any), 3000);
-        } else {
-            alert('Error: ' + res.message);
-        }
-        setIsSavingCode(false);
-    };
-
-    const copyTeacherLink = () => {
-        const slug = localStorage.getItem('sci_last_school_slug') || '';
-        const url = `${window.location.origin}${slug ? `?inst=${slug}` : ''}`;
-        navigator.clipboard.writeText(url);
-        alert('Enlace del colegio copiado. Compártelo con tus docentes.');
-    };
 
     const toggleSequences = async (email: string) => {
         if (expandedUser === email) {
@@ -283,140 +224,7 @@ export const UserManagement: React.FC = () => {
                 </div>
             </div>
 
-            {/* CONFIGURACIÓN DE ACCESO INSTITUCIONAL (NEW) */}
-            <div className="mb-10 p-8 bg-gradient-to-br from-[#0c0c0e] to-[#121215] rounded-[2.5rem] border border-indigo-500/20 shadow-2xl relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <KeyRound size={120} className="text-indigo-500" />
-                </div>
-                
-                <div className="relative z-10">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
-                        <div className="max-w-xl">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-[9px] font-black text-indigo-400 uppercase tracking-[2px] mb-4">
-                                <Sparkles size={12} /> Configuración de Seguridad
-                            </div>
-                            <h3 className="text-2xl font-black text-white tracking-tight mb-3">Llave Maestra de Registro</h3>
-                            <p className="text-slate-500 text-xs font-bold leading-relaxed uppercase tracking-widest">
-                                Define el código secreto que tus docentes deben ingresar antes de loguearse con Google. 
-                                <span className="text-indigo-400 block mt-1">¡Ya no necesitas registrar a cada profesor manualmente!</span>
-                            </p>
-                        </div>
 
-                        <div className="flex flex-col gap-4 min-w-[300px]">
-                            <div className="bg-white/5 border border-white/5 p-4 rounded-2xl">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                                        <KeyRound size={12} className="text-indigo-500" /> Código de Acceso Actual
-                                    </span>
-                                    {codeSuccess && <span className="text-[9px] font-black text-emerald-400 uppercase animate-pulse">✓ Guardado</span>}
-                                </div>
-                                
-                                {isEditingCode ? (
-                                    <div className="flex gap-2">
-                                        <input 
-                                            type="text"
-                                            value={newCode}
-                                            onChange={e => setNewCode(e.target.value)}
-                                            placeholder="ej: santander2026"
-                                            className="flex-1 bg-white/5 border border-indigo-500/30 rounded-xl px-4 text-sm text-white font-bold tracking-widest focus:ring-2 focus:ring-indigo-500 outline-none"
-                                            autoFocus
-                                            onKeyDown={e => e.key === 'Enter' && handleSaveInstCode()}
-                                        />
-                                        <button 
-                                            onClick={handleSaveInstCode}
-                                            disabled={isSavingCode || !newCode.trim()}
-                                            className="h-10 px-4 bg-indigo-600 text-white rounded-xl font-black text-[10px] uppercase hover:bg-indigo-500 transition-all disabled:opacity-50"
-                                        >
-                                            {isSavingCode ? <RefreshCw size={14} className="animate-spin" /> : 'OK'}
-                                        </button>
-                                        <button 
-                                            onClick={() => setIsEditingCode(false)}
-                                            className="h-10 w-10 bg-white/5 text-slate-400 rounded-xl hover:bg-red-500/20 hover:text-red-400 flex items-center justify-center transition-all"
-                                        >
-                                            ✕
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex-1 h-12 bg-black/40 border border-white/5 rounded-xl px-4 flex items-center shadow-inner">
-                                            <span className="text-xl font-black tracking-[8px] text-white">
-                                                {showCode ? (instCode || 'NO SET') : '••••••••'}
-                                            </span>
-                                        </div>
-                                        <button 
-                                            onClick={() => setShowCode(!showCode)}
-                                            className="h-12 w-12 bg-white/5 text-slate-400 rounded-xl hover:bg-white/10 hover:text-white flex items-center justify-center border border-white/5 transition-all"
-                                            title={showCode ? "Ocultar" : "Mostrar"}
-                                        >
-                                            {showCode ? <EyeOff size={18} /> : <Eye size={18} />}
-                                        </button>
-                                        <button 
-                                            onClick={() => { setIsEditingCode(true); setNewCode(instCode || ''); }}
-                                            className="h-12 w-12 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-600/20 transition-all border border-indigo-400/30"
-                                            title="Editar Código"
-                                        >
-                                            <Pencil size={18} />
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            <button 
-                                onClick={copyTeacherLink}
-                                className="w-full h-12 bg-white text-black font-black text-[10px] uppercase tracking-[3px] rounded-xl hover:bg-emerald-500 hover:text-white transition-all shadow-xl flex items-center justify-center gap-3 group border-2 border-transparent hover:border-emerald-400"
-                            >
-                                <Globe size={16} className="text-emerald-600 group-hover:text-white" />
-                                Copiar Enlace para Profesores
-                            </button>
-
-                            {/* LLAVE MAESTRA / MODO ESTRICTO */}
-                             <div className="mt-4 p-5 bg-indigo-500/10 border border-indigo-400/20 rounded-2xl">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-xl transition-colors ${isAutoRegEnabled ? 'bg-blue-500/20 text-blue-400' : 'bg-orange-500/20 text-orange-400'}`}>
-                                            {isAutoRegEnabled ? <Unlock size={18} /> : <Lock size={18} />}
-                                        </div>
-                                        <div>
-                                            <div className="text-[11px] font-black text-white uppercase tracking-widest flex items-center gap-2">
-                                                {isAutoRegEnabled ? 'Registro Libre Activo' : 'Modo Estricto Activo'}
-                                            </div>
-                                            <p className="text-[10px] text-indigo-300 font-bold uppercase tracking-widest mt-0.5 opacity-70">
-                                                Control de Acceso Institucional
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        onClick={handleToggleAutoReg}
-                                        disabled={isUpdatingAutoReg}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isAutoRegEnabled ? 'bg-blue-600' : 'bg-slate-700'}`}
-                                    >
-                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isAutoRegEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                                    </button>
-                                </div>
-                                
-                                <div className="space-y-3">
-                                    <div className="flex items-start gap-3">
-                                        <CheckCircle2 size={14} className={isAutoRegEnabled ? 'text-emerald-400 mt-0.5' : 'text-slate-600 mt-0.5'} />
-                                        <p className={`text-[10px] font-medium leading-relaxed ${isAutoRegEnabled ? 'text-slate-300' : 'text-slate-500'}`}>
-                                            {isAutoRegEnabled 
-                                                ? "¡Felicidades! Los profesores pueden registrarse solos usando el código del colegio. No tienes que agregarlos uno por uno."
-                                                : "El auto-registro está desactivado. Debes registrar manualmente el correo de cada profesor arriba antes de que puedan entrar."
-                                            }
-                                        </p>
-                                    </div>
-                                    {isAutoRegEnabled && (
-                                        <div className="pt-2 border-t border-indigo-400/10">
-                                            <p className="text-[9px] text-indigo-400 font-black uppercase tracking-widest">
-                                                Tip: Comparte el enlace y la clave "{instCode}" con tu equipo.
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             {/* Teacher Generator UI (Backup Manual) */}
             {showAddUser && (

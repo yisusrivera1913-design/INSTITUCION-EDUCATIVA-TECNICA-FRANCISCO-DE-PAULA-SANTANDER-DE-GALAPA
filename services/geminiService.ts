@@ -255,10 +255,22 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
 
   const hasDBA = areaNormativa.conDBA.some(a => currentArea.includes(a)) || isIntegral;
 
-  let pedagogicalInstruction = hasDBA
-    ? `- **DBA Obligatorio (MEN Colombia):** Esta área REQUIERE el uso de DBA. Debes identificar el número exacto del DBA (ej: "Matemáticas DBA #4") y transcribir su contenido literal. 
-       - **Input del Usuario:** ${sanitizeInput(input.dba) || 'Sin DBA especificado'}. Si el docente no lo especificó, TÚ debes buscarlo y citar el más adecuado para el tema "${input.tema}".`
-    : `- **Referencia Pedagógica:** Esta área NO utiliza DBA oficiales. Debes citar las **"Orientaciones Pedagógicas y Curriculares del MEN para ${input.area}"**.`;
+  let pedagogicalInstruction = "";
+  if (isMultigrado) {
+    pedagogicalInstruction = `- **Enfoque Multigrado:** Debes generar actividades diferenciadas por niveles de complejidad para los distintos grados que componen el grupo, asegurando que todos alcancen el objetivo base.`;
+  } else if (input.grado.toLowerCase().includes("transición") || input.grado.toLowerCase().includes("preescolar")) {
+    pedagogicalInstruction = `- **Referencia Pedagógica (TRANSICIÓN):** Esta es Educación Inicial. NO uses DBA de primaria. Debes basarte en las **"Dimensiones del Desarrollo"** y los **"Propósitos de la Educación Inicial"** del MEN. La planeación DEBE estructurarse por DIMENSIONES (Socioafectiva, Cognitiva, Comunicativa, Corporal, Estética, Ética, Espiritual).`;
+  } else if (hasDBA) {
+    pedagogicalInstruction = `- **DBA Obligatorio (MEN Colombia):** Esta área REQUIERE el uso de DBA. Debes identificar el número exacto del DBA (ej: "Matemáticas DBA #4") y transcribir su contenido literal. 
+       - **Input del Usuario:** ${sanitizeInput(input.dba) || 'Sin DBA especificado'}. Si el docente no lo especificó, TÚ debes buscarlo y citar el más adecuado para el tema "${input.tema}".`;
+  } else {
+    pedagogicalInstruction = `- **Referencia Pedagógica:** Esta área NO utiliza DBA oficiales. Debes citar las **"Orientaciones Pedagógicas y Curriculares del MEN para ${input.area}"**.`;
+  }
+
+  // Especialización para Religión
+  if (currentArea.includes("RELIGION")) {
+    pedagogicalInstruction += `\n- **Especialidad Educación Religiosa:** Usa los Estándares ERE de la Conferencia Episcopal. RECURSOS OBLIGATORIOS: Biblia, Textos de estudio sobre los evangelios.`;
+  }
 
   const nombreInstitucion = sanitizeInput(input.nombre_institucion) || 'la Institución Educativa';
   const codigoFormato = input.codigo_formato || 'F-PA-03';
@@ -270,25 +282,23 @@ export const generateDidacticSequence = async (input: SequenceInput, refinementI
     Tu objetivo es generar planeaciones de clase con RIGOR ACADÉMICO y EXCELENCIA PEDAGÓGICA.
     Formato institucional de referencia: **${codigoFormato}** | Modelo pedagógico: **${modeloPedagogico}**.
 
-    ### REGLAS DE ORO DE CALIDAD:
+    ### REGLAS DE ORO DE CALIDAD SUPREMA:
     1. **DBA MASTER (MEN COLOMBIA):** Tienes acceso a los Derechos Básicos de Aprendizaje (DBA) de Colombia. 
        - SIEMPRE transcribe el enunciado **LITERAL** y el **CÓDIGO/NÚMERO** oficial (ej: "Matemáticas DBA #4 - 5°").
        - SIEMPRE incluye las **EVIDENCIAS DE APRENDIZAJE** oficiales asociadas a ese DBA.
-       - DIFERENCIA VERSIONES: Prioriza las versiones más recientes del MEN (V2 si aplica).
-       - CAMPO OBLIGATORIO: El objeto dba_detalle NUNCA puede estar vacío para áreas básicas. Si no tienes el literal exacto, DEBES buscar el referente más cercano en los Estándares Básicos de Competencia (EBC).
-    2. **EVALUACIÓN POR COMPETENCIAS (ICFES):** Genera **EXACTAMENTE 10 PREGUNTAS** de selección múltiple. CADA PREGUNTA debe basarse en una **Situación Problema** o caso de la vida real (ej: "Un agricultor en Galapa...", "En la tienda escolar...", "Juan observa que..."). 
-       - PROHIBIDAS: Preguntas de memoria simple (ej: "¿Qué es...?", "¿Cuántos...?").
-       - REQUERIDO: Evaluar competencias (Uso del conocimiento, Explicación de fenómenos, Indagación).
-       - CADA PREGUNTA debe tener: Contexto (Situación), Enunciado preciso, 4 opciones plausibles, clave correcta y una EXPLICACIÓN PEDAGÓGICA profunda del porqué es la respuesta correcta.
-    3. **INTEGRACIÓN INTELIGENTE:** Si se solicitan áreas incompatibles (ej: Religión y Geometría), NO inventes conexiones forzadas. Si no existe un puente pedagógico natural, deja los campos de integración en blanco o sepáralos estrictamente. Prioriza siempre el rigor técnico de cada área por separado.
-    4. **Propósito e Indicador Cognitivo (BLOOM):** El propósito y el indicador cognitivo deben usar ÚNICAMENTE el verbo **Clasificar**. Razón: Si un estudiante clasifica, ya ha identificado procesalmente.
-    5. **Impacto Social (Matemáticas):** En el taller imprimible, si el área es Matemáticas, incluir OBLIGATORIAMENTE una actividad de aplicación real que conecte el tema con la **toma de decisiones y la equidad**.
-    6. **Activación de Saberes:** La **Pregunta Activadora** en el transcurso de la sesión debe tener un formato destacado (ej: "¡DESAFÍO COGNITIVO! [Pregunta]") y ser lo suficientemente retadora para movilizar el pensamiento.
-    7. **Estructuras Mentales:** Es OBLIGATORIO el uso de **esquemas mentales**, mapas conceptuales o cuadros sinópticos en las fases de Enunciación o Modelación para organizar el conocimiento.
-    8. **Terminología Institucional:** Fase final: "transferencia". PROHIBIDO: "ABP".
-    9. **LIMPIEZA TOTAL:** PROHIBIDO EL USO DE ASTERISCOS (*) EN CUALQUIER PARTE DEL TEXTO (ni siquiera para viñetas o negritas). Usa puntos o guiones si es necesario.
-    10. **Sin Tiempos Rígidos:** No incluyas minutos en las sesiones.
-    11. **Formato Sobrio:** Evita el marketing ("Platinum", "Supreme"). Usa lenguaje institucional formal.
+       - CAMPO OBLIGATORIO: El objeto dba_detalle NUNCA puede estar vacío para áreas básicas.
+    2. **INTELIGENCIA DE TRANSICIÓN:** Si el grado es **Transición**, NO hables de "Asignaturas". Estructura los contenidos y sesiones en torno a las **Dimensiones del Desarrollo** (Corporal, Cognitiva, Comunicativa, Socio-afectiva, Estética, Ética y Espiritual). Las actividades deben ser rectoras: Juego, Arte, Literatura y Exploración del Medio.
+    3. **EVALUACIÓN DINÁMICA (ICFES):** Genera una evaluación de selección múltiple basada en situaciones reales.
+       - **CANTIDAD:** Si el grado es 0-3°, genera 5 preguntas. Si es 4-11°, genera 10 preguntas.
+       - **CONTEXTO LOCAL:** Usa nombres de lugares de Galapa, Atlántico (ej: El Pozón, Plaza Principal, tradiciones artesanales) o situaciones de la I.E. Santander.
+       - **INSTRUMENTO:** En el campo "evaluacion", especifica siempre el Instrumento que usará el docente (Rúbrica, Diario de Campo, Lista de Cotejo).
+    4. **INCLUSIÓN PIAR PROACTIVA:** El campo "adecuaciones_piar" NUNCA debe decir "No aplica". Si no hay input del usuario, TÚ debes **proponer 2 estrategias de ajuste razonable** específicas para el tema (ej: "Para estudiantes con TDAH, fragmentar la actividad en pasos visuales", "Para dislexia, usar apoyos auditivos").
+    5. **INTEGRACIÓN INTELIGENTE:** Si se solicitan áreas incompatibles (ej: Religión y Geometría), crea puentes éticos o de valores. En Religión, usa SIEMPRE la Biblia como recurso central.
+    6. **Propósito e Indicador Cognitivo (BLOOM):** El propósito y el indicador cognitivo deben usar ÚNICAMENTE el verbo **Clasificar**. Razón: Si un estudiante clasifica, ya ha identificado procesalmente.
+    7. **Impacto Social y Regional:** En el taller imprimible, conecta el tema con un problema real de la comunidad de Galapa (servicios públicos, medio ambiente local, convivencia ciudadana).
+    8. **Activación de Saberes:** La **Pregunta Activadora** debe ser un "DESAFÍO COGNITIVO" que movilice el pensamiento superior.
+    9. **Terminología Institucional:** Fase final: "transferencia". PROHIBIDO: "ABP". Todo el texto debe ser formal, técnico y sin asteriscos.
+    10. **DIDÁCTICA:** Toda planeación debe basarse en el **Aprendizaje Basado en Problemas (ABP)**, planteando un reto inicial que se resuelve durante las sesiones.
 
     ### INSTRUCCIONES DE DISEÑO ELITE:
 
