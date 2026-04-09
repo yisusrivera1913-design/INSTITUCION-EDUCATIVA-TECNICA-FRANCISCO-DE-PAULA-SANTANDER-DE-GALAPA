@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { GRADOS, AREAS } from '../constants';
 
 /**
  * AuthService (Híbrido: Local + Supabase)
@@ -349,7 +350,8 @@ export const authService = {
         
         while (retries < 5 && !profile) {
             try {
-                const { data, error } = await supabase
+                // 1. Try to fetch with all columns (Ideal for fully migrated DB)
+                let { data, error: profileError } = await supabase
                     .from('app_users')
                     .select(`
                         name, email, role, assigned_grades, assigned_subjects,
@@ -358,8 +360,23 @@ export const authService = {
                     `)
                     .eq('email', email)
                     .maybeSingle();
+
+                // 2. FALLBACK: If 400 error (column doesn't exist yet), fetch only essential columns
+                if (profileError && profileError.code === 'PGRST204') {
+                   console.warn("⚠️ [Auth] Schema mismatch detected. Fetching essential columns only.");
+                   const { data: fallback, error: fallbackError } = await supabase
+                        .from('app_users')
+                        .select('name, email, role, assigned_grades, assigned_subjects, institucion_id, plan_type, credits, subscription_expiry, instituciones(nombre, dominio_email, config_visual)')
+                        .eq('email', email)
+                        .maybeSingle();
+                   
+                   if (!fallbackError) {
+                       data = fallback;
+                       profileError = null;
+                   }
+                }
                 
-                if (error) throw error;
+                if (profileError) throw profileError;
                 profile = data;
             } catch (err) {
                 console.warn(`⚠️ [Auth] Re-intentando consulta de perfil... (${retries + 1}/5)`);
@@ -440,17 +457,17 @@ export const authService = {
 
                 const { data: newProfile, error: createError } = await supabase
                     .from('app_users')
-                    .insert([{
+                    .upsert({
                         name: (user.user_metadata?.full_name || user.user_metadata?.name || email.split('@')[0]),
                         email: email,
                         password: obfuscatedDefaultPassword,
                         role: 'docente',
                         institucion_id: autoInstId,
-                        assigned_grades: [],
-                        assigned_subjects: [],
+                        assigned_grades: GRADOS,
+                        assigned_subjects: AREAS,
                         credits: 1,
                         plan_type: 'free'
-                    }])
+                    }, { onConflict: 'email' })
                     .select()
                     .single();
 
@@ -518,8 +535,8 @@ export const authService = {
                         email: teacher.email.toLowerCase(),
                         role: 'docente',
                         password: obfuscatedPassword,
-                        assigned_grades: teacher.assigned_grades || [],
-                        assigned_subjects: teacher.assigned_subjects || [],
+                        assigned_grades: teacher.assigned_grades || GRADOS,
+                        assigned_subjects: teacher.assigned_subjects || AREAS,
                         credits: 1
                     });
 
@@ -540,12 +557,29 @@ export const authService = {
         // 2. Cloud (Supabase)
         if (supabase) {
             try {
-                const { error } = await supabase
+                // 1. SELECTIVE FETCH: Prevents 400 errors if columns are missing
+                let { data, error } = await supabase
+                    .from('app_users')
+                    .select('name, email, role, assigned_grades, assigned_subjects, plan_type, credits, subscription_expiry, session_id')
+                    .eq('email', email.toLowerCase())
+                    .maybeSingle();
+
+                // 2. FALLBACK: Essential columns only
+                if (error || !data) {
+                    const { data: fallback } = await supabase
+                        .from('app_users')
+                        .select('name, email, role, assigned_grades, assigned_subjects, plan_type, credits, subscription_expiry, session_id')
+                        .eq('email', email.toLowerCase())
+                        .maybeSingle();
+                    if (fallback) data = fallback;
+                }
+
+                const { error: deleteError } = await supabase
                     .from('app_users')
                     .delete()
                     .eq('email', email.toLowerCase());
 
-                if (error) throw error;
+                if (deleteError) throw deleteError;
                 return { success: true };
             } catch (e: any) {
                 console.error("Delete Error:", e);

@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { MercadoPagoConfig, Preference } from 'https://esm.sh/mercadopago@2.2.8'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,49 +13,47 @@ serve(async (req) => {
 
   try {
     const { institucionId, userEmail, planName, amount, domain } = await req.json()
-    const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN')
+    const MP_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN') || Deno.env.get('MP_ACCESS_TOKEN')
 
     if (!MP_ACCESS_TOKEN) {
-      throw new Error('MP_ACCESS_TOKEN not set')
+      throw new Error('MERCADOPAGO_ACCESS_TOKEN not set')
     }
 
-    // Crear preferencia en Mercado Pago
+    // Inicializar cliente
+    const client = new MercadoPagoConfig({ accessToken: MP_ACCESS_TOKEN });
+    const preference = new Preference(client);
+
     // external_reference formateado como: email|institucionId|planId
     const externalReference = `${userEmail}|${institucionId}|${planName.toLowerCase()}`
 
-    const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
+    const body = {
+      items: [
+        {
+          id: planName.toLowerCase(),
+          title: `Suscripción: ${planName}`,
+          unit_price: Number(amount),
+          quantity: 1,
+          currency_id: 'COP'
+        }
+      ],
+      external_reference: externalReference,
+      notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
+      back_urls: {
+        success: `${domain}/?payment=success`,
+        failure: `${domain}/?payment=failure`,
+        pending: `${domain}/?payment=pending`,
       },
-      body: JSON.stringify({
-        items: [
-          {
-            title: planName,
-            unit_price: amount,
-            quantity: 1,
-            currency_id: 'COP'
-          }
-        ],
-        external_reference: externalReference,
-        notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
-        back_urls: {
-          success: `${domain}/?payment=success`,
-          failure: `${domain}/?payment=failure`,
-          pending: `${domain}/?payment=pending`,
-        },
-        auto_return: 'approved',
-      }),
-    })
+      auto_return: 'approved',
+    };
 
-    const data = await response.json()
+    const result = await preference.create({ body });
     
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
   } catch (error) {
+    console.error('Error creating preference:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,

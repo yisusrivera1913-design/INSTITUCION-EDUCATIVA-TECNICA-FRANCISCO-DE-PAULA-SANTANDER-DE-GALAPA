@@ -16,13 +16,9 @@ interface InputFormProps {
 export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerate, isLoading, user }) => {
   const [dbaMode, setDbaMode] = useState<'manual' | 'auto'>('manual');
 
-  const filteredGrados = (user?.role === 'admin')
-    ? GRADOS
-    : (user?.assigned_grades && user.assigned_grades.length > 0 ? user.assigned_grades : []);
-
-  const filteredAreas = (user?.role === 'admin')
-    ? AREAS
-    : (user?.assigned_subjects && user.assigned_subjects.length > 0 ? user.assigned_subjects : []);
+  // Todos los docentes tienen acceso total a todos los grados y áreas
+  const filteredGrados = GRADOS;
+  const filteredAreas = AREAS;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -76,9 +72,8 @@ export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerat
               onChange={handleChange}
               className="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer shadow-sm hover:border-blue-300 text-gray-700 font-bold"
             >
-              <option value="">{filteredGrados.length > 0 ? 'Seleccionar Grado' : 'Sin Grados Asignados'}</option>
+              <option value="">Seleccionar Grado</option>
               {filteredGrados.map(g => <option key={g} value={g}>{g}</option>)}
-              {filteredGrados.length === 0 && <option disabled>⚠️ Restringido por Rectoría</option>}
             </select>
           </div>
         </div>
@@ -150,9 +145,8 @@ export const InputForm: React.FC<InputFormProps> = ({ input, setInput, onGenerat
               onChange={handleChange}
               className="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all appearance-none cursor-pointer shadow-sm hover:border-blue-300 text-gray-700 font-bold"
             >
-              <option value="">{filteredAreas.length > 0 ? 'Seleccionar Área' : 'Sin Áreas Asignadas'}</option>
+              <option value="">Seleccionar Área</option>
               {filteredAreas.map(a => <option key={a} value={a}>{a}</option>)}
-              {filteredAreas.length === 0 && <option disabled>⚠️ Restringido por Rectoría</option>}
             </select>
           </div>
         </div>

@@ -101,8 +101,11 @@ export const SuperAdminPanel: React.FC<SuperAdminPanelProps> = ({ onEnterInstitu
             return;
         }
 
+        const user = authService.getCurrentUser();
+        const email = user?.email || 'admin@sistemaclasesideal.com';
+
         try {
-            const res = await authService.createPreference(inst.id, "Plan PRO - SCI", 20000);
+            const res = await authService.createPreference(inst.id, email, "Plan PRO - SCI", 20000);
             if (res.preferenceId) {
                 mp.checkout({
                     preference: {

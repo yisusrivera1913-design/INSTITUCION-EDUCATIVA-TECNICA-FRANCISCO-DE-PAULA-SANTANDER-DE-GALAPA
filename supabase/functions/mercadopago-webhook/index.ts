@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { MercadoPagoConfig, Payment } from 'https://esm.sh/mercadopago@2.2.8'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,17 +22,19 @@ serve(async (req) => {
     const topic = url.searchParams.get('topic') || url.searchParams.get('type')
     const id = url.searchParams.get('id') || url.searchParams.get('data.id')
 
-    if (topic === 'payment' || topic === 'merchant_order') {
-      const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN')
+    if ((topic === 'payment' || topic === 'merchant_order') && id) {
+      const MP_ACCESS_TOKEN = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN') || Deno.env.get('MP_ACCESS_TOKEN')
+      
+      if (!MP_ACCESS_TOKEN) {
+        throw new Error('MERCADOPAGO_ACCESS_TOKEN not set')
+      }
+
+      // Inicializar cliente y API de pagos
+      const client = new MercadoPagoConfig({ accessToken: MP_ACCESS_TOKEN });
+      const paymentClient = new Payment(client);
       
       // Consultar el estado del pago en Mercado Pago
-      const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${MP_ACCESS_TOKEN}`
-        }
-      })
-      
-      const payment = await mpResponse.json()
+      const payment = await paymentClient.get({ id });
       
       if (payment.status === 'approved') {
         const externalRef = payment.external_reference || '' // email|instId|plan
@@ -39,7 +42,7 @@ serve(async (req) => {
         
         console.log(`💰 Procesando pago para: ${userEmail} en inst: ${institucionId} (Plan: ${planId})`)
 
-        if (planId.includes('anual')) {
+        if (planId && planId.includes('anual')) {
           // 1. ACTUALIZAR PLAN INSTITUCIONAL (ANUAL)
           const { error: instError } = await supabase
             .from('instituciones')
@@ -55,7 +58,7 @@ serve(async (req) => {
           if (userError) throw userError
 
           console.log(`✅ Plan ANUAL activado para ${userEmail}`)
-        } else {
+        } else if (planId) {
           // 3. RECARGA DE CRÉDITOS INDIVIDUALES (SEMANAL/MENSUAL)
           const creditsToAdd = planId.includes('semanal') ? 10 : (planId.includes('mensual') ? 30 : 1)
           
